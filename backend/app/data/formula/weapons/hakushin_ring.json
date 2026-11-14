@@ -1,0 +1,268 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Hakushin Ring",
+ "nanoka_id": "14414",
+ "slug": "hakushin_ring",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/HakushinRing/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/hakushin/hakushin.go",
+ "verified_by": [
+  "hakushin_ring_r1_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.1,
+   6.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.125,
+   6.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.15,
+   6.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.175,
+   6.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.2,
+   6.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "reaction",
+   "label": "Electro reaction the wielder triggered: the other element",
+   "kind": "choice",
+   "default_by": "giver_is_subject",
+   "options": [
+    "pyro",
+    "hydro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "usual": {
+    "value": "receiver_element",
+    "reason": "The reaction with the optimized character's element, which is the one the ring is played for"
+   },
+   "go": "25,58-70"
+  }
+ ],
+ "effects": [
+  {
+   "key": "electro",
+   "label": "Electro DMG for an Electro receiver after any Electro reaction",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "electro"
+   ],
+   "receiver_elements": [
+    "electro"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "pyro",
+      "hydro",
+      "cryo",
+      "anemo",
+      "geo",
+      "dendro"
+     ]
+    }
+   ],
+   "go": "23,26,41-46,48-56"
+  },
+  {
+   "key": "ele_pyro",
+   "label": "Pyro DMG for a Pyro receiver",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "pyro"
+   ],
+   "receiver_elements": [
+    "pyro"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "pyro"
+     ]
+    }
+   ],
+   "go": "21,23,26,33-39,48-56"
+  },
+  {
+   "key": "ele_hydro",
+   "label": "Hydro DMG for a Hydro receiver",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "hydro"
+   ],
+   "receiver_elements": [
+    "hydro"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "hydro"
+     ]
+    }
+   ],
+   "go": "21,23,26,33-39,48-56"
+  },
+  {
+   "key": "ele_cryo",
+   "label": "Cryo DMG for a Cryo receiver",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "cryo"
+   ],
+   "receiver_elements": [
+    "cryo"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "cryo"
+     ]
+    }
+   ],
+   "go": "21,23,26,33-39,48-56"
+  },
+  {
+   "key": "ele_anemo",
+   "label": "Anemo DMG for a Anemo receiver",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "anemo"
+   ],
+   "receiver_elements": [
+    "anemo"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "anemo"
+     ]
+    }
+   ],
+   "go": "21,23,26,33-39,48-56"
+  },
+  {
+   "key": "ele_geo",
+   "label": "Geo DMG for a Geo receiver",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "geo"
+   ],
+   "receiver_elements": [
+    "geo"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "geo"
+     ]
+    }
+   ],
+   "go": "21,23,26,33-39,48-56"
+  },
+  {
+   "key": "ele_dendro",
+   "label": "Dendro DMG for a Dendro receiver",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "dendro"
+   ],
+   "receiver_elements": [
+    "dendro"
+   ],
+   "when": [
+    {
+     "condition": "reaction",
+     "values": [
+      "dendro"
+     ]
+    }
+   ],
+   "go": "21,23,26,33-39,48-56"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Millennial Movement / same-name buffs from two wielders",
+   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
+   "receiver": "teammate"
+  }
+ ]
+}

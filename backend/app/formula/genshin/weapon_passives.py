@@ -118,6 +118,9 @@ class WeaponValue(sheets._Strict):  # noqa: SLF001
     #: Multiplied by another refinement parameter (a per-stack value times a stack count GO
     #: reads from the list).
     times_param: int | None = None
+    #: With `times_stat`, the stat capped at this before it multiplies (GO `min(total.def,
+    #: 3200)`, Peak Patrol Song's party bonus).
+    stat_cap: WeaponParam | None = None
 
     @model_validator(mode="after")
     def _well_formed(self) -> WeaponValue:
@@ -127,14 +130,16 @@ class WeaponValue(sheets._Strict):  # noqa: SLF001
             raise ValueError("a constant carries its citation")
         if self.times_stat is not None and self.times_stat not in sheets.GIVER_STATS:
             raise ValueError(f"times_stat must be one of {sorted(sheets.GIVER_STATS)}")
-        if (self.stat_unit is not None or self.threshold is not None) and self.times_stat is None:
-            raise ValueError("a unit or a threshold belongs to a value that reads a stat")
+        if (self.stat_unit is not None or self.threshold is not None
+                or self.stat_cap is not None) and self.times_stat is None:
+            raise ValueError("a unit, a threshold or a stat cap belongs to a value that reads "
+                             "a stat")
         return self
 
     def params_read(self) -> list[int]:
         """Every refinement index this value reads."""
         out = [p for p in (self.param, self.times_param) if p is not None]
-        out += [p.param for p in (self.threshold, self.cap)
+        out += [p.param for p in (self.threshold, self.cap, self.stat_cap)
                 if p is not None and p.param is not None]
         return out
 
@@ -160,6 +165,11 @@ class WeaponEffect(sheets._Strict):  # noqa: SLF001
     #: Mistsplitter's Emblem): resolved to the receiver's element, which on a `self` effect is
     #: the wielder's.
     own_element: bool = False
+    #: Times a teammate count, as a set's Gilded Dreams: members of the wielder's element
+    #: (themselves excluded), or of another element (GO `tally`, A Thousand Floating Dreams).
+    #: A `self` effect only: the browser counts against the optimized character's element.
+    per_team: Literal["same_element_others", "different_element"] | None = None
+    per_team_max: int | None = None
     #: GO sheet lines (relative to the file's `go`).
     go: str
     #: gcsim file:lines at the pin, where gcsim implements the same buff.
@@ -184,6 +194,8 @@ class WeaponEffect(sheets._Strict):  # noqa: SLF001
             raise ValueError(f"{self.key}: {self.stat} belongs to the wielder's own hits")
         if self.own_element and (self.elements is not None or self.receivers != "self"):
             raise ValueError(f"{self.key}: the wielder's own element is a self effect's channel")
+        if self.per_team is not None and self.receivers != "self":
+            raise ValueError(f"{self.key}: a teammate count is read for the wielder's own buff")
         return self
 
 
@@ -346,6 +358,10 @@ def _effect_node(params: Sequence[float], effect: WeaponEffect, *,
     unit = 1.0 if ref.stat_unit is None else ref.stat_unit.constant
     threshold = None if ref.threshold is None else _number(params, ref.threshold)
     if wielder_is_subject and reads not in sheets.STATIC_STATS:
+        if ref.stat_cap is not None:
+            msg = (f"it reads the wielder's own {reads} through a cap on the stat, which the "
+                   "recipe does not carry per candidate")
+            raise _Withheld(msg)
         converted = sheets.SELF_CONVERSIONS.get((effect.stat, reads))
         if converted is None:
             msg = (f"it reads the wielder's own {reads}, which moves with every candidate, and "
@@ -356,6 +372,8 @@ def _effect_node(params: Sequence[float], effect: WeaponEffect, *,
     stat: AnyNode = sheets.GIVER_STATS[reads]
     if threshold is not None:
         stat = max_(sum_(stat, const(-threshold)), const(0.0))
+    if ref.stat_cap is not None:
+        stat = min_(stat, const(_number(params, ref.stat_cap)))
     node = prod_(const(factor), const(1.0 / unit), stat)
     if ref.cap is not None:
         node = min_(node, const(_number(params, ref.cap)))
@@ -466,6 +484,7 @@ def resolve(
         effects.append(Effect(
             stat=made.stat, value=value, elements=elements, moves=effect.moves,
             reactions=effect.reactions, when=effect.when, per=effect.per, cap=made.cap,
+            per_team=effect.per_team, per_team_max=effect.per_team_max,
             threshold=made.threshold,
         ))
         used.update(w.condition for w in effect.when)

@@ -1,0 +1,106 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Starcaller's Watch",
+ "nanoka_id": "14517",
+ "slug": "starcallers_watch",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/StarcallersWatch/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/starcallerswatch/starcallerswatch.go",
+ "verified_by": [
+  "starcallers_watch_r1_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.28,
+   15.0,
+   14.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.35,
+   15.0,
+   14.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.42,
+   15.0,
+   14.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.49,
+   15.0,
+   14.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.56,
+   15.0,
+   14.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "shield",
+   "label": "Mirror of Night: within 15s of the wielder's shield",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "24-25"
+  }
+ ],
+ "effects": [
+  {
+   "key": "team_dmg",
+   "label": "Mirror of Night: the active character's DMG",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "shield",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "23,26-31,37-44"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Elemental Mastery +100 (R1)",
+   "reason": "the seeded refinement list does not carry it (GO's literal `eleMasArr`, StarcallersWatch/index.tsx:17-22); not written as a constant, since it moves with refinement",
+   "receiver": "subject"
+  },
+  {
+   "what": "Millennial Movement / same-name buffs from two wielders",
+   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
+   "receiver": "teammate"
+  }
+ ]
+}

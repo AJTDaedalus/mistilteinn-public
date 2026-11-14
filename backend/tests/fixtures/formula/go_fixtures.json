@@ -40978,6 +40978,2817 @@
       "go_value": 5464.853310312745,
       "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
       "relative_divergence_from_go": 0.00022885958107064135
+    },
+    {
+      "name": "hakushin_ring_r1_on_xiangling",
+      "covers": "a teammate's weapon: the receiver's element DMG after an Electro reaction with that element (receiver_elements)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/HakushinRing/index.tsx:19-56"
+      ],
+      "givers": [
+        {
+          "name": "Raiden Shogun",
+          "weapon": "Hakushin Ring",
+          "refinement": 1,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:hakushin_ring",
+          "label": "Hakushin Ring R1 (Raiden Shogun)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/HakushinRing/index.tsx @ 2c13fc40 \u2014 ele_pyro :21,23,26,33-39,48-56; gcsim internal/weapons/catalyst/hakushin/hakushin.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "reaction",
+                "label": "Electro reaction the wielder triggered: the other element",
+                "kind": "choice",
+                "default": "pyro",
+                "default_reason": "usual",
+                "default_note": "The reaction with the optimized character's element, which is the one the ring is played for",
+                "max": null,
+                "step": null,
+                "options": [
+                  "pyro",
+                  "hydro",
+                  "cryo",
+                  "anemo",
+                  "geo",
+                  "dendro"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.1,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "reaction",
+                    "values": [
+                      "pyro"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Millennial Movement / same-name buffs from two wielders",
+                "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:hakushin_ring/reaction": "pyro"
+      },
+      "expected": 2778.420317051077,
+      "go_value": 2778.420317051077,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "forest_regalia_r1_on_xiangling_vape",
+      "covers": "a teammate's weapon: EM to the active character from the Leaf",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/ForestRegalia/index.tsx:15-37"
+      ],
+      "givers": [
+        {
+          "name": "Dehya",
+          "weapon": "Forest Regalia",
+          "refinement": 1,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:forest_regalia",
+          "label": "Forest Regalia R1 (Dehya)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/ForestRegalia/index.tsx @ 2c13fc40 \u2014 em :19,21-26,28-37; gcsim internal/weapons/claymore/forestregalia/forestregalia.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "leaf",
+                "label": "Leaf of Consciousness picked up",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 60.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "leaf",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Millennial Movement / same-name buffs from two wielders",
+                "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:forest_regalia/leaf": 1
+      },
+      "expected": 5466.103994351955,
+      "go_value": 5464.853310312745,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00022885958107064135
+    },
+    {
+      "name": "makhaira_aquamarine_r1_on_xiangling",
+      "covers": "a teammate's weapon: 30% of the wielder's ATK from their own EM to the others",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/MakhairaAquamarine/index.tsx:16-44"
+      ],
+      "givers": [
+        {
+          "name": "Dehya",
+          "weapon": "Makhaira Aquamarine",
+          "refinement": 1,
+          "stats": {
+            "elemental_mastery": 600.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:makhaira_aquamarine",
+          "label": "Makhaira Aquamarine R1 (Dehya)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/MakhairaAquamarine/index.tsx @ 2c13fc40 \u2014 team_atk :27-30,37-42; gcsim internal/weapons/claymore/aquamarine/aquamarine.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "flat_atk",
+                "value": 43.199999999999996,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 2680.491695429908,
+      "go_value": 2680.491695429908,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "wandering_evenstar_r5_on_xiangling",
+      "covers": "a teammate's weapon at R5: 30% of the wielder's ATK from their own EM",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/WanderingEvenstar/index.tsx:16-44"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "weapon": "Wandering Evenstar",
+          "refinement": 5,
+          "stats": {
+            "elemental_mastery": 800.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:wandering_evenstar",
+          "label": "Wandering Evenstar R5 (Nahida)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/WanderingEvenstar/index.tsx @ 2c13fc40 \u2014 team_atk :27-30,37-42; gcsim internal/weapons/catalyst/wanderingevenstar/wanderingevenstar.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "flat_atk",
+                "value": 115.19999999999999,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 2812.9797863689846,
+      "go_value": 2812.9797863689846,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "a_thousand_floating_dreams_r1_on_xiangling_vape",
+      "covers": "a teammate's weapon: the other party members' EM",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/AThousandFloatingDreams/index.tsx:21-77"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "weapon": "A Thousand Floating Dreams",
+          "refinement": 1,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:a_thousand_floating_dreams",
+          "label": "A Thousand Floating Dreams R1 (Nahida)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/AThousandFloatingDreams/index.tsx @ 2c13fc40 \u2014 team_em :25,58-65,72-77; gcsim internal/weapons/catalyst/athousandfloatingdreams/athousandfloatingdreams.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 40.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 5351.233209285608,
+      "go_value": 5350.074348415915,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00021660649819493953
+    },
+    {
+      "name": "symphonist_of_scents_r1_on_xiangling",
+      "covers": "a teammate's weapon: Sweet Echoes' ATK% after the wielder heals",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Polearm/SymphonistOfScents/index.tsx:8-35"
+      ],
+      "givers": [
+        {
+          "name": "Escoffier",
+          "weapon": "Symphonist of Scents",
+          "refinement": 1,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:symphonist_of_scents",
+          "label": "Symphonist of Scents R1 (Escoffier)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/SymphonistOfScents/index.tsx @ 2c13fc40 \u2014 team_atk :12,21-27,32-34; gcsim internal/weapons/spear/symphonist/symphonist.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "healing",
+                "label": "Sweet Echoes: after the wielder heals",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.32,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "healing",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:symphonist_of_scents/healing": 1
+      },
+      "expected": 3033.793271267446,
+      "go_value": 3033.793271267446,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "peak_patrol_song_r1_on_xiangling",
+      "covers": "a teammate's weapon: party Elemental DMG per 1,000 of the wielder's DEF",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/PeakPatrolSong/index.tsx:22-77"
+      ],
+      "givers": [
+        {
+          "name": "Xilonen",
+          "weapon": "Peak Patrol Song",
+          "refinement": 1,
+          "stats": {
+            "base_def": 800.0,
+            "def_pct": 1.5
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:peak_patrol_song",
+          "label": "Peak Patrol Song R1 (Xilonen)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/PeakPatrolSong/index.tsx @ 2c13fc40 \u2014 team_ele :51-64,71-76; gcsim internal/weapons/sword/peakpatrolsong/peakpatrolsong.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "maxed",
+                "label": "Ode at 2 stacks: the party bonus",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.16,
+                "elements": [
+                  "pyro",
+                  "hydro",
+                  "electro",
+                  "cryo",
+                  "anemo",
+                  "geo",
+                  "dendro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "maxed",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "the party bonus from the wielder's DEF including the Ode's own DEF%",
+                "reason": "pass 1 carries no conditional weapon stat: the DEF it reads is the wielder's build without the Ode stacks, where GO's `total.def` has them"
+              },
+              {
+                "what": "Millennial Movement / same-name buffs from two wielders",
+                "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:peak_patrol_song/maxed": 1
+      },
+      "expected": 2884.873202761846,
+      "go_value": 2884.873202761846,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "peak_patrol_song_r5_past_its_def_cap_on_xiangling",
+      "covers": "the same at R5, the wielder's 4,000 DEF counted to 3,200 (a stat cap)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/PeakPatrolSong/index.tsx:22-77"
+      ],
+      "givers": [
+        {
+          "name": "Xilonen",
+          "weapon": "Peak Patrol Song",
+          "refinement": 5,
+          "stats": {
+            "base_def": 800.0,
+            "def_pct": 4.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:peak_patrol_song",
+          "label": "Peak Patrol Song R5 (Xilonen)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/PeakPatrolSong/index.tsx @ 2c13fc40 \u2014 team_ele :51-64,71-76; gcsim internal/weapons/sword/peakpatrolsong/peakpatrolsong.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "maxed",
+                "label": "Ode at 2 stacks: the party bonus",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.512,
+                "elements": [
+                  "pyro",
+                  "hydro",
+                  "electro",
+                  "cryo",
+                  "anemo",
+                  "geo",
+                  "dendro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "maxed",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "the party bonus from the wielder's DEF including the Ode's own DEF%",
+                "reason": "pass 1 carries no conditional weapon stat: the DEF it reads is the wielder's build without the Ode stacks, where GO's `total.def` has them"
+              },
+              {
+                "what": "Millennial Movement / same-name buffs from two wielders",
+                "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:peak_patrol_song/maxed": 1
+      },
+      "expected": 3509.396798931692,
+      "go_value": 3509.396798931692,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "starcallers_watch_r1_on_xiangling",
+      "covers": "a teammate's weapon: the active character's DMG after the wielder's shield",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/StarcallersWatch/index.tsx:15-45"
+      ],
+      "givers": [
+        {
+          "name": "Lauma",
+          "weapon": "Starcaller's Watch",
+          "refinement": 1,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:starcallers_watch",
+          "label": "Starcaller's Watch R1 (Lauma)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/StarcallersWatch/index.tsx @ 2c13fc40 \u2014 team_dmg :23,26-31,37-44; gcsim internal/weapons/catalyst/starcallerswatch/starcallerswatch.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shield",
+                "label": "Mirror of Night: within 15s of the wielder's shield",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.28,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shield",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Millennial Movement / same-name buffs from two wielders",
+                "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:starcallers_watch/shield": 1
+      },
+      "expected": 3097.7789741833844,
+      "go_value": 3097.7789741833844,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "fleuve_cendre_ferryman_r1_on_ayaka",
+      "covers": "a self Elemental Skill CRIT Rate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/FleuveCendreFerryman/index.tsx:8-27"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Fleuve Cendre Ferryman",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:fleuve_cendre_ferryman",
+          "label": "Fleuve Cendre Ferryman R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/FleuveCendreFerryman/index.tsx @ 2c13fc40 \u2014 skill_cr :10,13,22-27; er :11,15-21,22-27; gcsim internal/weapons/sword/fleuvecendreferryman/fleuvecendreferryman.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "After an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_rate",
+                "value": 0.08,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "energy_recharge",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:fleuve_cendre_ferryman/after_skill": 1
+      },
+      "expected": 7414.434308382932,
+      "go_value": 7414.434308382932,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "wolf_fang_r1_on_ayaka",
+      "covers": "a self Elemental Skill and Burst DMG and a skill CRIT Rate per stack, four",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/WolfFang/index.tsx:16-52"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Wolf-Fang",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:wolf_fang",
+          "label": "Wolf-Fang R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/WolfFang/index.tsx @ 2c13fc40 \u2014 dmg :18,22-23,45-52; skill_cr :19,26-33,45-52; burst_cr :19,36-43,45-52; gcsim internal/weapons/sword/wolffang/wolffang.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "skill_stacks",
+                "label": "Elemental Skill hit stacks",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 4.0,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "burst_stacks",
+                "label": "Elemental Burst hit stacks",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 4.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill",
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.02,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "skill_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.02,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "burst_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:wolf_fang/skill_stacks": 4,
+        "weapon:wolf_fang/burst_stacks": 4
+      },
+      "expected": 8223.649512572061,
+      "go_value": 8223.649512572061,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "tamayuratei_no_ohanashi_r1_on_xiangling",
+      "covers": "a self ATK% after an Elemental Skill",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Polearm/TamayurateiNoOhanashi/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Tamayuratei no Ohanashi",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:tamayuratei_no_ohanashi",
+          "label": "Tamayuratei no Ohanashi R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/TamayurateiNoOhanashi/index.tsx @ 2c13fc40 \u2014 atk :10,12-22; gcsim internal/weapons/spear/tamayuratei/tamayuratei.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "After an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Movement SPD +10%",
+                "reason": "no damage effect"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:tamayuratei_no_ohanashi/after_skill": 1
+      },
+      "expected": 2871.495359867077,
+      "go_value": 2871.495359867077,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "aqua_simulacra_r1_on_amber_burst",
+      "covers": "a self HP% and DMG with opponents nearby",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Bow/AquaSimulacra/index.tsx:8-28"
+      ],
+      "givers": [
+        {
+          "name": "Amber",
+          "weapon": "Aqua Simulacra",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 733.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9461.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 601.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "physical_dmg_bonus": 0.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "wave",
+          "label": "Fiery Rain DMG Per Wave",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Fiery Rain DMG Per Wave|{param1:F1P}",
+            "params": [
+              0.5967
+            ]
+          },
+          "multiplier": 0.5967,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:aqua_simulacra",
+          "label": "Aqua Simulacra R1 (Amber)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Bow/AquaSimulacra/index.tsx @ 2c13fc40 \u2014 hp :11,16,23-28; dmg :12,17-21,23-28; gcsim internal/weapons/bow/aqua/aqua.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "nearby",
+                "label": "Opponents nearby",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "hp_pct",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "nearby",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:aqua_simulacra/nearby": 1
+      },
+      "expected": 942.6571022900933,
+      "go_value": 942.6571022900933,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "light_of_foliar_incision_r1_on_ayaka",
+      "covers": "a self CRIT Rate and skill flat damage from the wielder's own EM, per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/LightOfFoliarIncision/index.tsx:8-45"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Light of Foliar Incision",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6,
+        "elemental_mastery": 200.0
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:light_of_foliar_incision",
+          "label": "Light of Foliar Incision R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/LightOfFoliarIncision/index.tsx @ 2c13fc40 \u2014 cr :10-15,34-42; flat_from_em :18-32,34-42; gcsim internal/weapons/sword/foliar/foliar.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "foliar",
+                "label": "Foliar Incision (after Normal Attacks deal Elemental DMG)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_rate",
+                "value": 0.04,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "flat_damage_from_em",
+                "value": 1.2,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "foliar",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "the 28-instance limit",
+                "reason": "a count of hits the target's rows decide; the toggle is per row"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:light_of_foliar_incision/foliar": 1
+      },
+      "expected": 7339.654905269586,
+      "go_value": 7339.654905269586,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "flame_forged_insight_r1_on_xiangling_vape",
+      "covers": "a self EM after a reaction, into an amplifying reaction (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/FlameForgedInsight/index.tsx:8-25"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Flame-Forged Insight",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:flame_forged_insight",
+          "label": "Flame-Forged Insight R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/FlameForgedInsight/index.tsx @ 2c13fc40 \u2014 em :13-19,21-25; gcsim internal/weapons/claymore/flameforgedinsight/flameforgedinsight.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "triggered",
+                "label": "After Electro-Charged, Bloom, Crystallize or a Lunar one",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 60.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "triggered",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "the 12 Energy restored",
+                "reason": "no damage effect: energy (task 14)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:flame_forged_insight/triggered": 1
+      },
+      "expected": 5466.103994351955,
+      "go_value": 5464.853310312745,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00022885958107064135
+    },
+    {
+      "name": "finale_of_the_deep_r1_below_its_cap_on_ayaka",
+      "covers": "a self ATK% after a skill and ATK from the Bond cleared (25% of Max HP), capped at 150 and below it, per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/FinaleOfTheDeep/index.tsx:15-55"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Finale of the Deep",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6,
+        "flat_hp": 4780.0
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:finale_of_the_deep",
+          "label": "Finale of the Deep R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/FinaleOfTheDeep/index.tsx @ 2c13fc40 \u2014 atk :18,22-28,47-55; bond_atk :19-20,29-46,47-55; gcsim internal/weapons/sword/finaleofthedeep/finaleofthedeep.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "After an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "bond",
+                "label": "After the Bond of Life is cleared",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "flat_atk_from_hp",
+                "value": 0.006,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "bond",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 150.0,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:finale_of_the_deep/after_skill": 1,
+        "weapon:finale_of_the_deep/bond": 1
+      },
+      "expected": 7703.998991471957,
+      "go_value": 7703.998991471957,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "finale_of_the_deep_r1_past_its_cap_on_ayaka",
+      "covers": "a self ATK% after a skill and ATK from the Bond cleared (25% of Max HP), capped at 150 and past it, per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/FinaleOfTheDeep/index.tsx:15-55"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Finale of the Deep",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6,
+        "hp_pct": 1.0,
+        "flat_hp": 4780.0
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:finale_of_the_deep",
+          "label": "Finale of the Deep R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/FinaleOfTheDeep/index.tsx @ 2c13fc40 \u2014 atk :18,22-28,47-55; bond_atk :19-20,29-46,47-55; gcsim internal/weapons/sword/finaleofthedeep/finaleofthedeep.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "After an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "bond",
+                "label": "After the Bond of Life is cleared",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "flat_atk_from_hp",
+                "value": 0.006,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "bond",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 150.0,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:finale_of_the_deep/after_skill": 1,
+        "weapon:finale_of_the_deep/bond": 1
+      },
+      "expected": 7880.9140368735825,
+      "go_value": 7880.9140368735825,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "a_thousand_blazing_suns_r1_on_razor",
+      "covers": "a self CRIT DMG and ATK% in Scorching Brilliance",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/AThousandBlazingSuns/index.tsx:15-48"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "A Thousand Blazing Suns",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:a_thousand_blazing_suns",
+          "label": "A Thousand Blazing Suns R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/AThousandBlazingSuns/index.tsx @ 2c13fc40 \u2014 cd :20,24-27,43-48; atk :21,34-35,43-48; cd_ns :22,28-33,43-48; atk_ns :22,36-41,43-48; gcsim internal/weapons/claymore/athousandblazingsuns/athousandblazingsuns.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "brilliance",
+                "label": "Scorching Brilliance (after a skill or burst)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "nightsoul",
+                "label": "In Nightsoul's Blessing (effects +75%)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: only a character with a Nightsoul's Blessing state enters it; set it for one",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_dmg",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.28,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.15000000000000002,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "nightsoul",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.21000000000000002,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "nightsoul",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:a_thousand_blazing_suns/brilliance": 1,
+        "weapon:a_thousand_blazing_suns/nightsoul": 0
+      },
+      "expected": 3661.5677419875124,
+      "go_value": 3661.5677419875124,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "a_thousand_blazing_suns_r1_nightsoul_on_razor",
+      "covers": "a self CRIT DMG and ATK% in Scorching Brilliance, each +75% in Nightsoul's Blessing (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/AThousandBlazingSuns/index.tsx:15-48"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "A Thousand Blazing Suns",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:a_thousand_blazing_suns",
+          "label": "A Thousand Blazing Suns R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/AThousandBlazingSuns/index.tsx @ 2c13fc40 \u2014 cd :20,24-27,43-48; atk :21,34-35,43-48; cd_ns :22,28-33,43-48; atk_ns :22,36-41,43-48; gcsim internal/weapons/claymore/athousandblazingsuns/athousandblazingsuns.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "brilliance",
+                "label": "Scorching Brilliance (after a skill or burst)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "nightsoul",
+                "label": "In Nightsoul's Blessing (effects +75%)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: only a character with a Nightsoul's Blessing state enters it; set it for one",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_dmg",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.28,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.15000000000000002,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "nightsoul",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.21000000000000002,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "brilliance",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "nightsoul",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:a_thousand_blazing_suns/brilliance": 1,
+        "weapon:a_thousand_blazing_suns/nightsoul": 1
+      },
+      "expected": 4170.300356986996,
+      "go_value": 4170.300356986996,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

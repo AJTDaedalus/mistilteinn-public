@@ -1,0 +1,174 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "A Thousand Blazing Suns",
+ "nanoka_id": "12514",
+ "slug": "a_thousand_blazing_suns",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/AThousandBlazingSuns/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/athousandblazingsuns/athousandblazingsuns.go",
+ "verified_by": [
+  "a_thousand_blazing_suns_r1_on_razor",
+  "a_thousand_blazing_suns_r1_nightsoul_on_razor"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.28,
+   0.75,
+   6.0,
+   10.0,
+   2.0,
+   1.0,
+   3.0
+  ],
+  "2": [
+   0.25,
+   0.35,
+   0.75,
+   6.0,
+   10.0,
+   2.0,
+   1.0,
+   3.0
+  ],
+  "3": [
+   0.3,
+   0.42,
+   0.75,
+   6.0,
+   10.0,
+   2.0,
+   1.0,
+   3.0
+  ],
+  "4": [
+   0.35,
+   0.49,
+   0.75,
+   6.0,
+   10.0,
+   2.0,
+   1.0,
+   3.0
+  ],
+  "5": [
+   0.4,
+   0.56,
+   0.75,
+   6.0,
+   10.0,
+   2.0,
+   1.0,
+   3.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "brilliance",
+   "label": "Scorching Brilliance (after a skill or burst)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "17"
+  },
+  {
+   "key": "nightsoul",
+   "label": "In Nightsoul's Blessing (effects +75%)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: only a character with a Nightsoul's Blessing state enters it; set it for one"
+   },
+   "go": "18"
+  }
+ ],
+ "effects": [
+  {
+   "key": "cd",
+   "label": "Scorching Brilliance: CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "brilliance",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "20,24-27,43-48"
+  },
+  {
+   "key": "atk",
+   "label": "Scorching Brilliance: ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "brilliance",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "21,34-35,43-48"
+  },
+  {
+   "key": "cd_ns",
+   "label": "Nightsoul: CRIT DMG +75%",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 0,
+    "times_param": 2
+   },
+   "when": [
+    {
+     "condition": "brilliance",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "nightsoul",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "22,28-33,43-48"
+  },
+  {
+   "key": "atk_ns",
+   "label": "Nightsoul: ATK% +75%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1,
+    "times_param": 2
+   },
+   "when": [
+    {
+     "condition": "brilliance",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "nightsoul",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "22,36-41,43-48"
+  }
+ ]
+}

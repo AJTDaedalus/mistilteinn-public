@@ -327,5 +327,8 @@ def weapon_fixtures() -> list[dict[str, Any]]:
     from tests.unit.go_fixtures_weapons3 import four_star_fixtures
     out.extend(five_star_fixtures())
     out.extend(four_star_fixtures())
+    from tests.unit.go_fixtures_weapons4 import owner_weapon_fixtures, team_weapon_fixtures
+    out.extend(team_weapon_fixtures())
+    out.extend(owner_weapon_fixtures())
     return out
 

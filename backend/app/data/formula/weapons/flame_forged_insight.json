@@ -1,0 +1,100 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Flame-Forged Insight",
+ "nanoka_id": "12432",
+ "slug": "flame_forged_insight",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/FlameForgedInsight/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/flameforgedinsight/flameforgedinsight.go",
+ "verified_by": [
+  "flame_forged_insight_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   12.0,
+   60.0,
+   15.0,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   15.0,
+   75.0,
+   15.0,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   18.0,
+   90.0,
+   15.0,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   21.0,
+   105.0,
+   15.0,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   24.0,
+   120.0,
+   15.0,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "triggered",
+   "label": "After Electro-Charged, Bloom, Crystallize or a Lunar one",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "11"
+  }
+ ],
+ "effects": [
+  {
+   "key": "em",
+   "label": "Elemental Mastery",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "triggered",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "13-19,21-25"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "the 12 Energy restored",
+   "reason": "no damage effect: energy (task 14)"
+  }
+ ]
+}
