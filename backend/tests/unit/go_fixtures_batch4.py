@@ -177,4 +177,402 @@ def batch4_fixtures() -> list[dict[str, Any]]:
              receiver_element="dendro", team_elements=team),
         {"kit:nahida/c4_count": 2},
         _nahida_on_herself))
+    out.extend(_buffers())
+    return out
+
+
+# ── The next buffers ────────────────────────────────────────────────────────────────────────
+
+
+def _giver(name: str, nanoka_id: str, *, constellation: int,
+           rows: dict[tuple[str, int], tuple[list[str], list[float]]] | None = None,
+           stats: dict[str, float] | None = None) -> sheets.Giver:
+    """A giver at A6 with the sheet's pinned lists, the stated talent rows and stats. The
+    levels are the rows' (each is the giver's effective level less its boosts)."""
+    cons, pas = base._pinned(nanoka_id)
+    sheet = sheets.sheet_for(nanoka_id)
+    assert sheet is not None
+    levels: dict[str, int] = {}
+    for (talent, level) in rows or {}:
+        boosts = sum(3 for b in sheet.talent_boosts
+                     if b.talent == talent and constellation >= b.constellation)
+        levels[talent] = level - boosts
+    return base._ungated_giver(
+        name, nanoka_id, constellation=constellation, talent_levels=levels,
+        talent_rows={k: sheets.TalentRow(*v) for k, v in (rows or {}).items()},
+        cons=cons, passives=pas, stats=stats)
+
+
+def _multi(name: str, covers: str, go: list[str], giver: dict[str, Any], team: dict[str, Any],
+           base_stats: dict[str, float], artifacts: dict[str, float], channel: str,
+           rows: list[dict[str, Any]], source: dict[str, Any], conditionals: dict[str, Any],
+           figure: Any) -> dict[str, Any]:
+    """A fixture with several rows (the recipe's weighted total, GO's `sum(...targetNodes)`)."""
+    out = base._buffer(name, covers, go, giver, team, base_stats, artifacts, channel, rows[0],
+                       source, conditionals, figure)
+    return {**out, "rows": rows}
+
+
+# Kujou Sara, C6, on her own Titanbreaker: burst 13 (C3) and skill 13 (C5), seeded rows.
+SARA_BURST_13 = ("Tengu Juurai: Titanbreaker DMG|{param1:F1P}", [8.704, 0.72505, 20.0, 80.0])
+SARA_SKILL_13 = (["Tengu Juurai: Ambush DMG|{param1:F1P}", "ATK Bonus Ratio|{param2:P}",
+                  "ATK Bonus Duration|{param3:F1}s", "CD|{param4:F1}s"],
+                 [2.6724, 0.9129, 6.0, 10.0])
+SARA_BASE = base._base_stats(base_atk=760.0, base_hp=9570.0, base_def=628.0)
+SARA_ARTIFACTS = {"atk_pct": 0.466, "flat_atk": 311.0, "electro_dmg_bonus": 0.466,
+                  "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _sara(_: float) -> float:
+    """GO: `teamBuff.premod.atk.add(cmpNE(destIsActive, 0, prod(ambushOn, own.base.atk,
+    skill ratio)))` (`pando KujouSara.ts:81-85,100`; WR `total.atk`, `index.tsx:79-94,159`);
+    C6 `critDMG_.electro` under ambush and the C6 toggle (`:87-91,101`)."""
+    stats = base._stats(SARA_BASE, SARA_ARTIFACTS)
+    atk = base._total(stats, "atk") + SARA_SKILL_13[1][1] * stats["base_atk"]
+    return _go_hit(base_damage=SARA_BURST_13[1][0] * atk, dmg_bonus=stats["electro_dmg_bonus"],
+                   crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"] + 0.6)
+
+
+# Shenhe, C2, as Ayaka's teammate: her pass-1 ATK stated; skill and burst 10, seeded rows.
+SHENHE_SKILL_10 = (["Skill DMG|{param1:P}", "Hold Skill DMG|{param2:F1P}",
+                    "DMG Bonus|{param3:F1P} ATK"], [2.5056, 3.3984, 0.821808])
+SHENHE_BURST_10 = (["Skill DMG|{param1:P}", "RES Decrease|{param2:F1P}", "DoT|{param3:F1P}"],
+                   [1.8144, 0.15, 0.59616])
+SHENHE_GIVER_STATS = {"base_atk": 950.0, "atk_pct": 2.1, "flat_atk": 555.0}
+
+
+def _shenhe_on_ayaka(_: float) -> float:
+    """GO: Icy Quill `teamBuff.formula.base.cryo` = Shenhe's ATK × the skill row (`pando
+    Shenhe.ts:103-108,147`; WR `cryo_dmgInc`, `index.tsx:93-101,192`); burst Cryo RES (`:109-117,
+    148`); A1 Cryo DMG to the active (`:118-121,150`); A4 press Skill/Burst DMG (`:122-126,151`);
+    C2 Cryo CRIT DMG 15% (`:132-135,156`, WR `:143-148,201`)."""
+    atk = (base.AYAKA_BASE["base_atk"] * (1 + base.AYAKA_ARTIFACTS["atk_pct"])
+           + base.AYAKA_ARTIFACTS["flat_atk"])
+    return _go_hit(
+        base_damage=base._multiplier(base.HYOUKA) * atk,
+        flat=SHENHE_SKILL_10[1][2] * base._total(SHENHE_GIVER_STATS, "atk"),
+        dmg_bonus=base.AYAKA_ARTIFACTS["cryo_dmg_bonus"] + 0.15 + 0.15,
+        crit_rate=base.AYAKA_BASE["crit_rate"] + base.AYAKA_ARTIFACTS["crit_rate"],
+        crit_dmg=base.AYAKA_BASE["crit_dmg"] + base.AYAKA_ARTIFACTS["crit_dmg"] + 0.15,
+        res=0.1 - SHENHE_BURST_10[1][1])
+
+
+# Yun Jin, C2, as Xiangling's teammate on her 1-Hit (Physical): pass-1 DEF stated.
+XIANGLING_NA_1 = ("1-Hit DMG|{param1:F1P}", [0.8313])
+YUN_JIN_BURST_10 = (["Skill DMG|{param1:P}", "DMG Increase|{param2:P} DEF"], [4.392, 0.57888])
+YUN_JIN_GIVER_STATS = {"base_def": 734.0, "def_pct": 1.8, "flat_def": 344.8}
+
+
+def _yun_jin_on_xiangling(_: float) -> float:
+    """GO: `teamBuff.formula.base.normal` = Yun Jin's DEF × (burst row + A4 by the distinct
+    elements, `subscript(eleCount, [0, ...passive2])`) (`pando YunJin.ts:88-100,119`; WR
+    `normal_dmgInc`, `index.tsx:86-109,163`); C2 Normal DMG 15% (`:101-103,120`). Four
+    distinct elements: A4's fourth entry."""
+    yun = sheets.sheet_for("10000064")
+    assert yun is not None
+    stats = base._stats(base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS)
+    flat = base._total(YUN_JIN_GIVER_STATS, "def") * (
+        YUN_JIN_BURST_10[1][1] + yun.pins.passives[4][3])
+    return _go_hit(base_damage=XIANGLING_NA_1[1][0] * base._total(stats, "atk"), flat=flat,
+                   dmg_bonus=0.15, crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+# Gorou, C6, on his own burst in a three-Geo team: skill and burst 13 (C3, C5), seeded rows.
+GOROU_SKILL_13 = (["Skill DMG|{param1:F1P}", "DEF Increase|{param2:I}",
+                   "Geo DMG Bonus|{param3:P}"], [2.278, 438.09, 0.15])
+GOROU_BURST_13 = ("Skill DMG|{param1:P} DEF", [2.08709, 1.302625, 9.0, 20.0, 80.0])
+GOROU_BASE = base._base_stats(base_atk=650.0, base_hp=9570.0, base_def=648.0)
+GOROU_ARTIFACTS = {"def_pct": 1.166, "flat_def": 58.0, "geo_dmg_bonus": 0.466,
+                   "crit_rate": 0.35, "crit_dmg": 0.7}
+
+
+def _gorou(_: float) -> float:
+    """GO: banner flat DEF to the active at one Geo member and Geo DMG at three (`pando
+    Gorou.ts:93-102,136-137`; WR `index.tsx:89-105,172-173`); A1 DEF% (`:104-107,138`); A4
+    burst `formula.base` 15.6% of his DEF (`:114-118,141`; WR `total.def`, `:119-123,182`); C6
+    Geo CRIT DMG at the third Geo entry (`:120-127,139`)."""
+    gorou = sheets.sheet_for("10000055")
+    assert gorou is not None
+    stats = base._stats(GOROU_BASE, GOROU_ARTIFACTS)
+    defense = (base._total(stats, "def", extra_pct=gorou.pins.passives[1][0])
+               + GOROU_SKILL_13[1][1])
+    return _go_hit(
+        base_damage=GOROU_BURST_13[1][0] * defense, flat=gorou.pins.passives[4][1] * defense,
+        dmg_bonus=stats["geo_dmg_bonus"] + GOROU_SKILL_13[1][2], crit_rate=stats["crit_rate"],
+        crit_dmg=stats["crit_dmg"] + gorou.pins.constellations[6][2])
+
+
+# Xilonen, C4, as Xiangling's teammate: Pyronado and a 1-Hit, pass-1 DEF stated.
+XILONEN_SKILL_10 = (["Rush DMG|{param1:F1P} DEF", "Elemental RES Decrease|{param2:F1P}"],
+                    [3.2256, 0.36])
+XILONEN_GIVER_STATS = {"base_def": 849.0, "def_pct": 2.3, "flat_def": 198.3}
+XILONEN_BASE = base._base_stats(base_atk=600.0, base_hp=12405.0, base_def=849.0)
+XILONEN_ARTIFACTS = {"def_pct": 1.166, "flat_def": 58.0, "geo_dmg_bonus": 0.466,
+                     "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _xilonen_on_xiangling(_: float) -> float:
+    """GO: the Pyro Source Sample's RES decrease (`pando Xilonen.ts:115,205-209`; WR
+    `index.tsx:117,129-132,290`); C2 ATK% to a Pyro receiver (`:143-152,212`; WR `:162-176,291`);
+    C4 Normal/Charged/Plunging `formula.base` 65% of her DEF (`:175-181,215-217`). Pyronado
+    takes the shred and the ATK; the 1-Hit (Physical) the ATK and the flat damage."""
+    xil = sheets.sheet_for("10000103")
+    assert xil is not None
+    stats = base._stats(base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS)
+    atk = base._total(stats, "atk", extra_pct=xil.pins.constellations[2][0])
+    nado = _go_hit(base_damage=base._multiplier(base.PYRONADO) * atk,
+                   dmg_bonus=stats["pyro_dmg_bonus"], crit_rate=stats["crit_rate"],
+                   crit_dmg=stats["crit_dmg"], res=0.1 - XILONEN_SKILL_10[1][1])
+    hit = _go_hit(base_damage=XIANGLING_NA_1[1][0] * atk,
+                  flat=xil.pins.constellations[4][0] * base._total(XILONEN_GIVER_STATS, "def"),
+                  dmg_bonus=0.0, crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+    return nado + hit
+
+
+def _xilonen_on_herself(_: float) -> float:
+    """GO: Rush DMG `dmg('skill', info, 'def', …)` (`pando Xilonen.ts:228`); the Geo sample's RES
+    decrease while the Source Samples are on and fewer than three samplers are converted
+    (`:110-122,204`; WR `:112-128,289`); C2 DMG Bonus to a Geo receiver (`:131-142,211`)."""
+    xil = sheets.sheet_for("10000103")
+    assert xil is not None
+    stats = base._stats(XILONEN_BASE, XILONEN_ARTIFACTS)
+    return _go_hit(base_damage=XILONEN_SKILL_10[1][0] * base._total(stats, "def"),
+                   dmg_bonus=stats["geo_dmg_bonus"] + xil.pins.constellations[2][3],
+                   crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"],
+                   res=0.1 - XILONEN_SKILL_10[1][1])
+
+
+# Xianyun: C2 as Xiangling's teammate on a high plunge; C6 on her own third Driftcloud Wave.
+XIANGLING_HIGH_PLUNGE = ("Low/High Plunge DMG|{param10:P}",
+                         [0.8313, 0.833, 0.5151, 0.2788, 1.4042, 2.4055, 25.0, 1.26378,
+                          2.527025, 3.15639])
+XIANYUN_GIVER_STATS = {"base_atk": 943.0, "atk_pct": 1.9, "flat_atk": 465.3}
+XIANYUN_SKILL_13 = (["Skill DMG|{param1:F2P}",
+                     "Driftcloud Wave DMG|{param2:F1P}/{param3:F1P}/{param4:F1P}"],
+                    [0.527, 2.465, 3.145, 7.174, 12.0])
+XIANYUN_WAVE_3 = ("Driftcloud Wave DMG|{param4:F1P}", XIANYUN_SKILL_13[1])
+XIANYUN_BASE = base._base_stats(base_atk=943.0, base_hp=10409.0, base_def=573.0)
+XIANYUN_ARTIFACTS = {"atk_pct": 0.932, "flat_atk": 311.0, "anemo_dmg_bonus": 0.466,
+                     "crit_rate": 0.3, "crit_dmg": 0.9}
+
+
+def _xianyun_on_xiangling(_: float) -> float:
+    """GO: A1 `plunging_critRate_` at four stacks, the list's fourth entry (`pando
+    Xianyun.ts:113-121,171`; WR `index.tsx:111-122,251`); A4 `plunging_impact_dmgInc` =
+    `(1 + C2) × 200% × min(total.atk, 4500)` (`:122-134`; WR `:123-145,250`)."""
+    xy = sheets.sheet_for("10000093")
+    assert xy is not None
+    stats = base._stats(base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS)
+    ratio = (1 + xy.pins.constellations[2][2]) * xy.pins.passives[4][0]
+    flat = ratio * min(base._total(XIANYUN_GIVER_STATS, "atk"), xy.pins.passives[4][1])
+    return _go_hit(base_damage=XIANGLING_HIGH_PLUNGE[1][9] * base._total(stats, "atk"),
+                   flat=flat, dmg_bonus=0.0,
+                   crit_rate=stats["crit_rate"] + xy.pins.passives[1][3],
+                   crit_dmg=stats["crit_dmg"])
+
+
+def _xianyun_on_herself(_: float) -> float:
+    """GO: `leapDmg` — the wave row × total ATK as `plunging_impact`, with C6's
+    `plunging_critDMG_` at three Skyladder uses (`WR index.tsx:154-183`; pando `:138-158`); A1's
+    `plunging_critRate_` at four stacks (`:113-121,171`); C2 ATK% after her skill
+    (`:135-137,169`). A4 off (GO's default; the sheet withholds it on her, a capped own-ATK
+    conversion). Skill at 13 (C5)."""
+    xy = sheets.sheet_for("10000093")
+    assert xy is not None
+    stats = base._stats(XIANYUN_BASE, XIANYUN_ARTIFACTS)
+    atk = base._total(stats, "atk", extra_pct=xy.pins.constellations[2][0])
+    return _go_hit(base_damage=XIANYUN_SKILL_13[1][3] * atk,
+                   dmg_bonus=stats["anemo_dmg_bonus"],
+                   crit_rate=stats["crit_rate"] + xy.pins.passives[1][3],
+                   crit_dmg=stats["crit_dmg"] + xy.pins.constellations[6][2])
+
+
+# Mona, C4 (burst 13 from C3), as Xiangling's teammate on a reverse-vaporized Pyronado.
+MONA_BURST_13 = (["Illusory Bubble Duration|{param1:F1}s",
+                  "Illusory Bubble Explosion DMG|{param2:P}", "DMG Bonus|{param10:P}"],
+                 [8.0, 9.401, -0.6, 5.0, 15.0, 60.0, 0.0, 0.0, 0.0, 0.6])
+
+
+def _mona_on_xiangling(coefficient: float) -> float:
+    """GO: Omen `teamBuff.premod.dmg_` = the burst row (`pando Mona.ts:130,232`; WR `all_dmg_`,
+    `index.tsx:129-134,388`); C1 `vaporize_dmg_` (`:140-142,251-258`); C4 `critRate_` = |C4[0]|
+    (`:103,146-148,233`; WR `:117,163-167,401`)."""
+    mona = sheets.sheet_for("10000041")
+    assert mona is not None
+    stats = base._stats(base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS)
+    return _go_hit(
+        base_damage=base._multiplier(base.PYRONADO) * base._total(stats, "atk"),
+        dmg_bonus=stats["pyro_dmg_bonus"] + MONA_BURST_13[1][9],
+        crit_rate=stats["crit_rate"] + abs(mona.pins.constellations[4][0]),
+        crit_dmg=stats["crit_dmg"],
+        amp=_amp(stats["elemental_mastery"], coefficient,
+                 reaction_bonus=mona.pins.constellations[1][1]))
+
+
+def _buffers() -> list[dict[str, Any]]:
+    xiangling = {"element": "pyro", "weapon_type": "WEAPON_POLE"}
+    nado = base._row("nado", "Pyronado DMG", "burst", 1, base.PYRONADO, None)
+    na1 = base._row("na1", "1-Hit DMG", "normal", 1, XIANGLING_NA_1, None)
+    out: list[dict[str, Any]] = []
+
+    out.append(_fixture(
+        "kujou_sara_ambush_c6_on_her_own_burst",
+        "flat ATK from the giver's base ATK at her boosted skill level, and a two-condition "
+        "CRIT DMG buff",
+        [FORMULA, f"{PANDO}KujouSara.ts:45,63,72-101"],
+        {"name": "Kujou Sara", "constellation": 6, "ascension_phase": 6,
+         "talent_levels": {"elemental_skill": 10}, "stats": "the optimized character"},
+        {"element": "electro", "weapon_type": "WEAPON_BOW",
+         "member_elements": ["electro", "pyro"]},
+        SARA_BASE, SARA_ARTIFACTS, "electro",
+        base._row("titan", "Tengu Juurai: Titanbreaker DMG", "burst", 1, SARA_BURST_13, None),
+        _kit("10000056", _giver("Kujou Sara", "10000056", constellation=6,
+                                rows={("elemental_skill", 13): SARA_SKILL_13},
+                                stats=SARA_BASE), subject=True),
+        {}, _sara))
+
+    team = ["cryo", "cryo", "hydro", "anemo"]
+    out.append(_fixture(
+        "shenhe_quill_burst_a1_a4_c2_on_ayaka",
+        "a teammate's Cryo flat damage from her ATK, RES shred from a talent row, element- and "
+        "move-scoped DMG, and a cited CRIT DMG constant",
+        [FORMULA, f"{PANDO}Shenhe.ts:48,58,65,68,103-135,147-156"],
+        {"name": "Shenhe", "constellation": 2, "ascension_phase": 6,
+         "talent_levels": {"elemental_skill": 10, "elemental_burst": 10},
+         "stats": SHENHE_GIVER_STATS},
+        {"element": "cryo", "weapon_type": "WEAPON_SWORD_ONE_HAND", "member_elements": team},
+        base.AYAKA_BASE, base.AYAKA_ARTIFACTS, "cryo",
+        base._row("press", "Skill DMG", "skill", 1, base.HYOUKA, None),
+        _kit("10000063", _giver("Shenhe", "10000063", constellation=2,
+                                rows={("elemental_skill", 10): SHENHE_SKILL_10,
+                                      ("elemental_burst", 10): SHENHE_BURST_10},
+                                stats=SHENHE_GIVER_STATS),
+             subject=False, receiver_element="cryo", team_elements=team),
+        {"kit:shenhe/quill": 1, "kit:shenhe/burst_field": 1, "kit:shenhe/a1_field": 1,
+         "kit:shenhe/a4_press": 1},
+        _shenhe_on_ayaka))
+
+    team = ["pyro", "geo", "hydro", "cryo"]
+    out.append(_fixture(
+        "yun_jin_flying_cloud_on_a_teammate",
+        "a teammate's Normal Attack flat damage from her DEF, part read from a table by the "
+        "party's distinct elements",
+        [FORMULA, f"{PANDO}YunJin.ts:59,66,69,85-103,119-120"],
+        {"name": "Yun Jin", "constellation": 2, "ascension_phase": 6,
+         "talent_levels": {"elemental_burst": 10}, "stats": YUN_JIN_GIVER_STATS},
+        {**xiangling, "member_elements": team},
+        base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS, "physical", na1,
+        _kit("10000064", _giver("Yun Jin", "10000064", constellation=2,
+                                rows={("elemental_burst", 10): YUN_JIN_BURST_10},
+                                stats=YUN_JIN_GIVER_STATS),
+             subject=False, receiver_element="pyro", team_elements=team),
+        {"kit:yun_jin/flying_cloud": 1}, _yun_jin_on_xiangling))
+
+    team = ["geo", "geo", "geo", "pyro"]
+    out.append(_fixture(
+        "gorou_banner_a1_a4_c6_on_his_own_burst",
+        "flat DEF and a Geo DMG buff gated on the Geo count, DEF%, self flat damage from his "
+        "own DEF per candidate, and CRIT DMG from a clamped Geo-count table",
+        [FORMULA, f"{PANDO}Gorou.ts:45-46,59-76,86-141"],
+        {"name": "Gorou", "constellation": 6, "ascension_phase": 6,
+         "talent_levels": {"elemental_skill": 10, "elemental_burst": 10},
+         "stats": "the optimized character: his DEF is the candidate's"},
+        {"element": "geo", "weapon_type": "WEAPON_BOW", "member_elements": team},
+        GOROU_BASE, GOROU_ARTIFACTS, "geo",
+        base._row("burst", "Skill DMG", "burst", 1, GOROU_BURST_13, None),
+        _kit("10000055", _giver("Gorou", "10000055", constellation=6,
+                                rows={("elemental_skill", 13): GOROU_SKILL_13},
+                                stats=GOROU_BASE),
+             subject=True, receiver_element="geo", team_elements=team),
+        {}, _gorou))
+
+    team = ["pyro", "geo", "hydro", "cryo"]
+    out.append(_multi(
+        "xilonen_samples_c2_c4_on_a_pyro_teammate",
+        "a RES shred gated on a member of the element, an ATK% for receivers of one element, "
+        "and Normal Attack flat damage from her DEF; two rows",
+        [FORMULA, f"{PANDO}Xilonen.ts:53,81,89,106-181,205-217"],
+        {"name": "Xilonen", "constellation": 4, "ascension_phase": 6,
+         "talent_levels": {"elemental_skill": 10}, "stats": XILONEN_GIVER_STATS},
+        {**xiangling, "member_elements": team},
+        base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS, "pyro",
+        [nado, {**na1, "channel": "physical"}],
+        _kit("10000103", _giver("Xilonen", "10000103", constellation=4,
+                                rows={("elemental_skill", 10): XILONEN_SKILL_10},
+                                stats=XILONEN_GIVER_STATS),
+             subject=False, receiver_element="pyro", team_elements=team),
+        {"kit:xilonen/source_active": 1, "kit:xilonen/c4_blooming": 1},
+        _xilonen_on_xiangling))
+
+    team = ["geo", "pyro", "geo", "anemo"]
+    out.append(_fixture(
+        "xilonen_geo_sample_on_herself",
+        "the Geo sample's RES shred while fewer than three samplers are converted, and C2's DMG "
+        "Bonus to a Geo receiver",
+        [FORMULA, f"{PANDO}Xilonen.ts:53,84,110-142,204,211,228"],
+        {"name": "Xilonen", "constellation": 2, "ascension_phase": 6,
+         "talent_levels": {"elemental_skill": 10}, "stats": "the optimized character"},
+        {"element": "geo", "weapon_type": "WEAPON_SWORD_ONE_HAND", "member_elements": team},
+        XILONEN_BASE, XILONEN_ARTIFACTS, "geo",
+        base._row("rush", "Rush DMG", "skill", 1,
+                  ("Rush DMG|{param1:F1P} DEF", XILONEN_SKILL_10[1]), None),
+        _kit("10000103", _giver("Xilonen", "10000103", constellation=2,
+                                rows={("elemental_skill", 10): XILONEN_SKILL_10},
+                                stats=XILONEN_BASE),
+             subject=True, receiver_element="geo", team_elements=team),
+        {}, _xilonen_on_herself))
+
+    team = ["pyro", "anemo", "hydro", "cryo"]
+    out.append(_fixture(
+        "xianyun_a1_a4_c2_on_a_plunging_teammate",
+        "a stack table into plunge CRIT Rate, and plunge flat damage from the giver's ATK "
+        "capped before it is multiplied, raised by C2",
+        [FORMULA, f"{PANDO}Xianyun.ts:70-86,109-134,171"],
+        {"name": "Xianyun", "constellation": 2, "ascension_phase": 6,
+         "stats": XIANYUN_GIVER_STATS},
+        {**xiangling, "member_elements": team},
+        base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS, "physical",
+        base._row("high", "Low/High Plunge DMG (high)", "plunge", 1, XIANGLING_HIGH_PLUNGE,
+                  None),
+        _kit("10000093", _giver("Xianyun", "10000093", constellation=2,
+                                stats=XIANYUN_GIVER_STATS),
+             subject=False, receiver_element="pyro", team_elements=team),
+        {"kit:xianyun/a1_stacks": 4, "kit:xianyun/a4_stacks": 1},
+        _xianyun_on_xiangling))
+
+    team = ["anemo", "pyro", "hydro", "cryo"]
+    out.append(_fixture(
+        "xianyun_a1_c6_on_her_own_wave",
+        "row-scoped CRIT Rate and CRIT DMG from stack tables on her own Driftcloud Wave, and a "
+        "self ATK%",
+        [FORMULA, "libs/gi/sheets/src/Characters/Xianyun/index.tsx:111-122,147-183,243-251"],
+        {"name": "Xianyun", "constellation": 6, "ascension_phase": 6,
+         "talent_levels": {"elemental_skill": 10}, "stats": "the optimized character"},
+        {"element": "anemo", "weapon_type": "WEAPON_CATALYST", "member_elements": team},
+        XIANYUN_BASE, XIANYUN_ARTIFACTS, "anemo",
+        _with_hit(base._row("wave3", "Driftcloud Wave DMG", "skill", 1, XIANYUN_WAVE_3, None),
+                  "elemental_skill", "Driftcloud Wave DMG"),
+        _kit("10000093", _giver("Xianyun", "10000093", constellation=6,
+                                rows={("elemental_skill", 13): XIANYUN_SKILL_13},
+                                stats=XIANYUN_BASE),
+             subject=True, receiver_element="anemo", team_elements=team),
+        {}, _xianyun_on_herself))
+
+    team = ["pyro", "hydro", "anemo", "cryo"]
+    out.append(_fixture(
+        "mona_omen_c1_c4_on_xiangling",
+        "a party DMG buff from a talent row at the giver's boosted level, a reaction bonus, and "
+        "a CRIT Rate the seeded list publishes negated",
+        [FORMULA_AMP, f"{PANDO}Mona.ts:61,86,103,118-148,227-258"],
+        {"name": "Mona", "constellation": 4, "ascension_phase": 6,
+         "talent_levels": {"elemental_burst": 10}, "stats": {}},
+        {**xiangling, "member_elements": team},
+        base.XIANGLING_BASE, base.XIANGLING_ARTIFACTS, "pyro",
+        base._row("nado_vape", "Pyronado DMG (vaporize)", "burst", 1, base.PYRONADO,
+                  "reverse_vaporize"),
+        _kit("10000041", _giver("Mona", "10000041", constellation=4,
+                                rows={("elemental_burst", 13): MONA_BURST_13}),
+             subject=False, receiver_element="pyro", team_elements=team),
+        {"kit:mona/omen": 1, "kit:mona/c1_omen": 1}, _mona_on_xiangling,
+        "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9"))
     return out

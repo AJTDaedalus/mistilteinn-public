@@ -1,0 +1,650 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Xilonen",
+ "nanoka_id": "10000103",
+ "slug": "xilonen",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Xilonen.ts",
+  "wr": "libs/gi/sheets/src/Characters/Xilonen/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/xilonen/",
+ "verified_by": [
+  "xilonen_samples_c2_c4_on_a_pyro_teammate",
+  "xilonen_geo_sample_on_herself"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Xilonen.ts:194; wr:index.tsx:274,280"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Xilonen.ts:195; wr:index.tsx:275,279"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Elemental RES Decrease|{param2:F1P}"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.45,
+    0.45,
+    0.6,
+    0.5,
+    25.0,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.65,
+    6.0,
+    15.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    5.0,
+    3.0,
+    15.0,
+    1.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    35.0,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    14.0,
+    0.2,
+    15.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "source_active",
+   "label": "Source Samples are active (Yohual's Scratch)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xilonen.ts:106-108,117-122,205-209; wr:index.tsx:112,120-132"
+  },
+  {
+   "key": "ns_blessing",
+   "label": "Xilonen is in Nightsoul's Blessing",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xilonen.ts:106-108,117-125; wr:index.tsx:113,120-139"
+  },
+  {
+   "key": "ns_burst",
+   "label": "After a Nightsoul Burst (A4 Portable Armored Sheath)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Xilonen.ts:106-108,126-128,199; wr:index.tsx:141-146,283"
+  },
+  {
+   "key": "c4_blooming",
+   "label": "Blooming from Suchitl's Trance (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xilonen.ts:106-108,175-181,215-217; wr:index.tsx:208-219,295-297"
+  },
+  {
+   "key": "c6_carnival",
+   "label": "Imperishable Night Carnival is active (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xilonen.ts:106-108,182-188,200-201; wr:index.tsx:221-231,284-285"
+  }
+ ],
+ "effects": [
+  {
+   "key": "source_res_pyro",
+   "label": "Yohual's Scratch: Pyro RES decrease from its Source Sample (a Pyro member)",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "includes": [
+     "pyro"
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110,115,205-209; wr:index.tsx:64,114-117,129-132,290"
+  },
+  {
+   "key": "source_res_hydro",
+   "label": "Yohual's Scratch: Hydro RES decrease from its Source Sample (a Hydro member)",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "includes": [
+     "hydro"
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110,115,205-209; wr:index.tsx:64,114-117,129-132,290"
+  },
+  {
+   "key": "source_res_cryo",
+   "label": "Yohual's Scratch: Cryo RES decrease from its Source Sample (a Cryo member)",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "includes": [
+     "cryo"
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110,115,205-209; wr:index.tsx:64,114-117,129-132,290"
+  },
+  {
+   "key": "source_res_electro",
+   "label": "Yohual's Scratch: Electro RES decrease from its Source Sample (a Electro member)",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "includes": [
+     "electro"
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110,115,205-209; wr:index.tsx:64,114-117,129-132,290"
+  },
+  {
+   "key": "geo_res_source",
+   "label": "Yohual's Scratch: Geo RES decrease while the Source Samples are active",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro",
+       "hydro",
+       "cryo",
+       "electro"
+      ],
+      "at_most": 2
+     }
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110-122,204; wr:index.tsx:64,112-128,289"
+  },
+  {
+   "key": "geo_res_blessing",
+   "label": "Yohual's Scratch: Geo RES decrease in Nightsoul's Blessing (Source Samples off)",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro",
+       "hydro",
+       "cryo",
+       "electro"
+      ],
+      "at_most": 2
+     }
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      0
+     ]
+    },
+    {
+     "condition": "ns_blessing",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110-122,204; wr:index.tsx:64,112-128,289"
+  },
+  {
+   "key": "geo_res_c2",
+   "label": "C2 Chiucue Mix: the Geo RES decrease always (no other sample on)",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental RES Decrease",
+    "negate": true
+   },
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro",
+       "hydro",
+       "cryo",
+       "electro"
+      ],
+      "at_most": 2
+     }
+    ]
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      0
+     ]
+    },
+    {
+     "condition": "ns_blessing",
+     "values": [
+      0
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:53,110-122,204; wr:index.tsx:64,112-128,289"
+  },
+  {
+   "key": "a1_normal",
+   "label": "A1 Netotiliztli's Echoes: Normal and Plunging DMG in Nightsoul's Blessing (at most one sampler converted)",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal",
+    "plunge"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 1
+   },
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro",
+       "hydro",
+       "cryo",
+       "electro"
+      ],
+      "at_most": 1
+     }
+    ]
+   },
+   "when": [
+    {
+     "condition": "ns_blessing",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:70,123-125,197-198; wr:index.tsx:81,134-139,281"
+  },
+  {
+   "key": "a4_def",
+   "label": "A4 Portable Armored Sheath: Xilonen's DEF after a Nightsoul Burst",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "def_pct",
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "ns_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:74,126-128,199; wr:index.tsx:85,141-146,283"
+  },
+  {
+   "key": "c2_geo",
+   "label": "C2 Chiucue Mix: DMG Bonus to Geo characters while the Geo sample works",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "receiver_elements": [
+    "geo"
+   ],
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "pyro",
+       "hydro",
+       "cryo",
+       "electro"
+      ],
+      "at_most": 2
+     }
+    ]
+   },
+   "value": {
+    "constellation": 2,
+    "param": 3
+   },
+   "go": "pando:Xilonen.ts:84,131-142,211; wr:index.tsx:95,153-160,293"
+  },
+  {
+   "key": "c2_pyro",
+   "label": "C2 Chiucue Mix: ATK to Pyro characters (Source Samples active)",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "atk_pct",
+   "receiver_elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:81,143-152,212; wr:index.tsx:92,162-176,291"
+  },
+  {
+   "key": "c2_hydro",
+   "label": "C2 Chiucue Mix: Max HP to Hydro characters (Source Samples active)",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "hp_pct",
+   "receiver_elements": [
+    "hydro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:82,153-162,213; wr:index.tsx:93,177-191,292"
+  },
+  {
+   "key": "c2_cryo",
+   "label": "C2 Chiucue Mix: CRIT DMG to Cryo characters (Source Samples active)",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "crit_dmg",
+   "receiver_elements": [
+    "cryo"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "source_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:83,163-173,214; wr:index.tsx:94,192-206,294"
+  },
+  {
+   "key": "c4_flat",
+   "label": "C4 Suchitl's Trance: Normal, Charged and Plunging DMG from Xilonen's DEF",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "normal",
+    "charged",
+    "plunge"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0,
+    "times_stat": "def"
+   },
+   "when": [
+    {
+     "condition": "c4_blooming",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:89,175-181,215-217; wr:index.tsx:100,208-219,295-297"
+  },
+  {
+   "key": "c6_flat",
+   "label": "C6 Imperishable Night Carnival: Xilonen's Normal and Plunging DMG from her DEF",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal",
+    "plunge"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1,
+    "times_stat": "def"
+   },
+   "when": [
+    {
+     "condition": "c6_carnival",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xilonen.ts:95,182-188,200-201; wr:index.tsx:106,221-231,284-285"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Teammates' DEF buffs (and her own A4) in the DEF her C4 gives a teammate",
+   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `premod.def` would include her A4"
+  },
+  {
+   "source": "talent",
+   "what": "Ocelotlicue Point!: healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c2",
+   "what": "Chiucue Mix: Electro characters' Energy and burst cooldown",
+   "reason": "no damage effect: energy and cooldown"
+  },
+  {
+   "source": "c1",
+   "what": "Sabbatical Phrase: Nightsoul point consumption",
+   "reason": "no damage effect: resource"
+  },
+  {
+   "source": "c6",
+   "what": "Imperishable Night Carnival: healing",
+   "reason": "no damage effect: healing"
+  }
+ ]
+}

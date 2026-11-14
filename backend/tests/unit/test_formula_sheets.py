@@ -84,7 +84,7 @@ BUFFERS = {"furina", "xingqiu", "xiangling", "citlali", "yelan", "escoffier", "c
            "jean", "zhongli", "faruzan", "sucrose"}
 
 #: Task 11, fourth batch: Nahida (who waited on three mechanics) and the next buffers.
-BATCH4 = {"nahida"}
+BATCH4 = {"nahida", "kujou_sara", "shenhe", "yun_jin", "gorou", "xilonen", "xianyun", "mona"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():

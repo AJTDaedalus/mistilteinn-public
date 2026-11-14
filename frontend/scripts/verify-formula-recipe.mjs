@@ -59,7 +59,8 @@ function score(f, sources) {
         defIgnore: data.target.def_ignore,
       },
       characterLevel: data.character_level,
-      dmgBonusQuantity: `${f.channel}_dmg_bonus`,
+      // A row may name its own channel (a Physical normal attack beside a Pyro burst).
+      dmgBonusQuantity: `${r.channel ?? f.channel}_dmg_bonus`,
     },
   }));
   const team = {

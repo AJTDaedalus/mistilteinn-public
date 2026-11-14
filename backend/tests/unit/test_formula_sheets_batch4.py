@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from app.formula.builder import const
 from app.formula.genshin import sheets, tags
 from app.pando.calculator import NodeRegistry
+from tests.unit.go_fixtures_batch4 import batch4_fixtures
 
 NAHIDA_BURST_LABELS = ["Pyro: DMG Bonus|1 Character {param1:F1P}",
                        "Pyro: DMG Bonus|2 Characters {param2:F1P}"]
@@ -194,3 +195,149 @@ def test_the_def_terms_reach_only_where_they_belong(stat: str, receivers: str, m
     with pytest.raises(ValidationError, match=message):
         sheets.SheetEffect.model_validate(
             {**c2.model_dump(), "stat": stat, "receivers": receivers})
+
+
+# ── a team-count gate, a clamped team table, flat DEF (Gorou) ─────────────────────────────
+
+GOROU_SKILL_13 = sheets.TalentRow(
+    ["Skill DMG|{param1:F1P}", "DEF Increase|{param2:I}", "Geo DMG Bonus|{param3:P}"],
+    [2.278, 438.09, 0.15])
+
+
+def _gorou_kit(team: list[str]) -> sheets.ResolvedKit:
+    gorou = _sheet("gorou")
+    giver = _giver(gorou, constellation=6, talent_levels={"elemental_skill": 10},
+                   talent_rows={("elemental_skill", 13): GOROU_SKILL_13})
+    return sheets.resolve(gorou, giver, giver_is_subject=False, receiver_element="pyro",
+                          team_elements=team)
+
+
+@pytest.mark.parametrize(("team", "geo_dmg", "crit_dmg_entry"), [
+    (["geo", "pyro"], [], 0),
+    (["geo", "geo", "pyro"], [], 1),
+    (["geo", "geo", "geo", "pyro"], [0.15], 2),
+    # A fourth Geo member reads the table's last entry again, as GO writes it.
+    (["geo", "geo", "geo", "geo"], [0.15], 2),
+])
+def test_gorous_banner_and_c6_follow_the_geo_count(
+    team: list[str], geo_dmg: list[float], crit_dmg_entry: int,
+):
+    kit = _gorou_kit(team)
+    assert [e.value for e in _effects(kit, "flat_def")] == [pytest.approx(438.09)]
+    assert [e.value for e in _effects(kit, "dmg_bonus")] == [pytest.approx(v) for v in geo_dmg]
+    [c6] = _effects(kit, "crit_dmg")
+    assert c6.value == pytest.approx(_sheet("gorou").pins.constellations[6][crit_dmg_entry])
+
+
+def test_a_team_table_past_its_size_is_withheld_unless_it_clamps():
+    ref = sheets.TeamIndex(count="elements", elements=("geo",), size=3)
+    assert ref.clamp is False
+    with pytest.raises(ValidationError, match="names a bound"):
+        sheets.TeamCount(elements=("geo",))
+
+
+# ── the Geo sample's OR, and a gate on at most N members (Xilonen) ────────────────────────
+
+
+@pytest.mark.parametrize(("state", "constellation", "expected"), [
+    ({"source_active": 1, "ns_blessing": 0}, 0, ["geo_res_source"]),
+    ({"source_active": 0, "ns_blessing": 1}, 0, ["geo_res_blessing"]),
+    ({"source_active": 1, "ns_blessing": 1}, 0, ["geo_res_source"]),
+    ({"source_active": 0, "ns_blessing": 0}, 0, []),
+    ({"source_active": 0, "ns_blessing": 0}, 2, ["geo_res_c2"]),
+    ({"source_active": 1, "ns_blessing": 1}, 2, ["geo_res_source"]),
+])
+def test_the_geo_sample_is_one_shred_whichever_way_it_is_on(
+    state: dict[str, int], constellation: int, expected: list[str],
+):
+    """GO `cmpGE(sum(sourceActive, nsBlessing, C2), 1, …)`: an OR, never a sum. The sheet writes
+    it as three effects whose `when`s are disjoint; under any state at most one holds."""
+    xilonen = _sheet("xilonen")
+    geo = [e for e in xilonen.effects if e.key.startswith("geo_res_")]
+    on = [e.key for e in geo
+          if constellation >= int(e.source[1:] if e.source.startswith("c") else 0)
+          and all(state[w.condition] in w.values for w in e.when)]
+    assert on == expected
+
+
+def test_the_geo_sample_needs_fewer_than_three_converted_samplers():
+    xilonen = _sheet("xilonen")
+    def giver() -> sheets.Giver:  # one resolution per registry (LOG, task 11)
+        return _giver(xilonen, talent_levels={"elemental_skill": 10},
+                      talent_rows={("elemental_skill", 10): sheets.TalentRow(
+                          ["Rush DMG|{param1:F1P} DEF", "Elemental RES Decrease|{param2:F1P}"],
+                          [3.2256, 0.36])})
+    open_team = sheets.resolve(xilonen, giver(), giver_is_subject=True, receiver_element="geo",
+                               team_elements=["geo", "pyro", "hydro", "anemo"])
+    full = sheets.resolve(xilonen, giver(), giver_is_subject=True, receiver_element="geo",
+                          team_elements=["geo", "pyro", "hydro", "cryo"])
+    geo = lambda kit: [e for e in _effects(kit, "enemy_res") if e.elements == ("geo",)]  # noqa: E731
+    # Below C2: the Source-Sample and the Blessing variants, disjoint by their `when`s.
+    assert len(geo(open_team)) == 2
+    assert geo(full) == []
+    # The samplers present each get theirs, the absent one none.
+    assert sorted(e.elements[0] for e in _effects(full, "enemy_res")) == [
+        "cryo", "hydro", "pyro"]
+
+
+# ── a capped giver stat, and a row scope that cannot double count (Xianyun) ──────────────
+
+
+@pytest.mark.parametrize(("atk", "counted"), [(3000.0, 3000.0), (6000.0, 4500.0)])
+def test_xianyuns_a4_caps_her_atk_before_multiplying(atk: float, counted: float):
+    xianyun = _sheet("xianyun")
+    kit = sheets.resolve(xianyun, _giver(xianyun, base_atk=atk), giver_is_subject=False,
+                         receiver_element="pyro", team_elements=["pyro", "anemo"])
+    [a4] = _effects(kit, "flat_damage")
+    assert xianyun.pins.passives[4][1] == 4500.0
+    assert a4.value == pytest.approx(xianyun.pins.passives[4][0] * counted)
+
+
+def test_xianyuns_a4_on_herself_is_withheld_and_her_wave_buffs_name_the_row():
+    xianyun = _sheet("xianyun")
+    kit = sheets.resolve(xianyun, _giver(xianyun, constellation=6, base_atk=900.0),
+                         giver_is_subject=True, receiver_element="anemo",
+                         team_elements=["anemo", "pyro"])
+    assert _effects(kit, "flat_damage") == []
+    assert any("through a cap or a unit" in u.reason for u in kit.bonus.unmodelled)
+    [team_a1, own_a1] = _effects(kit, "crit_rate")
+    # Team plunges by move; her own wave by row, only while its move is Skill: never both.
+    assert (team_a1.moves, team_a1.rows) == (("plunge",), None)
+    assert own_a1.moves == ("skill",)
+    assert [(r.talent, r.label) for r in own_a1.rows or ()] == [
+        ("elemental_skill", "Driftcloud Wave DMG")]
+    assert own_a1.by_stack == xianyun.pins.passives[1][:4]
+
+
+def test_a_stat_cap_belongs_to_a_value_that_reads_a_stat():
+    with pytest.raises(ValidationError, match="stat cap belongs"):
+        sheets.ValueRef(passive=4, param=0, stat_cap={"passive": 4, "param": 1})
+
+
+# ── Mona: a CRIT Rate published negated, and an ER conversion the recipe cannot carry ────
+
+
+def test_monas_c4_is_her_lists_magnitude_and_her_a4_on_herself_is_withheld():
+    mona = _sheet("mona")
+    assert mona.pins.constellations[4][0] < 0
+    giver = _giver(mona, constellation=4, energy_recharge=1.8)
+    kit = sheets.resolve(mona, giver, giver_is_subject=True, receiver_element="hydro",
+                         team_elements=["hydro", "pyro"])
+    assert [e.value for e in _effects(kit, "crit_rate")] == [
+        pytest.approx(-mona.pins.constellations[4][0])]
+    assert not [e for e in _effects(kit, "dmg_bonus") if e.elements == ("hydro",)]
+    assert any("cannot carry dmg_bonus from energy_recharge" in u.reason
+               for u in kit.bonus.unmodelled)
+
+
+# ── the fixtures: only the EM coefficient may divide them from GO ─────────────────────────
+
+
+def test_the_batch_fixtures_differ_from_go_only_by_the_em_coefficient():
+    for f in batch4_fixtures():
+        gap = abs(f["expected"] - f["go_value"]) / f["go_value"]
+        if f["divergence"].startswith("none"):
+            assert gap == 0, f["name"]
+        else:
+            assert any(r["amplifying"] for r in f["rows"]), f["name"]
+            assert 0 < gap < 5e-4, f["name"]

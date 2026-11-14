@@ -1,0 +1,139 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Kujou Sara",
+ "nanoka_id": "10000056",
+ "slug": "kujou_sara",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/KujouSara.ts",
+  "wr": "libs/gi/sheets/src/Characters/KujouSara/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/sara/",
+ "verified_by": [
+  "kujou_sara_ambush_c6_on_her_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:KujouSara.ts:97; wr:index.tsx:146,152"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:KujouSara.ts:98; wr:index.tsx:147,151"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "ATK Bonus Ratio|{param2:P}"
+   ]
+  },
+  "constellations": {
+   "6": [
+    0.6,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "ambush",
+   "label": "In the field of Tengu Juurai: Ambush, as the active character (Tengu Stormcall)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:KujouSara.ts:72-84,100; wr:index.tsx:75-94,159"
+  },
+  {
+   "key": "c6",
+   "label": "C6 Sin of Pride: the Electro CRIT DMG bonus is active",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:KujouSara.ts:76,79,87-91,101; wr:index.tsx:96-105,156"
+  }
+ ],
+ "effects": [
+  {
+   "key": "ambush_atk",
+   "label": "Tengu Stormcall: ATK from Kujou Sara's base ATK to the active character",
+   "source": "talent",
+   "receivers": "active",
+   "stat": "flat_atk",
+   "value": {
+    "talent": "elemental_skill",
+    "row": "ATK Bonus Ratio",
+    "times_stat": "base_atk"
+   },
+   "when": [
+    {
+     "condition": "ambush",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KujouSara.ts:45,78,81-85,100; wr:index.tsx:53,79-94,159"
+  },
+  {
+   "key": "c6_crit_dmg",
+   "label": "C6 Sin of Pride: Electro CRIT DMG for characters under the ATK bonus",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "crit_dmg",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "ambush",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c6",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KujouSara.ts:63,87-91,101; wr:index.tsx:71,96-105,156"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c2",
+   "what": "Dark Wings: the weaker Tengu Juurai: Ambush",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "a1",
+   "what": "Immovable Will: faster aimed shot charging",
+   "reason": "no damage effect: charge time"
+  },
+  {
+   "source": "a4",
+   "what": "Decorum: Energy to the party from Tengu Juurai",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c1",
+   "what": "Crow's Eye: Tengu Stormcall cooldown",
+   "reason": "no damage effect: cooldown"
+  }
+ ]
+}
