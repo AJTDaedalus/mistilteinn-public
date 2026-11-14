@@ -8500,6 +8500,17 @@
               }
             ],
             "title": "Weapon Types"
+          },
+          "talent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent"
           }
         },
         "type": "object",
@@ -8614,6 +8625,107 @@
         "title": "FormulaKitSourceRead",
         "description": "One team member's kit, resolved for the optimized character (math-fallback P2).\n\nSame `bonus` vocabulary as a set tier or a resonance, with every number already resolved\nin the **giver's** context (`app/formula/genshin/sheets.py`): Bennett's ATK bonus arrives\nas flat ATK computed from Bennett's own base ATK. The browser gates each effect by its\n`when`, exactly as it does a set bonus."
       },
+      "FormulaRaisedHitRead": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "raise_by": {
+            "type": "integer",
+            "title": "Raise By"
+          },
+          "multiplier": {
+            "type": "number",
+            "title": "Multiplier"
+          },
+          "scaling_stat": {
+            "type": "string",
+            "title": "Scaling Stat"
+          },
+          "extra_terms": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaScalingTermRead"
+            },
+            "type": "array",
+            "title": "Extra Terms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "index",
+          "raise_by",
+          "multiplier",
+          "scaling_stat",
+          "extra_terms"
+        ],
+        "title": "FormulaRaisedHitRead",
+        "description": "One of the optimized character's hits read `raise_by` levels above its unraised level,\nas `/builds/{id}/search-context` would read it there (`team_talent_levels`)."
+      },
+      "FormulaRaisedTalentRead": {
+        "properties": {
+          "talent": {
+            "type": "string",
+            "title": "Talent"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "max_raise": {
+            "type": "integer",
+            "title": "Max Raise"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaRaisedHitRead"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "unavailable": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaRaisedUnavailableRead"
+            },
+            "type": "array",
+            "title": "Unavailable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "talent",
+          "level",
+          "max_raise",
+          "rows",
+          "unavailable"
+        ],
+        "title": "FormulaRaisedTalentRead",
+        "description": "A talent of the optimized character a kit's `talent_level` effect raises, and its rows at\neach raise (owner approval 2026-11-14, `DECISIONS.md` \u00a742). For the formula estimate only:\ngcsim applies these raises itself, and single-hit surfaces have no party to raise them."
+      },
+      "FormulaRaisedUnavailableRead": {
+        "properties": {
+          "raise_by": {
+            "type": "integer",
+            "title": "Raise By"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raise_by",
+          "reason"
+        ],
+        "title": "FormulaRaisedUnavailableRead",
+        "description": "A raise that reads no row (past the table's last level), and why."
+      },
       "FormulaResonanceRead": {
         "properties": {
           "key": {
@@ -8664,6 +8776,25 @@
         ],
         "title": "FormulaResonanceRead",
         "description": "One active resonance."
+      },
+      "FormulaScalingTermRead": {
+        "properties": {
+          "stat": {
+            "type": "string",
+            "title": "Stat"
+          },
+          "multiplier": {
+            "type": "number",
+            "title": "Multiplier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stat",
+          "multiplier"
+        ],
+        "title": "FormulaScalingTermRead",
+        "description": "A further scaling term of a mixed-stat hit (`ATK + EM`)."
       },
       "FormulaSetEffectsRead": {
         "properties": {
@@ -8778,6 +8909,14 @@
             },
             "type": "array",
             "title": "Members"
+          },
+          "raised_talents": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaRaisedTalentRead"
+            },
+            "type": "array",
+            "title": "Raised Talents",
+            "default": []
           }
         },
         "type": "object",

@@ -107,12 +107,14 @@ BATCH7 = {"xiao", "venti", "nilou", "albedo", "chiori", "sigewinne", "sethos", "
 #: Task 11's eighth batch: the small sheets of ordinary buffs, then Fischl, Mualani and Flins.
 BATCH8 = {"amber", "xinyan", "yanfei", "barbara", "razor", "kaeya", "qiqi", "sayu", "diona",
           "collei", "yaoyao", "gaming", "fischl", "mualani", "flins"}
+#: The team talent-level raise (`DECISIONS.md` §42): Tartaglia, whose kit is that raise.
+TALENT_LEVEL = {"tartaglia"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
         "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED, *BATCH6,
-        *BATCH7, *BATCH8}
+        *BATCH7, *BATCH8, *TALENT_LEVEL}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

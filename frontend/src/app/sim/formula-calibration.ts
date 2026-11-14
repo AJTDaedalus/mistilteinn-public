@@ -36,6 +36,7 @@ import {
   type ConditionState,
   type FormulaCondition,
   type FormulaKit,
+  type FormulaRaisedTalent,
   type FormulaResonance,
   type FormulaRow,
   type FormulaSetTier,
@@ -69,7 +70,12 @@ export interface FormulaCalibrationInput {
    * Every member's kit resolved for the optimized character (`/formula/kit-buffs`, P2), and
    * the members with no sheet. Absent: no kit buffs, said as such — the P1 behaviour.
    */
-  kits?: { sources: readonly FormulaKit[]; missing: readonly string[] };
+  kits?: {
+    sources: readonly FormulaKit[];
+    missing: readonly string[];
+    /** The subject's rows at the levels the kits' talent-level raises reach (§42). */
+    raisedTalents?: readonly FormulaRaisedTalent[];
+  };
 }
 
 export interface FormulaCalibration {
@@ -120,13 +126,15 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
     modelled: input.kits.sources.map((k) => ({ name: k.giver, verified: k.verified })),
     missing: [...input.kits.missing],
   };
+  // A teammate's talent-level raise (Tartaglia's +1 Normal Attack): rows read one level up.
+  const raised = input.kits?.raisedTalents ?? [];
   const tiersBySet = new Map<number, FormulaSetTier[]>();
   for (const tier of input.setTiers) {
     tiersBySet.set(tier.set_id, [...(tiersBySet.get(tier.set_id) ?? []), tier]);
   }
 
   const noFourPiece = synthesizeRecipe(
-    input.rows, resonances, input.team, teamState, characters, coverage,
+    input.rows, resonances, input.team, teamState, characters, coverage, raised,
   );
   const byFourPieceSet = new Map<number, Recipe>();
   const withheld: { setId: number; reason: string }[] = [];
@@ -143,7 +151,7 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
     const conditional = tiers.filter((t) => t.pieces <= 4 && usable(t)).map(setSource);
     const recipe = synthesizeRecipe(
       input.rows.map((row) => withStatics(row, statics)),
-      [...resonances, ...conditional], input.team, teamState, characters, coverage,
+      [...resonances, ...conditional], input.team, teamState, characters, coverage, raised,
     );
     // The set's whole bonus is inside, so the search must not add its pools again.
     recipe.meta.calibratedSetIds = [setId];

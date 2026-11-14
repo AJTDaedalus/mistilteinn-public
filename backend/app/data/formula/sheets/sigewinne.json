@@ -11,7 +11,9 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/sigewinne/",
  "verified_by": [
-  "sigewinne_a1_c1_on_xiangling"
+  "sigewinne_a1_c1_on_xiangling",
+  "sigewinne_c6_below_cap_on_her_own_burst",
+  "sigewinne_c6_past_cap_on_her_own_burst"
  ],
  "talent_boosts": [
   {
@@ -47,6 +49,18 @@
     8.0,
     0.0,
     0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.004,
+    0.022,
+    15.0,
+    0.2,
+    1.1,
     0.0,
     0.0,
     0.0,
@@ -119,6 +133,13 @@
    "kind": "toggle",
    "default_by": "giver_is_subject",
    "go": "pando:Sigewinne.ts:119,178-180"
+  },
+  {
+   "key": "c6_after_heal",
+   "label": "After she heals (C6)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Sigewinne.ts:116-122,182-197; wr:index.tsx:180-197,466-486"
   }
  ],
  "effects": [
@@ -261,6 +282,72 @@
    ],
    "go": "pando:Sigewinne.ts:81-85,178-180,214",
    "gcsim": "cons.go:34"
+  },
+  {
+   "key": "c6_crit_rate",
+   "label": "C6: burst CRIT Rate per 1,000 Max HP, capped",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Sigewinne.ts:182-197 `prod(final.hp, 1 / 1000, percent(x))`; gcsim sigewinne/cons.go:16-17 `/ 1000`; no seeded list carries the 1,000"
+    },
+    "cap": {
+     "constellation": 6,
+     "param": 3
+    }
+   },
+   "when": [
+    {
+     "condition": "c6_after_heal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Sigewinne.ts:89-95,182-197,209-210; wr:index.tsx:106-112,180-197,254-255",
+   "gcsim": "cons.go:16-19,41-60"
+  },
+  {
+   "key": "c6_crit_dmg",
+   "label": "C6: burst CRIT DMG per 1,000 Max HP, capped",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Sigewinne.ts:182-197 `prod(final.hp, 1 / 1000, percent(x))`; gcsim sigewinne/cons.go:16-17 `/ 1000`; no seeded list carries the 1,000"
+    },
+    "cap": {
+     "constellation": 6,
+     "param": 4
+    }
+   },
+   "when": [
+    {
+     "condition": "c6_after_heal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Sigewinne.ts:89-95,182-197,209-210; wr:index.tsx:106-112,180-197,254-255",
+   "gcsim": "cons.go:16-19,41-60"
   }
  ],
  "unmodelled": [
@@ -284,11 +371,6 @@
    "source": "c4",
    "what": "\"Can the Loveliest of Spirits Keep Decay at Bay?\": burst duration",
    "reason": "no damage effect"
-  },
-  {
-   "source": "c6",
-   "what": "\"Can the Most Radiant of Spirits Pray For Me?\": burst CRIT Rate and CRIT DMG from her Max HP",
-   "reason": "a capped conversion of her own Max HP into CRIT Rate and CRIT DMG, which the recipe does not carry (it carries CRIT Rate from EM only)"
   }
  ]
 }

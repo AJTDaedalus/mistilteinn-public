@@ -67,7 +67,10 @@ function score(f, sources) {
   const team = {
     element: f.team.element, weaponType: f.team.weapon_type, memberElements: f.team.member_elements,
   };
-  const recipe = synthesizeRecipe(rows, sources, team, f.conditionals);
+  // A kit's talent-level raise (DECISIONS §42): the subject's rows at the raised levels.
+  const recipe = synthesizeRecipe(
+    rows, sources, team, f.conditionals, [], undefined, f.raised_talents ?? [],
+  );
   if (recipe.meta.formula?.kind !== 'formula-estimate') throw new Error('no provenance marker');
   return evaluateRecipe(recipe, candidateStatsFrom([f.artifacts, ...f.set_pools]));
 }
@@ -102,6 +105,19 @@ for (const f of data.fixtures) {
     }
   }
 
+  // A kit's talent-level raise (DECISIONS §42) — **the raised rows dropped** must miss: the
+  // row's own multiplier is the unraised one, so a figure that passes without them is not
+  // checking the raise at all.
+  if (f.raised_talents !== undefined) {
+    if (!f.sources.some((s) => s.bonus.effects.some((e) => e.stat === 'talent_level'))) {
+      failures.push(`${f.name} (carries raised rows but no talent-level raise)`);
+    }
+    const unraised = score({ ...f, raised_talents: [] }, f.sources);
+    if (Math.abs(unraised - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (passes with its talent-level raise unread)`);
+    }
+  }
+
   // Math-fallback P2, task 10 — **a planted wrong kit buff must fail.** Every kit effect 1 %
   // off, and the classic self-buff mistake (the subject's own EM frozen at his zero-artifact
   // value instead of moving with the candidate), each have to leave the tolerance.
@@ -127,6 +143,7 @@ for (const f of data.fixtures) {
     const frozenAs = {
       dmg_bonus_from_em: ['dmg_bonus', 'em'], dmg_bonus_from_hp: ['dmg_bonus', 'hp'],
       crit_rate_from_em: ['crit_rate', 'em'],
+      crit_rate_from_hp: ['crit_rate', 'hp'], crit_dmg_from_hp: ['crit_dmg', 'hp'],
       flat_damage_from_atk: ['flat_damage', 'atk'], flat_damage_from_hp: ['flat_damage', 'hp'],
       flat_damage_from_def: ['flat_damage', 'def'], flat_damage_from_em: ['flat_damage', 'em'],
       flat_atk_from_def: ['flat_atk', 'def'], flat_atk_from_hp: ['flat_atk', 'hp'],

@@ -33,8 +33,8 @@ import {
   effectiveCritRate,
   type ConversionSource,
   type ConversionTerm,
+  type ConvertedTerm,
   type FormulaMove,
-  type PercentTerm,
   type Recipe,
   type RecipeHit,
   type TripleStat,
@@ -182,7 +182,8 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
     + converted(hit, stats, 'bonusDmg');
   const preCrit = base * (1 + bonus) * hit.defMultiplier * hit.resMultiplier;
   const critRate = hit.critRate + stats.critRate + converted(hit, stats, 'critRate');
-  const crit = 1 + effectiveCritRate(critRate) * (hit.critDmg + stats.critDmg);
+  const critDmg = hit.critDmg + stats.critDmg + converted(hit, stats, 'critDmg');
+  const crit = 1 + effectiveCritRate(critRate) * critDmg;
   // The amplifying multiplier follows the candidate's EM, through the same function the
   // single-hit kernel calls — for a gcsim recipe too, from the reaction its `calc` named. Only
   // a hit whose reaction could not be named keeps gcsim's frozen total.
@@ -197,7 +198,7 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
  * each from the hit owner's own total — the same `rawTotal` a resolved flat conversion reads —
  * and each capped on its own (owner ruling 2026-11-14, `DECISIONS.md` §40).
  */
-function converted(hit: RecipeHit, stats: CandidateStats, into: PercentTerm): number {
+function converted(hit: RecipeHit, stats: CandidateStats, into: ConvertedTerm): number {
   if (hit.statConversions === undefined) return 0;
   let total = 0;
   for (const c of hit.statConversions) {
