@@ -52,8 +52,10 @@ import {
   resMultiplier,
   type ScalingStat,
 } from './damage';
-import type {
-  ConversionSource, FormulaMove, FormulaProvenance, Recipe, RecipeHit, RecipeScaling,
+import {
+  cappedAmount,
+  type ConversionSource, type FormulaMove, type FormulaProvenance, type PercentTerm,
+  type Recipe, type RecipeHit, type RecipeScaling, type StatConversion,
 } from './recipe';
 import { evaluateHit, NO_STATS } from './recipe-eval';
 import {
@@ -98,7 +100,13 @@ export interface FormulaEffect {
   by_stack?: number[] | null;
   per_team?: 'same_element_others' | 'different_element' | null;
   per_team_max?: number | null;
+  /**
+   * Emblem's Energy Recharge cap, or a capped self-conversion's (owner ruling 2026-11-14,
+   * `DECISIONS.md` §40): the most the term grants, in its own units, after any `per`.
+   */
   cap?: number | null;
+  /** A self-conversion's stat counts only above this (Nahida's A4, EM above 200). */
+  threshold?: number | null;
   weapon_types?: string[] | null;
 }
 
@@ -323,6 +331,12 @@ interface Buffs {
    * the subject (Valeriy's Offensive Directive, Kachina's A4, Zhongli's A4). One source per hit.
    */
   flatFrom: Record<ConversionSource, number>;
+  /**
+   * The threshold and cap of a capped flat-damage conversion (Clorinde's A1), by source. A
+   * capped conversion is alone on its term: summed with another before its cap it would be
+   * the wrong number, so a second one on the same hit is refused.
+   */
+  flatLimits: Partial<Record<ConversionSource, Limits>>;
   erConversion: { perUnit: number; cap: number } | null;
   /** Flat ATK, after the percentage — a kit buff resolved from its giver's stats. */
   flatAtk: number;
@@ -334,22 +348,79 @@ interface Buffs {
   defReduction: number;
   /** The target's DEF ignored by this hit (Raiden's C2), the chain's other DEF input. */
   defIgnore: number;
-  /** Flat ATK per point of the hit owner's own total DEF (Noelle's Sweeping Time on herself). */
-  atkFromDef: number;
+  /**
+   * Flat ATK per point of the hit owner's own total DEF (Noelle's Sweeping Time on herself) or
+   * HP (Hu Tao's Guide to Afterlife, capped at 400% of her base ATK). One source per hit: the
+   * recipe resolves one conversion into flat ATK.
+   */
+  atkFrom: ({ from: 'def' | 'hp'; perUnit: number } & Limits) | null;
+  /** Capped self-conversions into DMG% or CRIT Rate (Nahida's, Furina's, Alhaitham's A4). */
+  statConversions: StatConversion[];
   /** Base ATK, before the percentage (Mavuika's C2). */
   baseAtk: number;
   /** Added to the talent term's base-damage multiplier (GO `baseMulti`). */
   baseDmgBonus: number;
 }
 
+/** A capped self-conversion's threshold and cap (`recipe.ts:cappedAmount`); absent is none. */
+interface Limits {
+  threshold?: number;
+  cap?: number;
+}
+
 function noBuffs(): Buffs {
   return {
     percent: { atk: 0, hp: 0, def: 0 }, em: 0, er: 0, critRate: 0, critDmg: 0, dmgBonus: 0,
     reactionBonus: 0, resistance: 0, flatDamage: 0, flatFrom: { atk: 0, hp: 0, def: 0, em: 0 },
-    erConversion: null,
+    flatLimits: {}, erConversion: null,
     flatAtk: 0, bonusFromEm: 0, flatDef: 0, defReduction: 0, defIgnore: 0,
-    atkFromDef: 0, baseAtk: 0, baseDmgBonus: 0,
+    atkFrom: null, statConversions: [], baseAtk: 0, baseDmgBonus: 0,
   };
+}
+
+/** The effect's threshold and cap, only those it carries. */
+function limitsOf(effect: FormulaEffect): Limits {
+  return {
+    ...(effect.threshold != null ? { threshold: effect.threshold } : {}),
+    ...(effect.cap != null ? { cap: effect.cap } : {}),
+  };
+}
+
+const isLimited = (limits: Limits): boolean =>
+  limits.threshold !== undefined || limits.cap !== undefined;
+
+/** Flat damage from the hit owner's own stat, capped or not, onto the one flat conversion. */
+function addFlatFrom(
+  buffs: Buffs, from: ConversionSource, amount: number, limits: Limits, source: string,
+): void {
+  if (isLimited(limits) || buffs.flatLimits[from] !== undefined) {
+    if (buffs.flatFrom[from] !== 0) {
+      throw new Error(`${source}: a capped flat-damage conversion from ${from} beside another`);
+    }
+    buffs.flatLimits[from] = limits;
+  }
+  buffs.flatFrom[from] += amount;
+}
+
+/** Flat ATK from the hit owner's own DEF or HP: one per hit. */
+function addAtkFrom(
+  buffs: Buffs, from: 'def' | 'hp', amount: number, limits: Limits, source: string,
+): void {
+  if (buffs.atkFrom !== null) {
+    if (buffs.atkFrom.from !== from || isLimited(limits) || isLimited(buffs.atkFrom)) {
+      throw new Error(`${source}: two conversions into flat ATK on one hit`);
+    }
+    buffs.atkFrom.perUnit += amount;
+    return;
+  }
+  buffs.atkFrom = { from, perUnit: amount, ...limits };
+}
+
+/** A conversion into DMG% or CRIT Rate, priced alone (`StatConversion`). */
+function addStatConversion(
+  buffs: Buffs, into: PercentTerm, from: ConversionSource, amount: number, limits: Limits,
+): void {
+  buffs.statConversions.push({ into, from, perUnit: amount, ...limits });
 }
 
 /** One hit's identity, for scoping. */
@@ -423,11 +494,14 @@ export function applySources(
         amount *= Math.min(teamCount(effect.per_team, team), effect.per_team_max ?? Infinity);
       }
       if (amount === 0 && effect.stat !== 'dmg_bonus_from_energy_recharge') continue;
-      if (effect.stat === 'dmg_bonus_from_em' && elements === null) {
-        // Not reachable from a sheet (Kazuha's A4 names its element); refused rather than read
-        // as "every channel", which would be the confident wrong number.
-        throw new Error(`${source.id}: an EM conversion names the element it reaches`);
+      if ((effect.stat === 'dmg_bonus_from_em' || effect.stat === 'dmg_bonus_from_hp')
+        && elements === null && !effect.moves && !effect.rows) {
+        // Not reachable from a sheet (Kazuha's A4 names its element, Alhaitham's and
+        // Tighnari's their moves, Nahida's and Furina's their rows); refused rather than read as
+        // "every hit", which would be the confident wrong number.
+        throw new Error(`${source.id}: a DMG% conversion names the element, move or row it reaches`);
       }
+      const limits = limitsOf(effect);
 
       switch (effect.stat) {
         case 'atk_pct': buffs.percent.atk += amount; break;
@@ -441,16 +515,26 @@ export function applySources(
         case 'reaction_bonus': buffs.reactionBonus += amount; break;
         case 'enemy_res': buffs.resistance += amount; break;
         case 'flat_damage': buffs.flatDamage += amount; break;
-        case 'flat_damage_from_atk': buffs.flatFrom.atk += amount; break;
-        case 'flat_damage_from_hp': buffs.flatFrom.hp += amount; break;
-        case 'flat_damage_from_def': buffs.flatFrom.def += amount; break;
-        case 'flat_damage_from_em': buffs.flatFrom.em += amount; break;
+        case 'flat_damage_from_atk': addFlatFrom(buffs, 'atk', amount, limits, source.id); break;
+        case 'flat_damage_from_hp': addFlatFrom(buffs, 'hp', amount, limits, source.id); break;
+        case 'flat_damage_from_def': addFlatFrom(buffs, 'def', amount, limits, source.id); break;
+        case 'flat_damage_from_em': addFlatFrom(buffs, 'em', amount, limits, source.id); break;
         case 'flat_atk': buffs.flatAtk += amount; break;
-        case 'dmg_bonus_from_em': buffs.bonusFromEm += amount; break;
+        case 'dmg_bonus_from_em':
+          // Uncapped (Kazuha's A4) stays the plain per-EM term; capped or thresholded is priced
+          // alone, so two caps are never summed before they bind.
+          if (isLimited(limits)) addStatConversion(buffs, 'bonusDmg', 'em', amount, limits);
+          else buffs.bonusFromEm += amount;
+          break;
+        case 'dmg_bonus_from_hp': addStatConversion(buffs, 'bonusDmg', 'hp', amount, limits); break;
+        case 'crit_rate_from_em':
+          addStatConversion(buffs, 'critRate', 'em', amount, limits);
+          break;
         case 'flat_def': buffs.flatDef += amount; break;
         case 'def_reduction': buffs.defReduction += amount; break;
         case 'def_ignore': buffs.defIgnore += amount; break;
-        case 'flat_atk_from_def': buffs.atkFromDef += amount; break;
+        case 'flat_atk_from_def': addAtkFrom(buffs, 'def', amount, limits, source.id); break;
+        case 'flat_atk_from_hp': addAtkFrom(buffs, 'hp', amount, limits, source.id); break;
         case 'base_atk': buffs.baseAtk += amount; break;
         case 'base_dmg_bonus': buffs.baseDmgBonus += amount; break;
         case 'dmg_bonus_from_energy_recharge':
@@ -529,18 +613,33 @@ export function rowHits(
     },
     ...(hit.extraTerms ?? []),
   ];
-  // ATK from the hit owner's own DEF lands in flat ATK beside its constants, resolved per
-  // candidate (`recipe-eval.ts:resolvedTerm`), so every ATK-scaling term reads it.
-  const atkFromDef = buffs.atkFromDef !== 0
-    ? { from: 'def' as const, perUnit: buffs.atkFromDef, offset: calibratedFlat.atk }
+  // ATK from the hit owner's own DEF or HP lands in flat ATK beside its constants, resolved per
+  // candidate (`recipe-eval.ts:resolvedTerm`), so every ATK-scaling term reads it — capped
+  // where the kit caps it (Hu Tao's 400% of base ATK, `recipe.ts:cappedAmount`).
+  const atkFrom = buffs.atkFrom !== null
+    ? { ...buffs.atkFrom, offset: calibratedFlat.atk }
     : null;
-  const zeroDef = calibratedBase.def * (1 + calibratedPercent.def) + calibratedFlat.def;
+  // The count folds into a flat conversion's slope **and** its cap: `n × min(k × s, c)` is
+  // `min(n × k × s, n × c)`. A threshold is on the stat, so it does not scale.
+  const flatLimits = converted ? buffs.flatLimits[flatSources[0]] ?? {} : {};
+  const flatConversion = converted
+    ? {
+      from: flatSources[0],
+      perUnit: buffs.flatFrom[flatSources[0]] * row.count,
+      ...(flatLimits.threshold !== undefined ? { threshold: flatLimits.threshold } : {}),
+      ...(flatLimits.cap !== undefined ? { cap: flatLimits.cap * row.count } : {}),
+    }
+    : null;
+  const zeroTotal = (from: 'def' | 'hp'): number =>
+    calibratedBase[from] * (1 + calibratedPercent[from]) + calibratedFlat[from];
   const hits = terms.map((term, i): RecipeHit => {
     const scaling = RECIPE_SCALING[term.stat];
     const total = scaling === 'em'
       ? calibratedEm
       : calibratedBase[scaling] * (1 + calibratedPercent[scaling]) + calibratedFlat[scaling]
-        + (scaling === 'atk' && atkFromDef ? atkFromDef.perUnit * zeroDef : 0);
+        + (scaling === 'atk' && atkFrom
+          ? cappedAmount(atkFrom.perUnit, zeroTotal(atkFrom.from), atkFrom.threshold, atkFrom.cap)
+          : 0);
     const flatDamage = i === 0 ? (hit.flatDamage + buffs.flatDamage) * row.count : 0;
     const out: RecipeHit = {
       abil: terms.length > 1 ? `${row.label} [${term.stat}]` : row.label,
@@ -552,14 +651,8 @@ export function rowHits(
       scaling,
       flatDamage,
       conversions: {
-        ...(i === 0 && converted
-          ? {
-            flatDamage: {
-              from: flatSources[0], perUnit: buffs.flatFrom[flatSources[0]] * row.count,
-            },
-          }
-          : {}),
-        ...(atkFromDef ? { flatAtk: atkFromDef } : {}),
+        ...(i === 0 && flatConversion ? { flatDamage: flatConversion } : {}),
+        ...(atkFrom ? { flatAtk: atkFrom } : {}),
       },
       constantTerms: [],
       calibratedScaling: total,
@@ -585,6 +678,9 @@ export function rowHits(
     if (hit.amplifying !== null) out.amplifying = { reaction: hit.amplifying, reactionBonus };
     if (row.move !== null) out.move = row.move;
     if (buffs.bonusFromEm !== 0) out.bonusFromEm = buffs.bonusFromEm;
+    if (buffs.statConversions.length > 0) {
+      out.statConversions = buffs.statConversions.map((c) => ({ ...c }));
+    }
     if (buffs.erConversion) {
       out.bonusFromEnergyRecharge = {
         ...buffs.erConversion, calibratedEnergyRecharge: b('energy_recharge') + buffs.er,

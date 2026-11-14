@@ -293,13 +293,22 @@ def test_xianyuns_a4_caps_her_atk_before_multiplying(atk: float, counted: float)
     assert a4.value == pytest.approx(xianyun.pins.passives[4][0] * counted)
 
 
-def test_xianyuns_a4_on_herself_is_withheld_and_her_wave_buffs_name_the_row():
+def test_xianyuns_a4_on_herself_is_a_capped_conversion_and_her_wave_buffs_name_the_row():
+    """Her A4 on her own plunges reads her own ATK, capped at 4,500 before it multiplies: since
+    the owner's 2026-11-14 ruling (DECISIONS §40) it is priced per candidate, the stat cap
+    carried as a cap on the term (ratio × 4,500), not withheld."""
     xianyun = _sheet("xianyun")
     kit = sheets.resolve(xianyun, _giver(xianyun, constellation=6, base_atk=900.0),
                          giver_is_subject=True, receiver_element="anemo",
                          team_elements=["anemo", "pyro"])
     assert _effects(kit, "flat_damage") == []
-    assert any("through a cap" in u.reason for u in kit.bonus.unmodelled)
+    converted = _effects(kit, "flat_damage_from_atk")
+    assert converted
+    for a4 in converted:
+        assert a4.moves == ("plunge",)
+        assert a4.cap == pytest.approx(a4.value * xianyun.pins.passives[4][1])
+        assert a4.threshold is None
+    assert not any("through a cap" in u.reason for u in kit.bonus.unmodelled)
     [team_a1, own_a1] = _effects(kit, "crit_rate")
     # Team plunges by move; her own wave by row, only while its move is Skill: never both.
     assert (team_a1.moves, team_a1.rows) == (("plunge",), None)

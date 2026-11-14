@@ -16,6 +16,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { synthesizeRecipe } from '../src/app/sim/formula-recipe.ts';
+import { cappedAmount } from '../src/app/sim/recipe.ts';
 import { evaluateRecipe } from '../src/app/sim/recipe-eval.ts';
 import { candidateStatsFrom } from '../src/app/sim/recipe-search.ts';
 
@@ -109,44 +110,62 @@ for (const f of data.fixtures) {
     const planted = (mutate) => f.sources.map((s) => (s.id.startsWith('kit:')
       ? { ...s, bonus: { ...s.bonus, effects: s.bonus.effects.map(mutate) } }
       : s));
-    const off = score(f, planted((e) => ({ ...e, value: e.value * 1.01 })));
+    // The cap too, or a figure past its cap would not notice (DECISIONS §40).
+    const off = score(f, planted((e) => ({
+      ...e, value: e.value * 1.01, ...(e.cap != null ? { cap: e.cap * 1.01 } : {}),
+    })));
     if (Math.abs(off - f.expected) / f.expected <= TOLERANCE) {
       failures.push(`${f.name} (a kit buff 1% off still passes)`);
     }
-    if (kits.some((s) => s.bonus.effects.some((e) => e.stat === 'dmg_bonus_from_em'))) {
-      const frozen = score(f, planted((e) => (e.stat === 'dmg_bonus_from_em'
-        ? { ...e, stat: 'dmg_bonus', value: e.value * f.base.elemental_mastery }
-        : e)));
-      if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
-        failures.push(`${f.name} (a frozen self EM conversion still passes)`);
-      }
-    }
-    // Task 11 — the same mistake for flat damage from the subject's own ATK, HP, DEF or EM
-    // (Valeriy's Offensive Directive, Kachina's A4, Zhongli's A4): frozen at the zero-artifact
-    // total instead of moving.
-    const flatFrom = {
-      flat_damage_from_atk: 'atk', flat_damage_from_hp: 'hp', flat_damage_from_def: 'def',
-      flat_damage_from_em: 'em',
+    // Task 11 and the capped conversions (DECISIONS §40) — **the classic self-buff mistake**:
+    // a conversion of the subject's own stat frozen at the zero-artifact build instead of moving
+    // with the candidate. Kazuha's EM, Valeriy's/Kachina's/Zhongli's flat damage, Noelle's ATK
+    // from DEF, and the capped ones: Hu Tao's ATK from HP, Clorinde's A1, Nahida's, Furina's,
+    // Alhaitham's and Tighnari's A4. Each frozen conversion must leave the tolerance — **where it
+    // reaches the fixture's row at all**: Xianyun's plunge-scoped A4 rides on her own kit beside
+    // a skill row it never touches, and freezing a term that is not there proves nothing.
+    const frozenAs = {
+      dmg_bonus_from_em: ['dmg_bonus', 'em'], dmg_bonus_from_hp: ['dmg_bonus', 'hp'],
+      crit_rate_from_em: ['crit_rate', 'em'],
+      flat_damage_from_atk: ['flat_damage', 'atk'], flat_damage_from_hp: ['flat_damage', 'hp'],
+      flat_damage_from_def: ['flat_damage', 'def'], flat_damage_from_em: ['flat_damage', 'em'],
+      flat_atk_from_def: ['flat_atk', 'def'], flat_atk_from_hp: ['flat_atk', 'hp'],
     };
-    if (kits.some((s) => s.bonus.effects.some((e) => e.stat in flatFrom))) {
-      const zero = (stat) => (stat === 'em' ? f.base.elemental_mastery
-        : f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`]) + f.base[`flat_${stat}`]);
-      const frozen = score(f, planted((e) => (e.stat in flatFrom
-        ? { ...e, stat: 'flat_damage', value: e.value * zero(flatFrom[e.stat]) }
-        : e)));
-      if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
-        failures.push(`${f.name} (a frozen self flat-damage conversion still passes)`);
+    const zero = (stat) => (stat === 'em' ? f.base.elemental_mastery
+      : f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`]) + f.base[`flat_${stat}`]);
+    const passes = (got) => Math.abs(got - f.expected) / f.expected <= TOLERANCE;
+    const converting = (e) => e.stat in frozenAs;
+    if (kits.some((s) => s.bonus.effects.some(converting))) {
+      const without = score(f, planted((e) => (converting(e) ? { ...e, value: 0 } : e)));
+      if (!passes(without)) {
+        const frozen = score(f, planted((e) => {
+          if (!converting(e)) return e;
+          const [stat, from] = frozenAs[e.stat];
+          // The capped amount at the zero-artifact stat, as a constant. Under a `per` the cap
+          // binds the stacked total, which a constant per stack cannot say: frozen uncapped.
+          const counted = e.per ? e.value * zero(from)
+            : cappedAmount(e.value, zero(from), e.threshold ?? undefined, e.cap ?? undefined);
+          const { cap: _cap, threshold: _threshold, ...rest } = e;
+          return { ...rest, stat, value: counted };
+        }));
+        if (passes(frozen)) failures.push(`${f.name} (a frozen self conversion still passes)`);
       }
     }
-    // Task 11, third batch — and for ATK from the subject's own DEF (Noelle's Sweeping Time):
-    // frozen as flat ATK at the zero-artifact DEF instead of moving with the candidate's.
-    if (kits.some((s) => s.bonus.effects.some((e) => e.stat === 'flat_atk_from_def'))) {
-      const zeroDef = f.base.base_def * (1 + f.base.def_pct) + f.base.flat_def;
-      const frozen = score(f, planted((e) => (e.stat === 'flat_atk_from_def'
-        ? { ...e, stat: 'flat_atk', value: e.value * zeroDef }
-        : e)));
-      if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
-        failures.push(`${f.name} (a frozen self ATK-from-DEF conversion still passes)`);
+
+    // The capped conversions (DECISIONS §40) — **the cap ignored** must fail on a fixture whose
+    // build is past it, and must change nothing on one below it: the fixture states which, so
+    // a "past the cap" figure that never reaches the cap is caught as mislabelled too.
+    if (f.cap_state !== undefined) {
+      const capped = (e) => converting(e) && e.cap != null;
+      if (!kits.some((s) => s.bonus.effects.some(capped))) {
+        failures.push(`${f.name} (states a cap but carries no capped conversion)`);
+      }
+      const uncapped = score(f, planted((e) => (capped(e) ? { ...e, cap: null } : e)));
+      if (f.cap_state === 'past' && passes(uncapped)) {
+        failures.push(`${f.name} (past its cap, and ignoring the cap still passes)`);
+      }
+      if (f.cap_state === 'below' && !passes(uncapped)) {
+        failures.push(`${f.name} (stated below its cap, but the cap binds)`);
       }
     }
   }

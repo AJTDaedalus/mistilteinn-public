@@ -60,6 +60,7 @@ class FormulaEffectRead(BaseModel):
     per_team: Literal["same_element_others", "different_element"] | None = None
     per_team_max: int | None = None
     cap: float | None = None
+    threshold: float | None = None
     weapon_types: list[str] | None = None
 
 

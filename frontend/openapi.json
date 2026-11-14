@@ -8372,6 +8372,17 @@
             ],
             "title": "Cap"
           },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
           "weapon_types": {
             "anyOf": [
               {

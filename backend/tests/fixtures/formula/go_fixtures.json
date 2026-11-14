@@ -112,6 +112,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -131,6 +132,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -149,6 +151,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -269,6 +272,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -413,6 +417,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -454,6 +459,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -473,6 +479,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -491,6 +498,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -625,6 +633,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -648,6 +657,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -673,6 +683,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -818,6 +829,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -989,6 +1001,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1014,6 +1027,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1039,6 +1053,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1064,6 +1079,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -1226,6 +1242,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1251,6 +1268,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1276,6 +1294,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1301,6 +1320,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -1432,6 +1452,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1450,6 +1471,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -1605,6 +1627,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1634,6 +1657,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -1775,6 +1799,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -1949,6 +1974,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -1980,6 +2006,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2003,6 +2030,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2019,6 +2047,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2042,6 +2071,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -2200,6 +2230,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2216,6 +2247,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -2378,6 +2410,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2409,6 +2442,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -2556,6 +2590,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2581,6 +2616,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -2724,6 +2760,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2747,6 +2784,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2770,6 +2808,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2793,6 +2832,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2816,6 +2856,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -2963,6 +3004,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -2979,6 +3021,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -3109,6 +3152,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3134,6 +3178,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -3285,6 +3330,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3310,6 +3356,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3335,6 +3382,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -3502,6 +3550,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3528,6 +3577,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3557,6 +3607,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3580,6 +3631,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -3709,6 +3761,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3745,6 +3798,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3761,6 +3815,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -3899,6 +3954,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -3924,6 +3980,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -4074,6 +4131,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4097,6 +4155,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -4235,6 +4294,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4260,6 +4320,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -4406,6 +4467,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4426,6 +4488,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4444,6 +4507,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4462,6 +4526,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -4614,6 +4679,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4639,6 +4705,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4670,6 +4737,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -4810,6 +4878,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -4833,6 +4902,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -4982,6 +5052,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5007,6 +5078,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5032,6 +5104,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -5146,6 +5219,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -5283,6 +5357,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -5434,6 +5509,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5459,6 +5535,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5484,6 +5561,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5502,6 +5580,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -5682,6 +5761,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5705,6 +5785,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5728,6 +5809,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5751,6 +5833,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5774,6 +5857,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5799,6 +5883,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -5962,6 +6047,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -5987,6 +6073,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6012,6 +6099,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6037,6 +6125,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6062,6 +6151,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6087,6 +6177,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6112,6 +6203,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6137,6 +6229,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6162,6 +6255,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6187,6 +6281,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6212,6 +6307,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -6369,6 +6465,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6392,6 +6489,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -6579,6 +6677,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6602,6 +6701,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6623,6 +6723,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -6780,6 +6881,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -6811,6 +6913,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -6998,6 +7101,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7023,6 +7127,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7048,6 +7153,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7073,6 +7179,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7099,6 +7206,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7126,6 +7234,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7151,6 +7260,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -7303,6 +7413,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7328,6 +7439,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7353,6 +7465,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -7520,6 +7633,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7545,6 +7659,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7568,6 +7683,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7586,6 +7702,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7604,6 +7721,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7629,6 +7747,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -7806,6 +7925,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7831,6 +7951,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7856,6 +7977,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7879,6 +8001,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -7906,6 +8029,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -8072,6 +8196,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8097,6 +8222,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8128,6 +8254,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8159,6 +8286,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8185,6 +8313,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8208,6 +8337,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8224,6 +8354,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -8385,6 +8516,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8410,6 +8542,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8435,6 +8568,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -8546,7 +8680,7 @@
         {
           "id": "kit:xianyun",
           "label": "Xianyun (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Xianyun.ts (pando), libs/gi/sheets/src/Characters/Xianyun/index.tsx (wr) @ 2c13fc40 \u2014 a1_plunge_crit pando:Xianyun.ts:70-76,110,113-121,171; wr:index.tsx:77-83,111-122,251; a1_wave_crit pando:Xianyun.ts:70-76,110,113-121,171; wr:index.tsx:77-83,111-122,251; wr:index.tsx:171-183; c2_atk pando:Xianyun.ts:84,135-137,169; wr:index.tsx:91,147-152,246; c6_wave_crit_dmg pando:Xianyun.ts:95-99,138-148,157; wr:index.tsx:102-106,154-183; gcsim internal/characters/xianyun/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Xianyun.ts (pando), libs/gi/sheets/src/Characters/Xianyun/index.tsx (wr) @ 2c13fc40 \u2014 a1_plunge_crit pando:Xianyun.ts:70-76,110,113-121,171; wr:index.tsx:77-83,111-122,251; a1_wave_crit pando:Xianyun.ts:70-76,110,113-121,171; wr:index.tsx:77-83,111-122,251; wr:index.tsx:171-183; a4_plunge pando:Xianyun.ts:79-80,122-134; wr:index.tsx:86-87,123-145,250; c2_plunge pando:Xianyun.ts:86,122-134; wr:index.tsx:93,123-145,250; c2_atk pando:Xianyun.ts:84,135-137,169; wr:index.tsx:91,147-152,246; c6_wave_crit_dmg pando:Xianyun.ts:95-99,138-148,157; wr:index.tsx:102-106,154-183; gcsim internal/characters/xianyun/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -8557,6 +8691,16 @@
                 "default_reason": "self",
                 "max": 4.0,
                 "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "a4_stacks",
+                "label": "Starwicker has stacks (A4 Consider, the Adeptus in Her Realm) \u2014 plunge impact only: turn it off on a Plunge DMG (collision) row",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
                 "options": null
               },
               {
@@ -8602,6 +8746,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8630,6 +8775,59 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 2.0,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "plunge"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 9000.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 2.0,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "plunge"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 9000.0,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8653,6 +8851,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8678,6 +8877,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -8697,14 +8897,6 @@
               {
                 "what": "C1: Purifying Wind: an extra skill charge",
                 "reason": "no damage effect: charges"
-              },
-              {
-                "what": "A4: A4 Consider, the Adeptus in Her Realm: plunge DMG from Xianyun's ATK, the ATK capped",
-                "reason": "withheld: it reads Xianyun's own atk, which moves with every candidate, through a cap the recipe cannot carry per candidate"
-              },
-              {
-                "what": "C2: C2 Aloof From the World: the A4 plunge DMG increased",
-                "reason": "withheld: it reads Xianyun's own atk, which moves with every candidate, through a cap the recipe cannot carry per candidate"
               }
             ]
           }
@@ -8840,6 +9032,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8866,6 +9059,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -8889,6 +9083,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -9082,6 +9277,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9103,6 +9299,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9152,6 +9349,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9175,6 +9373,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -9322,6 +9521,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9345,6 +9545,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -9519,6 +9720,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9548,6 +9750,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -9694,6 +9897,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9712,6 +9916,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -9861,6 +10066,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -9879,6 +10085,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -10022,6 +10229,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10040,6 +10248,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -10197,6 +10406,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10213,6 +10423,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10229,6 +10440,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10247,6 +10459,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -10399,6 +10612,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10424,6 +10638,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10440,6 +10655,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -10613,6 +10829,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10641,6 +10858,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10664,6 +10882,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10687,6 +10906,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10710,6 +10930,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -10852,6 +11073,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -10877,6 +11099,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -11014,6 +11237,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11037,6 +11261,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -11183,6 +11408,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11208,6 +11434,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -11356,6 +11583,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11381,6 +11609,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11406,6 +11635,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -11556,6 +11786,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11581,6 +11812,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
@@ -11744,6 +11976,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11769,6 +12002,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               },
               {
@@ -11806,6 +12040,7 @@
                 "per_team": null,
                 "per_team_max": null,
                 "cap": null,
+                "threshold": null,
                 "weapon_types": null
               }
             ],
