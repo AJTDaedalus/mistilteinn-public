@@ -6,8 +6,9 @@ the cost of not doing so at **15-25 % understated**.
 
 Two things are easy to get wrong and both are tested here rather than left to the browser:
 the calibration must carry **no stat but ER**, because anything else would be counted twice
-once a candidate's own stats are applied; and the probe must move **exactly one** stat, or
-`resolveConversions` cannot tell which one a frozen term came from.
+once a candidate's own stats are applied; and the probe must move each stat by a **different
+amount** — ATK%, HP%, DEF% and, since 2026-11-13, EM — or `resolveConversions` cannot tell
+which one a frozen term came from.
 """
 
 from __future__ import annotations
@@ -161,10 +162,43 @@ async def test_the_probe_moves_all_three_scaling_stats_by_different_amounts(
     baseline = next(ln for ln in body["baseline"].splitlines() if "add stats" in ln)
     probe = next(ln for ln in body["probe"].splitlines() if "add stats" in ln)
 
-    assert probe == baseline.replace(";", " atk%=0.5 def%=0.7 hp%=0.3;")
+    assert probe == baseline.replace(";", " atk%=0.5 def%=0.7 em=100 hp%=0.3;")
     # The deltas differ from one another, which is the property that makes them separable.
     deltas = body["probe_deltas"]
     assert len(set(deltas.values())) == len(deltas)
+
+
+async def test_the_probe_moves_elemental_mastery(authed_client: AsyncClient, scene: Scene):
+    """gcsim writes Tri-Karma's EM part as `FlatDmg = em * k` (`nahida/skill.go:219-220`).
+
+    With EM outside the probe that term never moved, so it was filed *constant*: artifact EM
+    bought the hit nothing and no warning said so. `em` is a flat amount, because EM has no
+    percentage form.
+    """
+    body = (await _calibrate(authed_client, scene)).json()
+
+    assert body["probe_deltas"]["em"] == 100
+    probe = next(ln for ln in body["probe"].splitlines() if "add stats" in ln)
+    assert " em=100 " in probe
+
+
+async def test_a_caller_may_name_elemental_mastery_in_the_probe(
+    authed_client: AsyncClient, scene: Scene,
+):
+    response = await _calibrate(
+        authed_client, scene, probe_deltas={"atk%": 0.5, "em": 80},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["probe_deltas"] == {"atk%": 0.5, "em": 80}
+
+
+async def test_the_probe_still_refuses_a_stat_it_cannot_resolve(
+    authed_client: AsyncClient, scene: Scene,
+):
+    response = await _calibrate(authed_client, scene, probe_deltas={"cr": 0.1})
+
+    assert response.status_code == 422
 
 
 async def test_the_characters_are_named_as_a_player_reads_them(

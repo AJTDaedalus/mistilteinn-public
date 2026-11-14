@@ -110,6 +110,20 @@ describe('parseSample', () => {
     expect(r.seed).toBe('7');
   });
 
+  it('drops damage that landed on the player rather than on an enemy', () => {
+    // A bloom's self-damage is logged as a `calc` against target key 0 — the player
+    // (`pkg/core/combat/player.go:9`), from `pkg/avatar/avatar.go` with no `total_scaling` at
+    // all. It is damage *taken*, not dealt: carried, it inflated a bloom team's score and
+    // replayed as NaN.
+    const r = parseSample({ logs: [
+      dmg(), calc({ target: 1 }),
+      dmg({ abil: 'bloom (self damage)' }),
+      calc({ abil: 'bloom (self damage)', target: 0, total_scaling: undefined, talent: 0 }),
+    ] });
+
+    expect(r.hits.map((h) => h.abil)).toEqual(['Normal 1']);
+  });
+
   it('drops hits gcsim reported as landing zero damage', () => {
     // Queued actions that never connected. Carrying them puts entries in the recipe whose
     // damage_grp_mult is 0 while every other term is populated — indistinguishable from a
@@ -451,5 +465,84 @@ describe('resolveConversions', () => {
     resolveConversions(baseline, probe);
 
     expect(baseline.meta.staleConversions.map((c) => c.term)).toEqual(['flatDamage']);
+  });
+});
+
+/**
+ * The probe moves Elemental Mastery too (2026-11-13, the gap DECISIONS §39 left open).
+ *
+ * gcsim writes the EM part of Nahida's Tri-Karma, Alhaitham's projections and Light of Foliar
+ * Incision's bonus as `FlatDmg = em × k`. With EM outside the probe that term did not move,
+ * so it was filed **constant** — silently frozen, and not even reported stale.
+ */
+describe('resolveConversions — Elemental Mastery', () => {
+  /** A hit at snapshot EM `em`, carrying `flat` flat damage and the probe's percentages. */
+  const mk = (
+    em: number, flat: number, atkPct = 0, over: Record<string, unknown> = {}, charIndex = 0,
+  ) => parseSample({ logs: [
+    dmg(),
+    calc({ em, flat_dmg: flat, atk_per: atkPct, hp_per: atkPct * 0.6, def_per: atkPct * 1.4, ...over },
+      charIndex),
+  ] });
+
+  it('resolves flat damage converted from EM, as a term scaling off EM', () => {
+    // Tri-Karma at talent 9: `em × 3.5088`. Snapshot EM 380 → 480 under the probe, ratio
+    // 1.263; ATK, HP and DEF move by 1.5, 1.18 and 1.56 — only EM matches.
+    const baseline = mk(380, 3.5088 * 380);
+    const out = resolveConversions(baseline, mk(480, 3.5088 * 480, 0.5));
+
+    expect(out).toEqual({ resolved: 1, unresolved: 0, constant: 0 });
+    expect(baseline.hits[0].conversions.flatDamage?.from).toBe('em');
+    expect(baseline.hits[0].conversions.flatDamage?.perUnit).toBeCloseTo(3.5088, 12);
+    expect(baseline.meta.staleConversions).toEqual([]);
+  });
+
+  it('leaves a flat term mixing EM with something else unresolved, and reports it', () => {
+    // Spread adds `1.25 × level × (1 + 5em/(em+1200))` to the same `FlatDmg` — not
+    // proportional to EM, so no single source matches and a guess would be wrong.
+    const catalyze = (em: number) => 1.25 * 1446.85 * (1 + (5 * em) / (em + 1200));
+    const baseline = mk(380, 3.5088 * 380 + catalyze(380));
+    const out = resolveConversions(baseline, mk(480, 3.5088 * 480 + catalyze(480), 0.5));
+
+    expect(out).toEqual({ resolved: 0, unresolved: 1, constant: 0 });
+    expect(baseline.meta.staleConversions.map((c) => c.term)).toEqual(['flatDamage']);
+  });
+
+  it('cannot resolve to EM on a hit that carries no snapshot EM', () => {
+    // A recipe whose `calc` predates the `em` field has nothing to compare against.
+    const baseline = parseSample({ logs: [dmg(), calc({ flat_dmg: 100 })] });
+    const probe = parseSample({ logs: [dmg(), calc({ flat_dmg: 120 })] });
+
+    expect(resolveConversions(baseline, probe)).toEqual({ resolved: 0, unresolved: 1, constant: 0 });
+  });
+
+  it('reports a DMG% or CRIT Rate the probe moved, because nothing prices it', () => {
+    // Nahida's A4: Tri-Karma gains 0.1 % DMG and 0.03 % CRIT Rate per EM above 200, capped at
+    // 80 % and 24 %. The probe sees both move. A two-point probe measures a slope, not a
+    // threshold or a cap, so pricing it would be a guess past the cap — reported instead.
+    const baseline = mk(380, 3.5088 * 380, 0, { bonus_dmg: 0.63, cr: 0.104 });
+    resolveConversions(baseline, mk(480, 3.5088 * 480, 0.5, { bonus_dmg: 0.73, cr: 0.134 }));
+
+    expect(baseline.hits[0].conversions.flatDamage?.from).toBe('em');
+    expect(baseline.meta.staleConversions.map((c) => c.term).sort())
+      .toEqual(['bonusDmg', 'critRate']);
+  });
+
+  it('does not report a teammate’s DMG% the probe could not have moved', () => {
+    const team = (bonus: number, em: number) => parseSample({ logs: [
+      dmg(), calc({ em, atk_per: em > 380 ? 0.5 : 0 }, 0),
+      dmg(), calc({ bonus_dmg: bonus }, 1),
+    ] });
+    const baseline = team(0.5, 380);
+    resolveConversions(baseline, team(0.6, 480));
+
+    expect(baseline.meta.staleConversions).toEqual([]);
+  });
+
+  it('does not report a percentage term the probe left alone', () => {
+    const baseline = mk(380, 0);
+    resolveConversions(baseline, mk(480, 0, 0.5));
+
+    expect(baseline.meta.staleConversions).toEqual([]);
   });
 });

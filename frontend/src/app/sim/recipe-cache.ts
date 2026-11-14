@@ -147,7 +147,13 @@ const PREFIX = 'mistilteinn:recipe:';
 // so a cache hit would go on scoring an EM-scaling hit off the candidate's EM alone and
 // holding vaporize/melt at the calibration's multiplier — artifact EM worth nothing, the
 // defect this version exists to retire, served to exactly the users who had searched before.
-const SCHEMA = 8;
+//
+// **9: a conversion can come from EM, and a hit names the percentage terms the probe moved.**
+// The probe moves EM, so a flat term such as Tri-Karma's `em × k` resolves to `from: 'em'`
+// where a v8 entry filed it `constant` — silently frozen and not even reported. The probe
+// string in the key changes too, which would miss those entries anyway; the version says the
+// *shape* changed (`unpricedTerms`), which the key cannot.
+const SCHEMA = 9;
 
 export function cacheKey(key: RecipeCacheKey): string {
   return [

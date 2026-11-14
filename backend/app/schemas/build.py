@@ -648,15 +648,21 @@ class CalibrationRequest(BaseModel):
     #: `1 + base * delta / total`, so two stats can still coincide. That is safe rather than
     #: wrong — the matcher resolves a term only when **exactly one** stat's ratio matches, so
     #: a collision leaves the term unresolved exactly as before.
+    #:
+    #: **And Elemental Mastery, since 2026-11-13** (`em`, a flat amount — EM has no percentage
+    #: form). gcsim writes the EM part of Nahida's Tri-Karma, Alhaitham's projections and Light
+    #: of Foliar Incision as `FlatDmg = em * k`; with EM outside the probe that term never
+    #: moved and was filed *constant*, so artifact EM bought those hits nothing and no warning
+    #: said so. It rides in the same probe run, so it costs no extra gcsim sample.
     probe_deltas: dict[str, float] = Field(
-        default_factory=lambda: {"atk%": 0.50, "hp%": 0.30, "def%": 0.70},
+        default_factory=lambda: {"atk%": 0.50, "hp%": 0.30, "def%": 0.70, "em": 100.0},
     )
 
     @field_validator("probe_deltas")
     @classmethod
     def _probe_moves_distinctly(cls, value: dict[str, float]) -> dict[str, float]:
         """Known stats, positive, and no two by the same amount."""
-        allowed = {"atk%", "hp%", "def%"}
+        allowed = {"atk%", "hp%", "def%", "em"}
         unknown = set(value) - allowed
         if unknown:
             msg = f"probe_deltas may only name {sorted(allowed)}; got {sorted(unknown)}"

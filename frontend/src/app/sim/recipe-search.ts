@@ -263,6 +263,9 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     atk: ['base_atk', 'atk_pct', 'flat_atk'],
     hp: ['base_hp', 'hp_pct', 'flat_hp'],
     def: ['base_def', 'def_pct', 'flat_def'],
+    // A flat term resolved to EM (Tri-Karma's `em × k`) reads the candidate's EM, on a hit
+    // that may neither scale off EM nor amplify.
+    em: ['elemental_mastery'],
   };
   for (const hit of recipes.flatMap((recipe) => recipe.hits)) {
     live.add(`${hit.element}${DMG_BONUS_SUFFIX}`);

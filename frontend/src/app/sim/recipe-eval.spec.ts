@@ -4,7 +4,7 @@ import {
   NO_STATS, energyRatio, evaluateHit, evaluateRecipe, type CandidateStats,
 } from './recipe-eval';
 import { computeDamage } from './damage';
-import { parseSample, type Recipe, type RecipeHit } from './recipe';
+import { parseSample, resolveConversions, type Recipe, type RecipeHit } from './recipe';
 
 /**
  * G.4 — applying a candidate's stats to a calibrated hit.
@@ -411,5 +411,61 @@ describe('elemental mastery on a gcsim-calibrated recipe', () => {
     const plain = sample({ em: 80 });
     expect(evaluateHit(plain, stats({ elementalMastery: 500 })))
       .toBeCloseTo(plain.gcsimAverageDamage, 9);
+  });
+});
+
+/**
+ * EM folded into flat damage — the gap DECISIONS §39 left open.
+ *
+ * gcsim writes the EM part of a hit such as Nahida's Tri-Karma Purification as `FlatDmg = em ×
+ * triKarmaEM` (`internal/characters/nahida/skill.go:219-220`), so a candidate's EM has to move
+ * that term — through the same resolved-conversion path a Redhorn DEF term already takes.
+ *
+ * Expected values are `backend/app/formula/genshin/damage.py:compute_damage` with the EM part
+ * as an `extra_terms` `ScalingTerm(ELEMENTAL_MASTERY, 3.5088)`, the inputs being a real
+ * Tri-Karma `calc` event (talent 9, A Thousand Floating Dreams, seed 12345).
+ */
+describe('elemental mastery converted into flat damage', () => {
+  /** One Tri-Karma `calc`, as gcsim logged it, at a given snapshot EM. */
+  function triKarma(em: number, over: Record<string, number> = {}): Recipe {
+    const logs = {
+      abil: 'Tri-Karma Purification', talent: 1.7544, total_scaling: 1008.9632796,
+      base_atk: 840.802733, atk_per: 0.2, flat_atk: 0, base_hp: 10360.0405293, hp_per: 0,
+      flat_hp: 0, base_def: 630.2145834, def_per: 0, flat_def: 0,
+      flat_dmg: 3.5088 * em, bonus_dmg: 0.6298144000000001, cr: 0.10394432, cd: 0.5,
+      def_mod: 0.48717948717948717, res_mod: 1.2, amp_mult_total: 0, use_hp: false,
+      use_def: false, use_em: false, em, melt_vape: false, react_mult: 0, react_bonus: 0,
+      avg_crit_dmg: 3110.061174171217, avg_crit_dmg_react: 0, damage: 1, ele: 18, ...over,
+    };
+    return parseSample({
+      logs: [
+        { event: 'calc', char_index: 0, logs } as never,
+        { event: 'damage', logs: { abil: logs.abil, ele: 'dendro', 'attack-tag': 4 } },
+      ],
+    });
+  }
+
+  /** The baseline, resolved against a probe that moved EM by 100 and ATK% by 0.5. */
+  function resolved(): RecipeHit {
+    const baseline = triKarma(379.81440000000003);
+    resolveConversions(baseline, triKarma(479.81440000000003, { atk_per: 0.7 }));
+    return baseline.hits[0];
+  }
+
+  it('reproduces the calibration when the candidate carries no EM', () => {
+    // damage.py, EM 379.8144: 3110.0611741712173 — gcsim's own `avg_crit_dmg` to the digit.
+    expect(evaluateHit(resolved(), stats())).toBeCloseTo(3110.0611741712173, 6);
+  });
+
+  it('pays for artifact EM through the flat term, by exactly what the damage chain says', () => {
+    // damage.py with the extra term at EM 579.8144 = 379.8144 + the candidate's 200.
+    expect(evaluateHit(resolved(), stats({ elementalMastery: 200 })))
+      .toBeCloseTo(3813.4593653187458, 6);
+  });
+
+  it('left frozen, the same hit valued artifact EM at nothing — the defect this closes', () => {
+    const frozen = triKarma(379.81440000000003).hits[0];
+    expect(evaluateHit(frozen, stats({ elementalMastery: 200 })))
+      .toBeCloseTo(evaluateHit(frozen, stats()), 9);
   });
 });

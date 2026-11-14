@@ -786,7 +786,12 @@ export class RecipeOptimizeService {
         // of two moving by the *same factor*, not of two moving at all. A DEF-only probe can
         // resolve only DEF-derived conversions, so on an ATK scaler every flat term stayed
         // frozen and was reported as "a conversion no probe could resolve".
-        probe_deltas: { 'atk%': 0.5, 'hp%': 0.3, 'def%': 0.7 },
+        //
+        // **And EM, as a flat +100** (2026-11-13). gcsim writes Tri-Karma's EM part as
+        // `FlatDmg = em × k`; with EM left out that term never moved and was filed constant,
+        // so artifact EM bought it nothing and no warning said so. Same probe run, so no extra
+        // gcsim sample.
+        probe_deltas: { 'atk%': 0.5, 'hp%': 0.3, 'def%': 0.7, em: 100 },
         iterations: 100,
       },
     });
