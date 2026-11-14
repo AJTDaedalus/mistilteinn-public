@@ -222,7 +222,7 @@ async def test_a_talent_with_no_level_is_refused(authed_client: AsyncClient, cat
     assert response.status_code == 422
 
 
-@pytest.mark.parametrize("level", [0, -1, 16, 999])
+@pytest.mark.parametrize("level", [0, -1, 11, 13, 16, 999])
 async def test_a_talent_level_out_of_range_is_refused(
     authed_client: AsyncClient, catalogue, level: int,
 ):
@@ -233,20 +233,59 @@ async def test_a_talent_level_out_of_range_is_refused(
     assert response.status_code == 422
 
 
-async def test_fifteen_is_allowed_because_the_scaling_table_defines_it(
+async def test_ten_is_the_cap_because_stored_levels_exclude_the_constellation_boost(
     authed_client: AsyncClient, catalogue,
 ):
-    """Not a typo for 10, and not derived from constellation arithmetic.
+    """Owner ruling, 2026-11-14 — replacing the 1-15 bound this test used to pin.
 
-    Every levelled talent in the committed fixtures carries a 15-row `promote` table keyed
-    `0..14`, so level 15 has a scaling row. Refusing it would be this repo asserting a game
-    rule it has not cited — see `MAX_TALENT_LEVEL`.
+    The scaling table does carry 15 rows, and the levels *read* still reach 13. But a stored
+    level is a base level: GOOD exports it without the C3/C5 boost and gcsim refuses one above
+    10. Accepting 13 invited a user to type the boosted number, which #374 then refuses on
+    every hit read as already boosted. The refusal names the reason, so the user knows to
+    enter the level before the boost.
     """
     created = await authed_client.post(BUILDS, json=_body(
-        catalogue, talent_levels={"elemental_burst": 15},
+        catalogue, talent_levels={"elemental_burst": 10},
+    ))
+    refused = await authed_client.post(BUILDS, json=_body(
+        catalogue, talent_levels={"elemental_burst": 13},
     ))
 
     assert created.status_code == 201, created.text
+    assert refused.status_code == 422
+    assert "without constellation boosts" in refused.text
+
+
+async def test_a_patch_refuses_a_boosted_level_too(authed_client: AsyncClient, catalogue):
+    build_id = await _existing(authed_client, catalogue)
+
+    response = await authed_client.patch(
+        f"{BUILDS}/{build_id}", json={"talent_levels": {"elemental_burst": 11}},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_the_read_publishes_the_boosted_level_beside_the_stored_one(
+    authed_client: AsyncClient, catalogue,
+):
+    """Ayaka's C3 raises her burst. The stored 9 stays 9; the boosted 12 is published beside
+    it from the same function the hit readers use."""
+    created = await authed_client.post(BUILDS, json=_body(
+        catalogue, constellation_level=3,
+        talent_levels={"normal_attack": 9, "elemental_skill": 9, "elemental_burst": 9},
+    ))
+    assert created.status_code == 201, created.text
+    read = (await authed_client.get(f"{BUILDS}/{created.json()['id']}")).json()
+
+    assert read["talent_levels"]["elemental_burst"] == 9
+    assert read["effective_talent_levels"] == {
+        "normal_attack": 9, "elemental_skill": 9, "elemental_burst": 12,
+    }
+    assert read["talent_boost_refusal"] is None
+    assert read["character"]["talent_boosts"][0] == {
+        "talent": "elemental_burst", "constellation": 3, "levels": 3,
+    }
 
 
 async def test_a_patch_checks_talent_levels_too(authed_client: AsyncClient, catalogue):

@@ -316,11 +316,23 @@ LEVELLED_TALENTS: tuple[TalentType, ...] = (
 #: — so levels 1-15 each have a scaling row and none of them can miss the lookup. (The one
 #: 1-row table belongs to an alternate sprint, which is why `LEVELLED_TALENTS` excludes it.)
 #:
-#: `app/models/build.py` reasons to **13** instead, from C3 and C5 each adding three levels
-#: to a base of 10. That is about what is *reachable in the game*; this is about what the
-#: data can *express*. The bound here is the looser of the two on purpose: refusing a level
-#: the published table defines would be this repo asserting a game rule it has not cited.
+#: This is about what the data can *express*, and it bounded **stored** levels until
+#: 2026-11-14. It no longer does: a build stores the base level (`MAX_STORED_TALENT_LEVEL`,
+#: below, with the gcsim citation that rule needed), and the highest level ever *read* is that
+#: plus one +3 boost — 13, inside this table.
 MAX_TALENT_LEVEL = 15
+
+#: Highest talent level a build may **store** — owner ruling, 2026-11-14.
+#:
+#: A stored level is a *base* level, without the +3 a C3 or C5 adds: that is what a GOOD
+#: export carries and what gcsim takes (`character.go:163-174` refuses anything above 10, and
+#: `TalentLvlSkill`/`TalentLvlBurst`/`TalentLvlAttack` add the boost themselves). The editor
+#: used to accept up to `MAX_TALENT_LEVEL`, which invited a user to type the boosted 13 — and
+#: `talent_boosts.effective_talent_levels` then refuses that build's hits as already boosted.
+#: The boosted level is published beside the stored one (`BuildRead.effective_talent_levels`)
+#: rather than typed into it. `MAX_TALENT_LEVEL` stays the table's bound: the levels *read*
+#: reach 13, and every one of them has a row.
+MAX_STORED_TALENT_LEVEL = 10
 
 
 #: Words that are acronyms in-game and would otherwise title-case into something nobody

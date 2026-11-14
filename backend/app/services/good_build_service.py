@@ -138,6 +138,11 @@ class BuildImportReport:
     unplaced: list[str] = field(default_factory=list)
     #: Pieces taken from a build that was already wearing them — see `_equip`.
     reassigned: list[str] = field(default_factory=list)
+    #: Characters given **no build** because the export's talent levels cannot be stored,
+    #: `"character: reason"` — a level present and outside 1-10 (owner ruling, 2026-11-14;
+    #: `good_importer._talents_out_of_range`). Refused rather than clamped, and named, so the
+    #: user can correct the scan or make the build by hand; their pieces stay unequipped.
+    refused_talents: list[str] = field(default_factory=list)
 
 
 async def _characters_by_key(session: AsyncSession) -> dict[str, list[Character]]:
@@ -286,6 +291,9 @@ async def rebuild_builds(
         character = _pick(rows)
         if str(character.id) in existing:
             report.skipped_existing.append(character.name)
+            continue
+        if entry is not None and entry.talent_refusal is not None:
+            report.refused_talents.append(f"{character.name}: {entry.talent_refusal}")
             continue
 
         wielded = held_weapon.get(key)

@@ -5901,6 +5901,14 @@
             "type": "array",
             "title": "Reassigned",
             "default": []
+          },
+          "refused_talents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refused Talents",
+            "default": []
           }
         },
         "type": "object",
@@ -6126,6 +6134,35 @@
               }
             ]
           },
+          "effective_talent_levels": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Talent Levels",
+            "description": "The levels this build's hits are read at: `talent_levels` plus C3/C5 boosts.\n\nOwner ruling, 2026-11-14: a stored level is a base level, capped at 10, and the\nboosted one is shown beside it rather than typed into it. The same function the hit\nreaders use (`talent_boosts.effective_talent_levels`, via `builds._hit_levels`), so\nwhat the editor shows and what `/explain` multiplies cannot disagree.\n\n`None` exactly when that function refuses \u2014 a C3+ character no derived table covers \u2014\nwith the reason in `talent_boost_refusal`. Never the stored levels standing in for an\nanswer: below a table, a boosted talent would read three levels low and look settled.",
+            "readOnly": true
+          },
+          "talent_boost_refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent Boost Refusal",
+            "description": "Why `effective_talent_levels` is `None`, verbatim from #374's refusal.",
+            "readOnly": true
+          },
           "weapon_display": {
             "anyOf": [
               {
@@ -6150,6 +6187,8 @@
           "weapon_level",
           "refinement",
           "constellation_level",
+          "effective_talent_levels",
+          "talent_boost_refusal",
           "weapon_display"
         ],
         "title": "BuildRead",
@@ -6935,6 +6974,22 @@
             "description": "The name to put on a card, which for sixteen characters is not `name`.\n\nEvery `Traveler` row is *named* `Traveler` \u2014 no gender column, no title, and upstream\npublishes one `en` value for all sixteen. So the roster tab drew Aether Pyro and Lumine\nPyro as the same row twice, and the two unreleased bodies, which have no element and so\nno chip, drew *identically*.\n\n**Computed rather than stored**, like `element_icon` and `stars` beside it: a display\nname is presentation, and storing it would mean a migration whenever a body or element\nis added plus a second copy of the truth to keep in step.\n\n`app/services/traveler.py` says why it is keyed on the icon \u2014 it is the only signal\nthat exists \u2014 and `docs/RESEARCH_traveler_identity.md` has the rest.",
             "readOnly": true
           },
+          "talent_boosts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TalentBoostRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent Boosts",
+            "description": "Which talent this character's C3 and C5 raise, in constellation order.\n\n`None` when no derived table covers the character \u2014 **not** `[]`, which would claim\nnothing is boosted. Owner ruling, 2026-11-14: stored talent levels are base levels,\nand the boosted one is shown beside them; this is what lets the build editor follow a\nconstellation it has not saved yet. Computed, like `gcsim` beside it, so it moves with\nthe pin rather than going stale in a column.",
+            "readOnly": true
+          },
           "stars": {
             "type": "integer",
             "title": "Stars",
@@ -6964,6 +7019,7 @@
           "weapon_type_icon",
           "element_icon",
           "display_name",
+          "talent_boosts",
           "stars",
           "gcsim"
         ],
@@ -7065,6 +7121,22 @@
             "description": "The name to put on a card, which for sixteen characters is not `name`.\n\nEvery `Traveler` row is *named* `Traveler` \u2014 no gender column, no title, and upstream\npublishes one `en` value for all sixteen. So the roster tab drew Aether Pyro and Lumine\nPyro as the same row twice, and the two unreleased bodies, which have no element and so\nno chip, drew *identically*.\n\n**Computed rather than stored**, like `element_icon` and `stars` beside it: a display\nname is presentation, and storing it would mean a migration whenever a body or element\nis added plus a second copy of the truth to keep in step.\n\n`app/services/traveler.py` says why it is keyed on the icon \u2014 it is the only signal\nthat exists \u2014 and `docs/RESEARCH_traveler_identity.md` has the rest.",
             "readOnly": true
           },
+          "talent_boosts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TalentBoostRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Talent Boosts",
+            "description": "Which talent this character's C3 and C5 raise, in constellation order.\n\n`None` when no derived table covers the character \u2014 **not** `[]`, which would claim\nnothing is boosted. Owner ruling, 2026-11-14: stored talent levels are base levels,\nand the boosted one is shown beside them; this is what lets the build editor follow a\nconstellation it has not saved yet. Computed, like `gcsim` beside it, so it moves with\nthe pin rather than going stale in a column.",
+            "readOnly": true
+          },
           "stars": {
             "type": "integer",
             "title": "Stars",
@@ -7088,6 +7160,7 @@
           "weapon_type_icon",
           "element_icon",
           "display_name",
+          "talent_boosts",
           "stars",
           "gcsim"
         ],
@@ -13167,6 +13240,30 @@
         ],
         "title": "SwapNode",
         "description": "An explicit `x swap;`. gcsim also inserts one implicitly; this is the written kind."
+      },
+      "TalentBoostRead": {
+        "properties": {
+          "talent": {
+            "type": "string",
+            "title": "Talent"
+          },
+          "constellation": {
+            "type": "integer",
+            "title": "Constellation"
+          },
+          "levels": {
+            "type": "integer",
+            "title": "Levels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "talent",
+          "constellation",
+          "levels"
+        ],
+        "title": "TalentBoostRead",
+        "description": "One constellation's talent-level boost: `talent` reads `levels` higher from `constellation`.\n\nPublished so an editor can show the boosted level beside a stored one **while the\nconstellation is being edited**, from the server's derived table rather than a copy of it\n(`app/services/talent_boosts.py` says where the table comes from)."
       },
       "TalentOption": {
         "properties": {

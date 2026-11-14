@@ -7,6 +7,13 @@ import { BuildsPage, matchesBuild } from './builds';
 import { BuildsService } from './builds.service';
 import { RosterService } from './roster.service';
 
+// Ayaka's C3 raises her burst and her C5 her skill — the server's derived table, published on
+// the character so the editor can follow a constellation it has not saved yet.
+const AYAKA_BOOSTS = [
+  { talent: 'elemental_burst', constellation: 3, levels: 3 },
+  { talent: 'elemental_skill', constellation: 5, levels: 3 },
+];
+
 // `display_name` is a server-computed field, equal to `name` for everyone but the sixteen
 // Traveler rows. These fixtures carry it because the pickers render it.
 const AYAKA = {
@@ -14,11 +21,14 @@ const AYAKA = {
   display_name: 'Kamisato Ayaka', element: 'Cryo',
   weapon_type: 'WEAPON_SWORD_ONE_HAND', weapon_type_display: 'Sword', rarity: 5, stars: 5,
   icon: 'UI_AvatarIcon_Ayaka', element_icon: 'Cryo', weapon_type_icon: 'Skill_A_01',
+  talent_boosts: AYAKA_BOOSTS,
 };
 const GANYU = {
   id: 'char-ganyu', nanoka_id: '10000037', name: 'Ganyu', display_name: 'Ganyu', element: 'Cryo',
   weapon_type: 'WEAPON_BOW', weapon_type_display: 'Bow', rarity: 5, stars: 5,
   icon: 'UI_AvatarIcon_Ganyu', element_icon: 'Cryo', weapon_type_icon: 'Skill_A_02',
+  // No derived table: `null`, which is "unknown", never `[]`, which would be "nothing".
+  talent_boosts: null,
 };
 const SWORD = {
   id: 'w-mistsplitter', nanoka_id: 11509, name: 'Mistsplitter Reforged',
@@ -28,8 +38,9 @@ const SWORD = {
 
 const OPTIONS = {
   talents: ['normal_attack', 'elemental_skill', 'elemental_burst'],
-  max_talent_level: 15,
+  max_talent_level: 10,
 };
+
 
 function pageWith(
   builds: Partial<BuildsService>,
@@ -96,7 +107,7 @@ describe('BuildsPage', () => {
     await page['load']();
 
     expect(page['talents']()).toEqual(OPTIONS.talents);
-    expect(page['maxTalent']()).toBe(15);
+    expect(page['maxTalent']()).toBe(10);
   });
 
   it('asks the server for weapons of the chosen character class', async () => {
@@ -784,5 +795,101 @@ describe('BuildsPage roster tab', () => {
     page['search'].set('ganyu');
 
     expect(page['shownRoster']().map((e) => e.name)).toEqual(['Ganyu']);
+  });
+});
+
+describe('BuildsPage talent levels', () => {
+  // Owner ruling, 2026-11-14: stored levels are base levels capped at 10, and the boosted
+  // level is shown beside the box.
+
+
+  const C3_AYAKA = {
+    id: 'b1', character_id: 'char-ayaka', weapon_id: null,
+    character_level: 90, ascension_phase: 6, weapon_level: 90, refinement: 1,
+    constellation_level: 3,
+    talent_levels: { normal_attack: 9, elemental_skill: 9, elemental_burst: 9 }, notes: '',
+    character: AYAKA, weapon: null,
+  };
+
+  it('caps a talent input at ten before the options arrive, not fifteen', () => {
+    // The fallback is what the form offers if `/builds/options` is slow. Fifteen invited a
+    // user to type the boosted level, which the server now refuses.
+    const page = healthy();
+
+    expect(page['maxTalent']()).toBe(10);
+  });
+
+  it('shows the boosted level of a talent the constellation raises, and only that one', async () => {
+    const page = healthy();
+    await page['load']();
+    await page['edit'](C3_AYAKA as never);
+
+    expect(page['talentBoost']('elemental_burst')).toEqual({ level: 12, constellation: 3 });
+    expect(page['talentBoost']('elemental_skill')).toBeNull();
+    expect(page['talentBoost']('normal_attack')).toBeNull();
+  });
+
+  it('follows an unsaved constellation edit, and the stored level is never changed', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 'b1' });
+    const page = healthy({ update } as unknown as BuildsService);
+    await page['load']();
+    await page['edit'](C3_AYAKA as never);
+
+    page['fields'] = { ...page['fields'], constellation_level: 6 };
+    expect(page['talentBoost']('elemental_skill')).toEqual({ level: 12, constellation: 5 });
+    page['fields'] = { ...page['fields'], constellation_level: 2 };
+    expect(page['talentBoost']('elemental_burst')).toBeNull();
+
+    await page['save']();
+    // The base level is what is sent: the boost is shown beside it, never folded into it.
+    expect(update.mock.calls[0][1].talent_levels.elemental_burst).toBe(9);
+  });
+
+  it('shows no boosted level beside a base level the server will refuse', async () => {
+    // Found by driving the editor: typing 13 drew "→ 16 with C3" beside a box the save then
+    // rejected, which reads as an answer rather than an error.
+    const page = healthy();
+    await page['load']();
+    await page['edit'](C3_AYAKA as never);
+
+    page['setTalent']('elemental_burst', 13);
+    expect(page['talentBoost']('elemental_burst')).toBeNull();
+    page['setTalent']('elemental_burst', 10);
+    expect(page['talentBoost']('elemental_burst')).toEqual({ level: 13, constellation: 3 });
+  });
+
+  it('says the boost is unknown for a character no table covers, rather than showing none', async () => {
+    const page = healthy();
+    await page['load']();
+    await page['selectCharacter']('char-ganyu');
+
+    expect(page['boostsUnknown']()).toBe(true);
+    expect(page['talentBoost']('elemental_burst')).toBeNull();
+
+    await page['selectCharacter']('char-ayaka');
+    expect(page['boostsUnknown']()).toBe(false);
+  });
+
+  it('renders the boosted level beside the input and names it to assistive tech', async () => {
+    const fixture = (() => {
+      healthy();
+      return TestBed.createComponent(BuildsPage);
+    })();
+    const page = fixture.componentInstance;
+    fixture.detectChanges(); // ngOnInit starts its own load; let it finish before editing
+    await page['load']();
+    await page['edit'](C3_AYAKA as never);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const burst = root.querySelector<HTMLInputElement>('input[aria-label="elemental_burst"]')!;
+    expect(burst.max).toBe('10');
+    const describedBy = burst.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    const note = root.querySelector(`#${describedBy}`)!;
+    expect(note.textContent?.replace(/\s+/g, ' ').trim()).toContain('12 with C3');
+
+    const skill = root.querySelector<HTMLInputElement>('input[aria-label="elemental_skill"]')!;
+    expect(skill.getAttribute('aria-describedby')).toBeNull();
   });
 });

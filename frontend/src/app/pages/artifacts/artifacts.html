@@ -134,6 +134,15 @@
                 }
               </ul>
             }
+            @if (builds.refused_talents.length) {
+              <!-- Owner ruling, 2026-11-14: a stored talent level is a base level, 1-10. A
+                   13 in an export is almost always the boosted level, so the build is refused
+                   by name rather than clamped or stored; the reason says what to fix. -->
+              <p class="warn">{{ builds.refused_talents.length }} build{{ builds.refused_talents.length === 1 ? '' : 's' }} not made — talent level out of range:</p>
+              <ul class="rejections">
+                @for (note of builds.refused_talents; track $index) { <li>{{ note }}</li> }
+              </ul>
+            }
             @if (builds.no_weapon_in_export.length) {
               <!-- **A different failure from the one above, with the opposite remedy.**
                    `unresolved_weapons` means the export named a weapon this catalogue does not

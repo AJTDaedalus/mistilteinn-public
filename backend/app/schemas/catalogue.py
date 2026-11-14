@@ -40,10 +40,30 @@ from typing import Any
 from pydantic import BaseModel, computed_field
 
 from app.models.enums import Element, Rarity, StatType, WeaponType
-from app.services import element_symbols, gcsim_status, traveler, weapon_symbols
+from app.services import (
+    element_symbols,
+    gcsim_status,
+    talent_boosts,
+    traveler,
+    weapon_symbols,
+)
 from app.services.gcsim_status import GcsimSupport
 
 _FROM_ORM = {"from_attributes": True}
+
+
+class TalentBoostRead(BaseModel):
+    """One constellation's talent-level boost: `talent` reads `levels` higher from `constellation`.
+
+    Published so an editor can show the boosted level beside a stored one **while the
+    constellation is being edited**, from the server's derived table rather than a copy of it
+    (`app/services/talent_boosts.py` says where the table comes from).
+    """
+
+    talent: str
+    constellation: int
+    #: Always 3 today (`talent_boosts.BOOST`). Published rather than assumed by the client.
+    levels: int
 
 
 class GcsimStatusRead(BaseModel):
@@ -279,6 +299,26 @@ class CharacterSummary(WeaponClassed):
             icon=self.icon,
             element=getattr(self.element, "value", self.element),
         )
+
+    @computed_field
+    @property
+    def talent_boosts(self) -> list[TalentBoostRead] | None:
+        """Which talent this character's C3 and C5 raise, in constellation order.
+
+        `None` when no derived table covers the character — **not** `[]`, which would claim
+        nothing is boosted. Owner ruling, 2026-11-14: stored talent levels are base levels,
+        and the boosted one is shown beside them; this is what lets the build editor follow a
+        constellation it has not saved yet. Computed, like `gcsim` beside it, so it moves with
+        the pin rather than going stale in a column.
+        """
+        try:
+            table = talent_boosts.boosts_for(self)
+        except talent_boosts.TalentBoostError:
+            return None
+        return [
+            TalentBoostRead(talent=talent, constellation=needs, levels=talent_boosts.BOOST)
+            for talent, needs in sorted(table.items(), key=lambda item: (item[1], item[0]))
+        ]
 
     @computed_field
     @property
