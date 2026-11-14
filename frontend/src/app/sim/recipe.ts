@@ -50,8 +50,18 @@ export const BURST_ATTACK_TAG = 6;
 
 export type RecipeScaling = 'atk' | 'hp' | 'def' | 'em';
 
-/** A stat a conversion can draw from. */
-export type ConversionSource = 'atk' | 'hp' | 'def';
+/** ATK, HP or DEF — a stat with base, percentage and flat parts. */
+export type TripleStat = 'atk' | 'hp' | 'def';
+
+/**
+ * A stat a conversion can draw from.
+ *
+ * **`em` since 2026-11-13.** gcsim writes the EM part of Nahida's Tri-Karma, Alhaitham's
+ * projections and Light of Foliar Incision as `FlatDmg = em × k`, so EM is a source a flat
+ * term can be converted from like any other. It has no base or percentage form: its total is
+ * the hit's snapshot `calibratedEm`, plus the candidate's own.
+ */
+export type ConversionSource = TripleStat | 'em';
 
 /** ATK, HP and DEF together — every stat that has base, percentage and flat parts. */
 export interface StatTriple {
@@ -62,6 +72,19 @@ export interface StatTriple {
 
 /** Terms a conversion can land in. Each is frozen at calibration until a probe resolves it. */
 export type ConversionTerm = 'flatDamage' | 'flatAtk' | 'flatHp' | 'flatDef';
+
+/**
+ * Percentage terms a probe can see move but nothing prices.
+ *
+ * Nahida's A4 gives Tri-Karma 0.1 % DMG and 0.03 % CRIT Rate per EM above 200, capped at 80 %
+ * and 24 % (`internal/characters/nahida/asc.go`). A two-point probe measures a slope; it
+ * cannot see a threshold or a cap, so pricing the slope would be a confident guess past the
+ * cap. These are **reported, never resolved**.
+ */
+export type PercentTerm = 'bonusDmg' | 'critRate';
+
+/** Any term a stale-conversion report can name. */
+export type StaleTerm = ConversionTerm | PercentTerm;
 
 /** What a resolved conversion draws from, and how much per unit of it. */
 export interface ResolvedConversion {
@@ -132,6 +155,13 @@ export interface RecipeHit {
    * flat is added on top — so there is nothing here to warn about.
    */
   constantTerms?: ConversionTerm[];
+  /**
+   * Percentage terms the probe moved, which therefore carry a conversion nothing prices.
+   *
+   * The evaluator holds them at the calibration's value, so the hit under-values the stat that
+   * moved them; this is what lets the stale report say so. Absent and empty mean the same.
+   */
+  unpricedTerms?: PercentTerm[];
   /**
    * The scaling stat **as the calibration computed it** — gcsim's `total_scaling`. Used by
    * `replayHit` to check the transcription against gcsim's own answer, and **not** by the
@@ -244,12 +274,16 @@ export interface FormulaProvenance {
  * so a non-zero `atk_per` test would fire on every recipe. Distinguishing that needs a second
  * calibration at a perturbed ER, which is a task rather than a tweak.
  *
+ * **What the probe itself moves is found, in a percentage term too** (2026-11-13). Once
+ * `resolveConversions` has run, a hit's DMG% or CRIT Rate that moved under the probe — Nahida's
+ * EM-driven A4 — is reported as `bonusDmg` / `critRate`. ER is still not probed.
+ *
  * So a non-empty result can be trusted; an empty one means *"no flat-term conversions"*, not
  * *"none at all"*.
  */
 export interface StaleConversion {
-  /** Which term carries it. */
-  term: ConversionTerm;
+  /** Which term carries it — a flat term, or a percentage term the probe saw move. */
+  term: StaleTerm;
   /** How many hits of the recipe are affected. */
   hits: number;
   /** The share of the recipe's total damage those hits account for, 0–1. */
@@ -438,6 +472,11 @@ interface CalcLog {
    * vaporize hit it is the pre-reaction average and this is the real one.
    */
   avg_crit_dmg_react?: number;
+  /**
+   * The target's key. **0 is the player** (`pkg/core/combat/player.go:9`); enemies are keyed
+   * from 1. A bloom's self-damage is logged as a `calc` against it, by `pkg/avatar/avatar.go`.
+   */
+  target?: number;
 }
 
 /**
@@ -453,6 +492,23 @@ function amplifyingFrom(type: string | undefined, mult: number | undefined): Amp
   if (type === 'melt') return strong ? 'melt' : 'reverse_melt';
   if (type === 'vaporize') return strong ? 'vaporize' : 'reverse_vaporize';
   return null;
+}
+
+/** gcsim's target key for the player — `pkg/core/combat/player.go:9`. */
+const PLAYER_TARGET = 0;
+
+/**
+ * Whether a `calc` is a hit the recipe carries — **one predicate, because two readers pair by
+ * position**: `parseSample` builds the hits and `staleConversionsIn` re-reads the calcs, and
+ * a filter applied in one and not the other misaligns every index after the first skip.
+ *
+ * Two kinds are dropped. A hit that landed zero damage is a queued action that never
+ * connected. And **damage the player took is not damage dealt**: a bloom's self-damage is a
+ * `calc` against target 0, from gcsim's avatar path with no `total_scaling` at all — carried,
+ * it added to a bloom team's score and replayed as NaN.
+ */
+function lands(c: CalcLog): boolean {
+  return c.damage !== 0 && c.target !== PLAYER_TARGET;
 }
 
 interface SampleEntry {
@@ -523,7 +579,7 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
   const hits: RecipeHit[] = [];
   for (let i = 0; i < calcs.length; i++) {
     const c = calcs[i];
-    if (!c || c.damage === 0) continue;
+    if (!c || !lands(c)) continue;
     // Pair by position, and **verify** rather than assume: a mismatch means the pairing
     // premise is wrong, and silently mislabelling every hit's element is exactly the kind of
     // wrong-but-plausible this repo keeps legislating against.
@@ -605,13 +661,17 @@ export function parseSample(payload: string | { logs?: SampleEntry[]; seed?: unk
  * 83 hits carrying 2 % of the damage is a footnote, and 5 hits carrying 40 % is not.
  */
 function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversion[] {
-  const landed = calcs.filter((c) => c.damage !== 0);
-  const reads = new Map(TERMS.map((t) => [t.term, t.fromCalc]));
+  const landed = calcs.filter(lands);
+  const reads = new Map<StaleTerm, (c: CalcLog) => number>(TERMS.map((t) => [t.term, t.fromCalc]));
   // At parse time every present term is frozen — nothing has been resolved yet. Counting the
   // owner's Skirk rotation without the `mine` filter reported 89.3 % of the damage as an
   // unresolvable conversion, every point of it a teammate's, while Skirk's own hits carried
   // no flat terms at all; the filter now lives in `tallyStale` where both callers get it.
-  return tallyStale(hits, (term, i) => i < landed.length && reads.get(term)!(landed[i]) !== 0);
+  // A percentage term has no reader here: only a probe can say one carries a conversion.
+  return tallyStale(hits, (term, i) => {
+    const read = reads.get(term);
+    return read !== undefined && i < landed.length && read(landed[i]) !== 0;
+  });
 }
 
 
@@ -633,6 +693,9 @@ function staleConversionsIn(hits: RecipeHit[], calcs: CalcLog[]): StaleConversio
  */
 /** `total = base × (1 + percent) + flat`, gcsim's own formula. */
 export function totalStat(hit: RecipeHit, stat: ConversionSource): number {
+  // EM has no base or percentage form: the hit's snapshot EM is its total. A recipe whose
+  // `calc` predates the field has none, and 0 makes it a candidate no ratio can match.
+  if (stat === 'em') return hit.calibratedEm ?? 0;
   return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat]) + hit.calibratedFlat[stat];
 }
 
@@ -656,6 +719,23 @@ const TERMS: {
 ];
 
 /**
+ * The percentage terms a probe can see move — listed once, like `TERMS`.
+ *
+ * Never resolved (see `PercentTerm`), and never reported at parse time: they are non-zero on
+ * every hit, so only a probe can say one carries a conversion.
+ */
+const PERCENT_TERMS: { term: PercentTerm; read: (h: RecipeHit) => number }[] = [
+  { term: 'bonusDmg', read: (h) => h.bonusDmg },
+  { term: 'critRate', read: (h) => h.critRate },
+];
+
+/** Every term a stale report can name, in the order it names them. */
+const STALE_TERMS: StaleTerm[] = [
+  ...TERMS.map((t) => t.term),
+  ...PERCENT_TERMS.map((t) => t.term),
+];
+
+/**
  * The one place a stale-conversion list is assembled.
  *
  * **This exists because the rule was written out twice and drifted.** Both callers share it:
@@ -671,11 +751,11 @@ const TERMS: {
  */
 function tallyStale(
   hits: readonly RecipeHit[],
-  frozen: (term: ConversionTerm, index: number) => boolean,
+  frozen: (term: StaleTerm, index: number) => boolean,
 ): StaleConversion[] {
   const total = hits.reduce((sum, h) => sum + h.gcsimAverageDamage, 0);
   const out: StaleConversion[] = [];
-  for (const { term } of TERMS) {
+  for (const term of STALE_TERMS) {
     let count = 0;
     let damage = 0;
     for (let i = 0; i < hits.length; i++) {
@@ -718,7 +798,9 @@ export function resolveConversions(
         `A probe that moves the structure cannot identify a conversion.`,
     );
   }
-  const sources: ConversionSource[] = ['atk', 'hp', 'def'];
+  // EM is a source since 2026-11-13: the probe moves it, and a flat term proportional to the
+  // hit's snapshot EM — Tri-Karma's `em × k` — matches EM's ratio and nothing else's.
+  const sources: ConversionSource[] = ['atk', 'hp', 'def', 'em'];
   let resolved = 0;
   let unresolved = 0;
   let constant = 0;
@@ -730,6 +812,13 @@ export function resolveConversions(
     // teammate's hit is identical in both runs and has nothing to identify. Skipped rather
     // than counted unresolved, which is what made the warning describe the whole team.
     if (!b.mine) continue;
+    // **A percentage term the probe moved is a conversion nothing prices** — Nahida's A4 turns
+    // EM into Tri-Karma's DMG% and CRIT Rate. Recorded so the stale report can name it; the
+    // evaluator still holds it at the calibration's value, which under-values that stat.
+    const unpriced = PERCENT_TERMS
+      .filter(({ read }) => Math.abs(read(p) - read(b)) > tolerance)
+      .map(({ term }) => term);
+    if (unpriced.length > 0) b.unpricedTerms = unpriced;
     for (const { term, read } of TERMS) {
       const before = read(b);
       if (before === 0) continue;
@@ -788,12 +877,16 @@ function staleConversionsAfter(recipe: Recipe): StaleConversion[] {
   const reads = new Map(TERMS.map((t) => [t.term, t.read]));
   return tallyStale(recipe.hits, (term, i) => {
     const hit = recipe.hits[i];
+    const read = reads.get(term as ConversionTerm);
+    // A percentage term is stale exactly when the probe saw it move: nothing prices it.
+    if (read === undefined) return (hit.unpricedTerms ?? []).includes(term as PercentTerm);
+    const flat = term as ConversionTerm;
     // Resolved and constant terms are no longer stale: a resolved one rescales with the
     // candidate, and a constant one the probe never moved is not something a search can act on.
     return (
-      reads.get(term)!(hit) !== 0
-      && hit.conversions[term] === undefined
-      && !(hit.constantTerms ?? []).includes(term)
+      read(hit) !== 0
+      && hit.conversions[flat] === undefined
+      && !(hit.constantTerms ?? []).includes(flat)
     );
   });
 }

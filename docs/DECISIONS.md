@@ -1429,7 +1429,33 @@ The owner ruled on three questions raised while building math-fallback P1 (PR #3
   exists, and the reason tells them why it is not offered. Being built on
   `feat/math-fallback-p1-data`.
 
-**Left open by (ii):** EM converted into *flat damage* (Nahida's Tri-Karma, `ATK × a + EM × b`,
-the second part written as `FlatDmg`) is still a frozen term reported stale, because the
-calibration probe moves `atk%`, `hp%` and `def%` only. Widening the probe to EM is a backend
-schema change (`probe_deltas`) and was not folded into this fix.
+**Left open by (ii), and closed the same day on `fix/recipe-em-flat`:** EM converted into
+*flat damage* (Nahida's Tri-Karma, `ATK × a + EM × b`, the second part written as `FlatDmg`).
+The note that stood here called it *"a frozen term reported stale"*; it was frozen but **not**
+reported — the probe never moved it, so #229's rule filed it *constant* and the stale list was
+empty. The probe now moves EM by a flat +100 in the same run (`probe_deltas` accepts `em`; no
+extra gcsim sample, probe sample time unchanged within noise), and `resolveConversions` treats EM
+as a fourth source through the existing resolved-conversion path. Measured against gcsim: Sethos
+(EM only in `FlatDmg`) +300 EM, gain **+16,428.81** predicted **+16,428.81** (2.2e-16); the
+owner's Hyperbloom Nahida, +187 EM, gcsim **+4,756.84**, recipe **+2,320.77**, where it was 0
+(and ATK% +46.6 % exact at +5,382.96 both before and after). The remainder is reported, not
+priced — see the open questions below.
+
+**Open questions from that fix, for the owner:**
+
+- **Should a capped EM → DMG% / CRIT Rate conversion be priced?** Nahida's A4 (0.1 % DMG and
+  0.03 % CR per EM above 200, capped at 80 % / 24 %) is about half of what EM is worth to
+  Tri-Karma. The probe now *sees* it and the recipe reports it as stale `bonusDmg` / `critRate`.
+  Pricing it at the probe's slope would be exact between the threshold and the cap and would
+  **overstate every build past ~1,000 total EM**, which an EM-stacking Nahida reaches; a
+  two-point probe cannot see the cap. Left reported, on the rule that a guess past a cap is a
+  confident wrong number.
+- **Transformative and additive reactions are still unpriced, and are now visible.** Bloom,
+  hyperbloom and burgeon land their whole damage in `flat_dmg` on gcsim's EM curve, and spread
+  and aggravate add the catalyze bonus — from *live*, not snapshot, EM — to the same term. These
+  stay unresolved and are reported, so a bloom or spread team that read clean before may now say
+  *"Scoring unreliable"*: on the Nahida fixture they are the bulk of what EM is worth. Pricing
+  them needs gcsim's reaction formulas in the recipe (level multiplier, and a reaction bonus gcsim
+  does not publish for catalyze) — a feature, not a follow-up.
+- **Found on the way, fixed:** a bloom's self-damage (a `calc` against target 0, the player) was
+  carried as damage dealt and replayed as NaN. Recipes now drop it.
