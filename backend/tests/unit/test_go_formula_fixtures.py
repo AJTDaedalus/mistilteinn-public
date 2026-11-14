@@ -898,6 +898,441 @@ def ungated_fixtures() -> list[dict[str, Any]]:
     return out
 
 
+# ── Math-fallback P2, task 11: the buffers the owner's teams use ───────────────────────────
+#
+# One fixture per sheet, on its main damage-relevant effect, by the same method. Talent rows are
+# verbatim from the seeded catalogue (nanoka 7.2.51); constellation and passive lists are the
+# sheets' pins. Builds are stated. A teammate giver's stats are written out (their pass-1
+# numbers); a giver who is the subject resolves against the subject's base stats.
+
+FURINA_BURST_LABELS = [
+    "Skill DMG|{param1:F1P} Max HP", "Duration|{param2:F1}s", "Maximum Fanfare|{param4:I}",
+    "Fanfare to DMG Increase Conversion Ratio|{param5:F2P}",
+    "Fanfare to Incoming Healing Bonus Conversion Ratio|{param6:F2P}", "CD|{param7:F1}s",
+    "Energy Cost|{param8:I}"]
+FURINA_BURST_10 = [0.205315, 18.0, 0.01, 300.0, 0.0025, 0.001, 15.0, 60.0]
+FURINA_BURST = ("Skill DMG|{param1:F1P} Max HP", [0.205315])
+FURINA_BASE = _base_stats(base_atk=674.0, base_hp=15307.0, base_def=696.0, crit_rate=0.242)
+FURINA_ARTIFACTS = {"hp_pct": 0.932, "flat_hp": 4780.0, "hydro_dmg_bonus": 0.466,
+                    "crit_rate": 0.3, "crit_dmg": 0.9}
+
+
+def _furina(_: float) -> float:
+    """**Furina, C2, on her own burst**, both conditions at their default for the subject (her
+    own doing): Fanfare at the C1-raised limit 400 and 400 points beyond it.
+
+    GO: `dmg('burst_skillDmg', info, 'hp', dm.burst.skillDmg, 'burst')` (`pando Furina.ts:260`);
+    `teamBuff.premod.dmg_` = `min(fanfare, 300 + C1 100)` × the burst row's ratio
+    (`:114-119,129-137,202`); C2 `ownBuff.premod.hp_` = overstack × `constellation2.hp_`
+    (`:120-125,160-164,200`)."""
+    stats = _stats(FURINA_BASE, FURINA_ARTIFACTS)
+    hp = _total(stats, "hp", extra_pct=400 * 0.0035)
+    return _go_general(base=_multiplier(FURINA_BURST) * hp, flat=0.0,
+                       dmg_bonus=stats["hydro_dmg_bonus"] + 400 * 0.0025,
+                       crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+XINGQIU_RAIN = ("Sword Rain DMG|{param1:F1P}", [0.976896])
+XINGQIU_BASE = _base_stats(base_atk=712.0, atk_pct=0.24, base_hp=10222.0, base_def=758.0)
+XINGQIU_ARTIFACTS = {"atk_pct": 0.466, "flat_atk": 311.0, "hydro_dmg_bonus": 0.466,
+                     "crit_rate": 0.3, "crit_dmg": 0.9}
+
+
+def _xingqiu(_: float) -> float:
+    """**Xingqiu, C2, on his own Rain Swords**: A4's Hydro DMG (always on) and C2's Hydro RES
+    -15% (his own Rain Swords: on for the subject).
+
+    GO: `dmg('burst', info, 'atk', dm.burst.dmg, 'burst', {ele: 'hydro'})` (`pando
+    Xingqiu.ts:127`); A4 `ownBuff.premod.dmg_.hydro` 0.2 (`:61,103-106`); C2
+    `enemyDebuff.common.preRes.hydro` -0.15 (`:64,107-110`)."""
+    stats = _stats(XINGQIU_BASE, XINGQIU_ARTIFACTS)
+    return _go_general(base=_multiplier(XINGQIU_RAIN) * _total(stats, "atk"), flat=0.0,
+                       dmg_bonus=stats["hydro_dmg_bonus"] + 0.2, crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"], res_shred=-0.15)
+
+
+def _xiangling_on_bennett(_: float) -> float:
+    """**A C6 Xiangling's C1 and C6 on Bennett's burst**, Guoba's hit and Pyronado on.
+
+    GO: C1 `enemyDebuff.common.preRes.pyro` = `-constellation1.pyroRes` (`pando
+    Xiangling.ts:61-62,91-93,110`); C6 `teamBuff.premod.dmg_.pyro` (`:73-74,94-96,109`), which
+    reaches Bennett whole (`antiC6` subtracts it only on Xiangling's own Pyronado rows)."""
+    stats = _stats(BENNETT_BASE, BENNETT_ARTIFACTS)
+    return _go_general(base=_multiplier(BENNETT_BURST_DMG) * _total(stats, "atk"), flat=0.0,
+                       dmg_bonus=stats["pyro_dmg_bonus"] + 0.15, crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"], res_shred=-0.15)
+
+
+#: Citlali as a teammate: her pass-1 EM, stated.
+CITLALI_GIVER_STATS = {"elemental_mastery": 800.0}
+
+
+def _citlali_on_xiangling(_: float) -> float:
+    """**A C2 Citlali on Xiangling's Pyronado**, after a Frozen/Melt and with an Obsidian Blade
+    consumed: A1's Pyro RES -20%, C2's second -20%, and C1's flat 200% of Citlali's EM.
+
+    GO: `enemyDebuff.common.preRes.pyro` = A1 + C2's copy of it (`pando Citlali.ts:119-136,
+    194-196`); C1 `notOwnBuff.formula.base.burst` = `prod(percent(constellation1.dmgInc),
+    final.eleMas)` (`:149-151,191`)."""
+    stats = _stats(XIANGLING_BASE, XIANGLING_ARTIFACTS)
+    return _go_general(base=_multiplier(PYRONADO) * _total(stats, "atk"),
+                       flat=2.0 * CITLALI_GIVER_STATS["elemental_mastery"],
+                       dmg_bonus=stats["pyro_dmg_bonus"], crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"], res_shred=-0.4)
+
+
+YELAN_SKILL = ("Skill DMG|{param1:F1P} Max HP", [0.407045])
+YELAN_TEAM = ["hydro", "pyro", "cryo", "electro"]
+YELAN_BASE = _base_stats(base_atk=785.0, base_hp=14450.0, base_def=548.0, crit_rate=0.242)
+YELAN_ARTIFACTS = {"hp_pct": 0.932, "flat_hp": 4780.0, "hydro_dmg_bonus": 0.466,
+                   "crit_rate": 0.3, "crit_dmg": 0.9}
+
+
+def _yelan(_: float) -> float:
+    """**Yelan, C0, on her own skill** in a party of four different elements, Depth-Clarion Dice
+    at 14 seconds (her own burst, on for the subject).
+
+    GO: `dmg('skill', info, 'hp', dm.skill.dmg, 'skill')`; A1 `ownBuff.premod.hp_` =
+    `subscript(eleCount, hp_Arr)` (`pando Yelan.ts:62-64,109-113,139`); A4
+    `teamBuff.premod.dmg_` to the active = 1% + stacks × 3.5% (`:65-69,114-125,141`)."""
+    stats = _stats(YELAN_BASE, YELAN_ARTIFACTS)
+    return _go_general(base=_multiplier(YELAN_SKILL) * _total(stats, "hp", extra_pct=0.3),
+                       flat=0.0, dmg_bonus=stats["hydro_dmg_bonus"] + 0.01 + 14 * 0.035,
+                       crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+ESCOFFIER_SKILL = ("Skill DMG|{param1:F1P}", [0.9072])
+ESCOFFIER_TEAM = ["cryo", "hydro", "hydro", "cryo"]
+ESCOFFIER_BASE = _base_stats(base_atk=956.0, base_hp=13348.0, base_def=732.0, crit_rate=0.242)
+ESCOFFIER_ARTIFACTS = {"atk_pct": 0.466, "flat_atk": 311.0, "cryo_dmg_bonus": 0.466,
+                       "crit_rate": 0.3, "crit_dmg": 0.7}
+
+
+def _escoffier(_: float) -> float:
+    """**Escoffier, C1, on her own skill** in a Hydro/Cryo party of four: A4's Cryo RES by the
+    count (4 → 55%) and C1's Cryo CRIT DMG, both her own doing (on for the subject).
+
+    GO: `enemyDebuff.common.preRes.cryo` = `subscript(count.hydro + count.cryo, [0, -5%, -10%,
+    -15%, -55%])` (`pando Escoffier.ts:70-77,111-118,143`); C1 `teamBuff.premod.critDMG_.cryo`
+    when the count is 4 (`:80-82,119-129,145`)."""
+    stats = _stats(ESCOFFIER_BASE, ESCOFFIER_ARTIFACTS)
+    return _go_general(base=_multiplier(ESCOFFIER_SKILL) * _total(stats, "atk"), flat=0.0,
+                       dmg_bonus=stats["cryo_dmg_bonus"], crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"] + 0.6, res_shred=-0.55)
+
+
+#: Chevreuse as a teammate: her pass-1 HP parts, stated (33,464.876 total).
+CHEVREUSE_GIVER_STATS = {"base_hp": 11962.0, "hp_pct": 1.398, "flat_hp": 4780.0}
+CHEVREUSE_TEAM = ["pyro", "pyro", "electro", "electro"]
+
+
+def _chevreuse_on_xiangling(_: float) -> float:
+    """**Chevreuse on Xiangling's Pyronado** in a Pyro/Electro party, after an Overloaded and
+    an Overcharged Ball: A1's Pyro RES -40% and A4's ATK +1% per 1,000 of her Max HP.
+
+    GO: A1 `enemyDebuff.common.preRes.pyro` with `onlyPyroElectroTeam` (`pando
+    Chevreuse.ts:103-114,147`); A4 `teamBuff.premod.atk_` = `min(percent(0.01) × premod.hp /
+    1000, 40%)` for a Pyro or Electro receiver (`:115-132,149`)."""
+    giver_hp = (CHEVREUSE_GIVER_STATS["base_hp"] * (1 + CHEVREUSE_GIVER_STATS["hp_pct"])
+                + CHEVREUSE_GIVER_STATS["flat_hp"])
+    stats = _stats(XIANGLING_BASE, XIANGLING_ARTIFACTS)
+    atk = _total(stats, "atk", extra_pct=min(0.01 * giver_hp / 1000, 0.4))
+    return _go_general(base=_multiplier(PYRONADO) * atk, flat=0.0,
+                       dmg_bonus=stats["pyro_dmg_bonus"], crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"], res_shred=-0.4)
+
+
+JEAN_SKILL = ("Skill DMG|{param1:P}", [5.256])
+JEAN_BASE = _base_stats(base_atk=847.0, base_hp=14695.0, base_def=769.0)
+JEAN_ARTIFACTS = {"atk_pct": 0.932, "flat_atk": 311.0, "anemo_dmg_bonus": 0.466,
+                  "crit_rate": 0.3, "crit_dmg": 0.7}
+
+
+def _jean(_: float) -> float:
+    """**Jean, C4, on her own held Gale Blade**: C1's skill DMG (her own hold) and C4's Anemo
+    RES -40% in her field (on for the subject).
+
+    GO: `ownBuff.premod.dmg_.skill` = C1 (`pando Jean.ts:68-69,92-94,117`);
+    `enemyDebuff.common.preRes.anemo` = `-|constellation4.anemoRes|` (`:76-77,101-103,122`)."""
+    stats = _stats(JEAN_BASE, JEAN_ARTIFACTS)
+    return _go_general(base=_multiplier(JEAN_SKILL) * _total(stats, "atk"), flat=0.0,
+                       dmg_bonus=stats["anemo_dmg_bonus"] + 0.4, crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"], res_shred=-0.4)
+
+
+ZHONGLI_BURST = ("Skill DMG|{param1:P}", [8.9972])
+ZHONGLI_BASE = _base_stats(base_atk=859.0, base_hp=14695.0, base_def=738.0)
+ZHONGLI_ARTIFACTS = {"hp_pct": 0.932, "flat_hp": 4780.0, "atk_pct": 0.466, "flat_atk": 311.0,
+                     "geo_dmg_bonus": 0.754, "crit_rate": 0.3, "crit_dmg": 0.7}
+
+
+def _zhongli(_: float) -> float:
+    """**Zhongli, C0, on his own Planet Befall**, shielded (his own doing): Jade Shield's Geo
+    RES -20% and A4's flat 33% of his Max HP, which moves with every candidate.
+
+    GO: `enemyDebuff.common.preRes.geo` -0.2 (`pando Zhongli.ts:57,90,120-123`); A4
+    `ownBuff.formula.base.burst` = `prod(percent(passive2.burst_), own.premod.hp)`
+    (`:68-72,107-111,128`)."""
+    stats = _stats(ZHONGLI_BASE, ZHONGLI_ARTIFACTS)
+    return _go_general(base=_multiplier(ZHONGLI_BURST) * _total(stats, "atk"),
+                       flat=0.33 * _total(stats, "hp"), dmg_bonus=stats["geo_dmg_bonus"],
+                       crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"],
+                       res_shred=-0.2)
+
+
+FARUZAN_BURST_LABELS = [
+    "Skill DMG|{param1:F1P}", "Anemo DMG Bonus|{param2:F1P}",
+    "Prayerful Wind's Benefit Duration|{param3:F1}s", "Anemo RES Decrease|{param4:F1P}",
+    "Perfidious Wind's Bale Duration|{param5:F1}s", "Duration|{param6:F1}s", "CD|{param7:F1}s",
+    "Energy Cost|{param8:I}"]
+FARUZAN_BURST_10 = [6.7968, 0.324, 4.0, 0.3, 4.0, 12.0, 20.0, 80.0]
+FARUZAN_BURST = ("Skill DMG|{param1:F1P}", [6.7968])
+FARUZAN_BASE = _base_stats(base_atk=804.0, base_hp=9569.0, base_def=628.0,
+                           energy_recharge=1.24)
+FARUZAN_ARTIFACTS = {"atk_pct": 0.932, "flat_atk": 311.0, "anemo_dmg_bonus": 0.466,
+                     "crit_rate": 0.3, "crit_dmg": 0.7}
+
+
+def _faruzan(_: float) -> float:
+    """**Faruzan, C0, on her own burst**, every condition her own doing: the burst's Anemo DMG
+    (row 10), its Anemo RES -30%, and A4's flat 32% of her **base** ATK.
+
+    GO: `teamBuff.premod.dmg_.anemo` = burst row (`pando Faruzan.ts:55,86-88,111`);
+    `enemyDebuff.common.preRes.anemo` = `-burst[3][0]` (`:57,89-91,113`); A4
+    `teamBuff.formula.base.anemo` = `prod(percent(gift_dmgInc), own.base.atk)`
+    (`:67,93-97,114`)."""
+    stats = _stats(FARUZAN_BASE, FARUZAN_ARTIFACTS)
+    return _go_general(base=_multiplier(FARUZAN_BURST) * _total(stats, "atk"),
+                       flat=0.32 * FARUZAN_BASE["base_atk"],
+                       dmg_bonus=stats["anemo_dmg_bonus"] + 0.324,
+                       crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"],
+                       res_shred=-0.3)
+
+
+#: Sucrose as a teammate: her pass-1 EM, stated.
+SUCROSE_GIVER_STATS = {"elemental_mastery": 900.0}
+
+
+def _sucrose_on_xiangling(coefficient: float) -> float:
+    """**Sucrose on Xiangling's reverse-vaporized Pyronado**, after a Pyro Swirl and a skill
+    hit: A1's 50 EM to a Pyro teammate and A4's 20% of Sucrose's EM, both into the EM the
+    reaction reads.
+
+    GO: A1 `notOwnBuff.premod.eleMas` for a receiver of the swirled element (`pando
+    Sucrose.ts:143-150`); A4 `notOwnBuff.final.eleMas` = `prod(percent(passive2.eleMas_),
+    own.premod.eleMas)` (`:125-131,152`); amp `formula.ts:257,454-484`."""
+    totals = _xiangling_totals(fervent=False, witch_stacks=0)
+    totals["pyro"] -= 0.15  # no Crimson Witch here: `_xiangling_totals` adds its 2-piece
+    em = totals["em"] + 50.0 + 0.2 * SUCROSE_GIVER_STATS["elemental_mastery"]
+    return _go_hit(multiplier=_multiplier(PYRONADO), atk=totals["atk"], dmg_bonus=totals["pyro"],
+                   crit_rate=totals["cr"], crit_dmg=totals["cd"], em=em, amp_base=1.5,
+                   reaction_bonus=0.0, em_coefficient=coefficient)
+
+
+def _buffer(name: str, covers: str, go: list[str], giver: dict[str, Any], team: dict[str, Any],
+            base: dict[str, float], artifacts: dict[str, float], channel: str,
+            row: dict[str, Any], source: dict[str, Any], conditionals: dict[str, Any],
+            figure: Any, divergence: str = "none: no reaction") -> dict[str, Any]:
+    return {
+        "name": name, "covers": covers, "go": go, "givers": [giver], "team": team,
+        "base": base, "artifacts": artifacts, "set_pools": [], "channel": channel,
+        "rows": [row], "sources": [source], "conditionals": conditionals,
+        "expected": figure(OUR_EM_COEFFICIENT), "go_value": figure(GO_EM_COEFFICIENT),
+        "divergence": divergence,
+    }
+
+
+def buffer_fixtures() -> list[dict[str, Any]]:
+    """Task 11, second batch: one fixture per buffer sheet."""
+    formula = "libs/gi/wr/src/formula.ts:357,434-453,505-514"
+    pando = "libs/gi/formula/src/data/char/"
+    xiangling = {"element": "pyro", "weapon_type": "WEAPON_POLE"}
+    nado = _row("nado", "Pyronado DMG", "burst", 1, PYRONADO, None)
+    out: list[dict[str, Any]] = []
+
+    cons, pas = _pinned("10000089")
+    out.append(_buffer(
+        "furina_fanfare_c2_on_her_own_burst",
+        "a team DMG buff per stack from a talent row, its maximum raised by C1; a self HP% per "
+        "stack (C2)",
+        [formula, f"{pando}Furina.ts:114-137,160-164,196-202,260"],
+        {"name": "Furina", "constellation": 2, "ascension_phase": 6,
+         "talent_levels": {"elemental_burst": 10}, "stats": "the optimized character"},
+        {"element": "hydro", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["hydro", "pyro"]},
+        FURINA_BASE, FURINA_ARTIFACTS, "hydro",
+        _row("burst", "Skill DMG", "burst", 1, FURINA_BURST, None),
+        _kit_source("10000089", _ungated_giver(
+            "Furina", "10000089", constellation=2, talent_levels={"elemental_burst": 10},
+            talent_rows={("elemental_burst", 10): sheets.TalentRow(FURINA_BURST_LABELS,
+                                                                   FURINA_BURST_10)},
+            cons=cons, passives=pas, stats=FURINA_BASE), subject=True),
+        {}, _furina))
+
+    cons, pas = _pinned("10000025")
+    out.append(_buffer(
+        "xingqiu_c2_on_his_own_burst",
+        "two constants no seeded list carries (cited to GO and gcsim): a self DMG buff and an "
+        "enemy RES shred",
+        [formula, f"{pando}Xingqiu.ts:61-64,103-110,127"],
+        {"name": "Xingqiu", "constellation": 2, "ascension_phase": 6,
+         "stats": "the optimized character"},
+        {"element": "hydro", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["hydro", "pyro"]},
+        XINGQIU_BASE, XINGQIU_ARTIFACTS, "hydro",
+        _row("rain", "Sword Rain DMG", "burst", 1, XINGQIU_RAIN, None),
+        _kit_source("10000025", _ungated_giver(
+            "Xingqiu", "10000025", constellation=2, cons=cons, passives=pas,
+            stats=XINGQIU_BASE), subject=True),
+        {}, _xingqiu))
+
+    cons, pas = _pinned("10000023")
+    out.append(_buffer(
+        "xiangling_c1_c6_on_bennett",
+        "a teammate's RES shred and party DMG buff, the latter withheld from her own Pyronado",
+        [formula, f"{pando}Xiangling.ts:61-62,73-74,91-98,109-110"],
+        {"name": "Xiangling", "constellation": 6, "ascension_phase": 6, "stats": {}},
+        {"element": "pyro", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["pyro", "pyro"]},
+        BENNETT_BASE, BENNETT_ARTIFACTS, "pyro",
+        _row("burst", "Skill DMG", "burst", 1, BENNETT_BURST_DMG, None),
+        _kit_source("10000023", _ungated_giver(
+            "Xiangling", "10000023", constellation=6, cons=cons, passives=pas), subject=False),
+        {"kit:xiangling/after_guoba_hit": 1, "kit:xiangling/pyronado": 1},
+        _xiangling_on_bennett))
+
+    cons, pas = _pinned("10000107")
+    out.append(_buffer(
+        "citlali_c2_on_xiangling",
+        "a teammate's flat damage from the giver's EM (C1), and a RES shred doubled by C2",
+        [formula, f"{pando}Citlali.ts:63-66,74-75,119-136,149-151,186-199"],
+        {"name": "Citlali", "constellation": 2, "ascension_phase": 6,
+         "stats": CITLALI_GIVER_STATS},
+        {**xiangling, "member_elements": ["pyro", "cryo"]},
+        XIANGLING_BASE, XIANGLING_ARTIFACTS, "pyro", nado,
+        _kit_source("10000107", _ungated_giver(
+            "Citlali", "10000107", constellation=2, cons=cons, passives=pas,
+            stats=CITLALI_GIVER_STATS), subject=False),
+        {"kit:citlali/a1_freeze_melt": 1, "kit:citlali/c1_blades": 1},
+        _citlali_on_xiangling))
+
+    cons, pas = _pinned("10000060")
+    out.append(_buffer(
+        "yelan_a1_a4_on_her_own_skill",
+        "a value read from a table by the team's distinct elements (A1), and a ramping DMG buff "
+        "(A4) as a base part and a per-second part",
+        [formula, f"{pando}Yelan.ts:62-69,109-125,139-141"],
+        {"name": "Yelan", "constellation": 0, "ascension_phase": 6,
+         "stats": "the optimized character"},
+        {"element": "hydro", "weapon_type": "WEAPON_BOW", "member_elements": YELAN_TEAM},
+        YELAN_BASE, YELAN_ARTIFACTS, "hydro",
+        _row("skill", "Skill DMG", "skill", 1, YELAN_SKILL, None),
+        _kit_source("10000060", _ungated_giver(
+            "Yelan", "10000060", cons=cons, passives=pas, stats=YELAN_BASE), subject=True,
+            receiver_element="hydro", team_elements=YELAN_TEAM),
+        {}, _yelan))
+
+    cons, pas = _pinned("10000112")
+    out.append(_buffer(
+        "escoffier_a4_c1_on_her_own_skill",
+        "a RES shred read from a table by the Hydro/Cryo count (A4), and a CRIT DMG buff gated on "
+        "the whole party's composition (C1)",
+        [formula, f"{pando}Escoffier.ts:70-82,111-129,143-145"],
+        {"name": "Escoffier", "constellation": 1, "ascension_phase": 6,
+         "stats": "the optimized character"},
+        {"element": "cryo", "weapon_type": "WEAPON_POLE", "member_elements": ESCOFFIER_TEAM},
+        ESCOFFIER_BASE, ESCOFFIER_ARTIFACTS, "cryo",
+        _row("skill", "Skill DMG", "skill", 1, ESCOFFIER_SKILL, None),
+        _kit_source("10000112", _ungated_giver(
+            "Escoffier", "10000112", constellation=1, cons=cons, passives=pas,
+            stats=ESCOFFIER_BASE), subject=True, receiver_element="cryo",
+            team_elements=ESCOFFIER_TEAM),
+        {}, _escoffier))
+
+    cons, pas = _pinned("10000090")
+    out.append(_buffer(
+        "chevreuse_a1_a4_on_xiangling",
+        "a teammate's ATK% from the giver's HP per 1,000, capped, for receivers of two elements; "
+        "a RES shred gated on the party's composition",
+        [formula, f"{pando}Chevreuse.ts:64-71,103-132,147-149"],
+        {"name": "Chevreuse", "constellation": 0, "ascension_phase": 6,
+         "stats": CHEVREUSE_GIVER_STATS},
+        {**xiangling, "member_elements": CHEVREUSE_TEAM},
+        XIANGLING_BASE, XIANGLING_ARTIFACTS, "pyro", nado,
+        _kit_source("10000090", _ungated_giver(
+            "Chevreuse", "10000090", cons=cons, passives=pas, stats=CHEVREUSE_GIVER_STATS),
+            subject=False, receiver_element="pyro", team_elements=CHEVREUSE_TEAM),
+        {"kit:chevreuse/a1_overloaded": 1, "kit:chevreuse/a4_after_ball": 1},
+        _chevreuse_on_xiangling))
+
+    cons, pas = _pinned("10000003")
+    out.append(_buffer(
+        "jean_c1_c4_on_her_own_skill",
+        "a self move-scoped DMG buff (C1) and an enemy RES shred (C4)",
+        [formula, f"{pando}Jean.ts:68-77,92-103,117-122"],
+        {"name": "Jean", "constellation": 4, "ascension_phase": 6,
+         "stats": "the optimized character"},
+        {"element": "anemo", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["anemo", "pyro"]},
+        JEAN_BASE, JEAN_ARTIFACTS, "anemo",
+        _row("skill", "Skill DMG", "skill", 1, JEAN_SKILL, None),
+        _kit_source("10000003", _ungated_giver(
+            "Jean", "10000003", constellation=4, cons=cons, passives=pas, stats=JEAN_BASE),
+            subject=True),
+        {}, _jean))
+
+    cons, pas = _pinned("10000030")
+    out.append(_buffer(
+        "zhongli_shield_and_a4_on_his_own_burst",
+        "an all-element RES shred (a cited constant), and self flat damage from his own HP per "
+        "candidate",
+        [formula, f"{pando}Zhongli.ts:57,68-72,90,107-111,120-128"],
+        {"name": "Zhongli", "constellation": 0, "ascension_phase": 6,
+         "stats": "the optimized character: his HP is the candidate's"},
+        {"element": "geo", "weapon_type": "WEAPON_POLE", "member_elements": ["geo", "pyro"]},
+        ZHONGLI_BASE, ZHONGLI_ARTIFACTS, "geo",
+        _row("burst", "Skill DMG", "burst", 1, ZHONGLI_BURST, None),
+        _kit_source("10000030", _ungated_giver(
+            "Zhongli", "10000030", cons=cons, passives=pas, stats=ZHONGLI_BASE), subject=True),
+        {}, _zhongli))
+
+    cons, pas = _pinned("10000076")
+    out.append(_buffer(
+        "faruzan_burst_a4_on_her_own_burst",
+        "a DMG buff and a RES shred from talent rows, and flat damage from the giver's base ATK",
+        [formula, f"{pando}Faruzan.ts:55-57,67,86-97,111-114"],
+        {"name": "Faruzan", "constellation": 0, "ascension_phase": 6,
+         "talent_levels": {"elemental_burst": 10}, "stats": "the optimized character"},
+        {"element": "anemo", "weapon_type": "WEAPON_BOW", "member_elements": ["anemo", "pyro"]},
+        FARUZAN_BASE, FARUZAN_ARTIFACTS, "anemo",
+        _row("burst", "Skill DMG", "burst", 1, FARUZAN_BURST, None),
+        _kit_source("10000076", _ungated_giver(
+            "Faruzan", "10000076", talent_levels={"elemental_burst": 10},
+            talent_rows={("elemental_burst", 10): sheets.TalentRow(FARUZAN_BURST_LABELS,
+                                                                   FARUZAN_BURST_10)},
+            cons=cons, passives=pas, stats=FARUZAN_BASE), subject=True),
+        {}, _faruzan))
+
+    cons, pas = _pinned("10000043")
+    out.append(_buffer(
+        "sucrose_a4_on_xiangling",
+        "teammate EM buffs (one gated on the receiver's element) into an amplifying reaction",
+        ["libs/gi/wr/src/formula.ts:257,357,434-484",
+         f"{pando}Sucrose.ts:58-63,125-131,143-152"],
+        {"name": "Sucrose", "constellation": 0, "ascension_phase": 6,
+         "stats": SUCROSE_GIVER_STATS},
+        {**xiangling, "member_elements": ["pyro", "anemo", "hydro"]},
+        XIANGLING_BASE, XIANGLING_ARTIFACTS, "pyro",
+        _row("nado_vape", "Pyronado DMG (vaporize)", "burst", 1, PYRONADO, "reverse_vaporize"),
+        _kit_source("10000043", _ungated_giver(
+            "Sucrose", "10000043", cons=cons, passives=pas, stats=SUCROSE_GIVER_STATS),
+            subject=False, receiver_element="pyro", team_elements=["pyro", "anemo", "hydro"]),
+        {"kit:sucrose/swirl_pyro": 1, "kit:sucrose/skill_hit": 1},
+        _sucrose_on_xiangling,
+        "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9"))
+    return out
+
+
 def build() -> dict[str, Any]:
     """Every fixture, inputs and figures, as the committed file holds them."""
     witch = _set_source(15006, 4, WITCH_PARAMS, [WITCH_TWO_PIECE_ROW])
@@ -971,6 +1406,7 @@ def build() -> dict[str, Any]:
     ]
     fixtures.extend(sheet_fixtures())
     fixtures.extend(ungated_fixtures())
+    fixtures.extend(buffer_fixtures())
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {
@@ -1013,11 +1449,15 @@ def test_the_divergence_is_only_the_em_coefficient():
     by_name = {f["name"]: f for f in data["fixtures"]}
     for name in ("shattering_ice_on", "bennett_c6_on_xiangling", "bennett_burst_on_himself",
                  "kazuha_a4_pyro_on_xiangling", "kazuha_a4_on_his_own_burst",
-                 *(f["name"] for f in ungated_fixtures())):
+                 *(f["name"] for f in ungated_fixtures()),
+                 *(f["name"] for f in buffer_fixtures()
+                   if f["name"] != "sucrose_a4_on_xiangling")):
         assert by_name[name]["relative_divergence_from_go"] == 0, name
-    for name in ("crimson_witch_one_stack_reverse_vaporize", "xiangling_multi_target"):
+    for name in ("crimson_witch_one_stack_reverse_vaporize", "xiangling_multi_target",
+                 "sucrose_a4_on_xiangling"):
         gap = by_name[name]["relative_divergence_from_go"]
-        assert 0 < gap < 2e-4, name
+        # The gap grows with EM: ~1e-4 at Xiangling's 176, ~3e-4 at 406 with Sucrose's buffs.
+        assert 0 < gap < 5e-4, name
 
 
 def test_the_fixtures_would_catch_a_missing_buff():
@@ -1035,6 +1475,16 @@ def test_the_kit_figures():
     assert _bennett_on_xiangling(OUR_EM_COEFFICIENT) == pytest.approx(5120.33, abs=0.01)
     # Pyronado 2.016 x ATK 1,413.5 x (1 + 0.466 + 0.0004 x 960.2) x 1.42 x 190/390 x 0.9.
     assert _kazuha_on_xiangling(OUR_EM_COEFFICIENT) == pytest.approx(3282.44, abs=0.01)
+
+
+def test_the_buffer_figures():
+    """Two of task 11's second batch by hand, so a reader can check them against GO."""
+    # Pyronado 2.016 x ATK 1,659.47 (735 x (1 + 0.5 + 0.0100 x 33,464.876 / 1,000) + 311)
+    # x 1.466 x avgHit 1.42 x 190/390 x resMulti 1.15 (RES 0.1 - 0.4 = -0.3).
+    assert _chevreuse_on_xiangling(OUR_EM_COEFFICIENT) == pytest.approx(3901.83, abs=0.01)
+    # Burst 0.205315 x HP 55,782.92 (15,307 x (1 + 0.932 + 400 x 0.0035) + 4,780)
+    # x (1 + 0.466 + 400 x 0.0025) x avgHit 1.7588 (1 + 0.542 x 1.4) x 190/390 x 0.9.
+    assert _furina(OUR_EM_COEFFICIENT) == pytest.approx(21780.26, abs=0.01)
 
 
 def test_the_resolver_reads_the_givers_base_atk_not_his_total():

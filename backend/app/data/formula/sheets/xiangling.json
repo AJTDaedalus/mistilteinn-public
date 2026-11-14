@@ -1,0 +1,238 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Xiangling",
+ "nanoka_id": "10000023",
+ "slug": "xiangling",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Xiangling.ts",
+  "wr": "libs/gi/sheets/src/Characters/Xiangling/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/xiangling/",
+ "verified_by": [
+  "xiangling_c1_c6_on_bennett"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Xiangling.ts:103-104; wr:index.tsx:155,160",
+   "gcsim": "xiangling.go:21"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Xiangling.ts:103,105; wr:index.tsx:156,159",
+   "gcsim": "xiangling.go:22"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "4": [
+    0.1,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "1": [
+    0.15,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "after_chili",
+   "label": "Picked up Xiangling's chili pepper (A4), as the active character",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Xiangling.ts:85-90; wr:index.tsx:87-95,240-252"
+  },
+  {
+   "key": "after_guoba_hit",
+   "label": "Opponent hit by Guoba's flame (C1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xiangling.ts:85-86,91-93; wr:index.tsx:99-104,260-272"
+  },
+  {
+   "key": "pyronado",
+   "label": "During Pyronado (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xiangling.ts:85-86,94-96; wr:index.tsx:107-117"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_atk",
+   "label": "A4 Beware, It's Super Hot!: ATK% to the active character who picks up the chili",
+   "source": "a4",
+   "receivers": "active",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "after_chili",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiangling.ts:57-58,88-90,108; wr:index.tsx:87-95,164"
+  },
+  {
+   "key": "c1_res",
+   "label": "C1 Crispy Outside, Tender Inside: Pyro RES reduction on opponents hit by Guoba",
+   "source": "c1",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "after_guoba_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiangling.ts:61-62,91-93,110; wr:index.tsx:99-104,166",
+   "gcsim": "cons.go:13-26"
+  },
+  {
+   "key": "c6_pyro_others",
+   "label": "C6 Condensed Pyronado: party Pyro DMG Bonus during Pyronado",
+   "source": "c6",
+   "receivers": "others",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "pyronado",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165",
+   "gcsim": "cons.go:67-81"
+  },
+  {
+   "key": "c6_pyro_self",
+   "label": "C6 Condensed Pyronado: Pyro DMG Bonus to her own attacks and skill (not Pyronado itself, which is cast before it)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "moves": [
+    "normal",
+    "charged",
+    "plunge",
+    "skill"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "pyronado",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165",
+   "gcsim": "cons.go:67-81"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Crossfire: Guoba's attack range +20%",
+   "reason": "no damage effect: range"
+  },
+  {
+   "source": "c2",
+   "what": "Oil Meets Fire: an explosion after the 4th normal hit",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "Slowbake: Pyronado duration +40%",
+   "reason": "no damage effect: duration (a row's count is the user's)"
+  },
+  {
+   "source": "c6",
+   "what": "C6 on Pyronado's own 3-hit swing",
+   "reason": "GO excludes Pyronado's 1-hit, 2-hit and spin rows only (`antiC6`); the 3-hit swing is the same move, and the format scopes by move, not by row"
+  }
+ ]
+}

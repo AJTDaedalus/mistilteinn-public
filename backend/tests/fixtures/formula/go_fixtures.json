@@ -2810,6 +2810,1983 @@
       "go_value": 2270.5096055385693,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "furina_fanfare_c2_on_her_own_burst",
+      "covers": "a team DMG buff per stack from a talent row, its maximum raised by C1; a self HP% per stack (C2)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Furina.ts:114-137,160-164,196-202,260"
+      ],
+      "givers": [
+        {
+          "name": "Furina",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 674.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15307.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 696.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P} Max HP",
+            "params": [
+              0.205315
+            ]
+          },
+          "multiplier": 0.205315,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:furina",
+          "label": "Furina (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Furina.ts (pando), libs/gi/sheets/src/Characters/Furina/index.tsx (wr) @ 2c13fc40 \u2014 burst_dmg pando:Furina.ts:133-137,201-202; wr:index.tsx:149-155,351-354; c2_hp pando:Furina.ts:160-164,200; wr:index.tsx:190-200,343; gcsim internal/characters/furina/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "fanfare",
+                "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
+                "kind": "number",
+                "default": 400.0,
+                "default_reason": "self",
+                "max": 400.0,
+                "step": 50.0,
+                "options": null
+              },
+              {
+                "key": "c2_overstack",
+                "label": "C2: Fanfare points beyond the limit",
+                "kind": "number",
+                "default": 400.0,
+                "default_reason": "self",
+                "max": 400.0,
+                "step": 50.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.0025,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [],
+                "per": "fanfare",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "hp_pct",
+                "value": 0.0035,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [],
+                "per": "c2_overstack",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Let the People Rejoice: Incoming Healing Bonus per Fanfare point",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "TALENT: Salon Solitaire: Salon members' DMG multiplier from the number of party members whose HP they consume (110-140%)",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "A1: Endless Waltz healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A4: Unheard Confession: Salon members' DMG + 0.7% per 1,000 of Furina's Max HP, up to 28%",
+                "reason": "scoped to the Salon members' rows (not her Ousia bubble, which is the same move), and read from her own HP, which moves with every candidate through a cap the recipe cannot carry per candidate"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 21780.25635584084,
+      "go_value": 21780.25635584084,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "xingqiu_c2_on_his_own_burst",
+      "covers": "two constants no seeded list carries (cited to GO and gcsim): a self DMG buff and an enemy RES shred",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Xingqiu.ts:61-64,103-110,127"
+      ],
+      "givers": [
+        {
+          "name": "Xingqiu",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 712.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 10222.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 758.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "rain",
+          "label": "Sword Rain DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Sword Rain DMG|{param1:F1P}",
+            "params": [
+              0.976896
+            ]
+          },
+          "multiplier": 0.976896,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:xingqiu",
+          "label": "Xingqiu (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Xingqiu.ts (pando), libs/gi/sheets/src/Characters/Xingqiu/index.tsx (wr) @ 2c13fc40 \u2014 a4_hydro pando:Xingqiu.ts:61,103-106; wr:index.tsx:72,83,147; c2_res pando:Xingqiu.ts:64,107-110; wr:index.tsx:75,85-90,151; gcsim internal/characters/xingqiu/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "rain_swords",
+                "label": "Opponent hit by Xingqiu's Rain Swords (during Raincutter)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": [
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.15,
+                "elements": [
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "rain_swords",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Guhua Sword: Raincutter: Rain Sword damage reduction",
+                "reason": "no damage effect: damage reduction"
+              },
+              {
+                "what": "A1: Hydropathic healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "C2: Raincutter duration +3s",
+                "reason": "no damage effect: duration"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 1847.496532817153,
+      "go_value": 1847.496532817153,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "xiangling_c1_c6_on_bennett",
+      "covers": "a teammate's RES shred and party DMG buff, the latter withheld from her own Pyronado",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Xiangling.ts:61-62,73-74,91-98,109-110"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "constellation": 6,
+          "ascension_phase": 6,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "pyro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 799.16,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12397.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 771.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.267
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.1904
+            ]
+          },
+          "multiplier": 4.1904,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:xiangling",
+          "label": "Xiangling (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Xiangling.ts (pando), libs/gi/sheets/src/Characters/Xiangling/index.tsx (wr) @ 2c13fc40 \u2014 a4_atk pando:Xiangling.ts:57-58,88-90,108; wr:index.tsx:87-95,164; c1_res pando:Xiangling.ts:61-62,91-93,110; wr:index.tsx:99-104,166; c6_pyro_others pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165; gcsim internal/characters/xiangling/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_chili",
+                "label": "Picked up Xiangling's chili pepper (A4), as the active character",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "after_guoba_hit",
+                "label": "Opponent hit by Guoba's flame (C1)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "pyronado",
+                "label": "During Pyronado (C6)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_chili",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.15,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_guoba_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.15,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyronado",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Crossfire: Guoba's attack range +20%",
+                "reason": "no damage effect: range"
+              },
+              {
+                "what": "C2: Oil Meets Fire: an explosion after the 4th normal hit",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C4: Slowbake: Pyronado duration +40%",
+                "reason": "no damage effect: duration (a row's count is the user's)"
+              },
+              {
+                "what": "C6: C6 on Pyronado's own 3-hit swing",
+                "reason": "GO excludes Pyronado's 1-hit, 2-hit and spin rows only (`antiC6`); the 3-hit swing is the same move, and the format scopes by move, not by row"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:xiangling/after_guoba_hit": 1,
+        "kit:xiangling/pyronado": 1
+      },
+      "expected": 6943.433113625109,
+      "go_value": 6943.433113625109,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "citlali_c2_on_xiangling",
+      "covers": "a teammate's flat damage from the giver's EM (C1), and a RES shred doubled by C2",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Citlali.ts:63-66,74-75,119-136,149-151,186-199"
+      ],
+      "givers": [
+        {
+          "name": "Citlali",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": {
+            "elemental_mastery": 800.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:citlali",
+          "label": "Citlali (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Citlali.ts (pando), libs/gi/sheets/src/Characters/Citlali/index.tsx (wr) @ 2c13fc40 \u2014 a1_res pando:Citlali.ts:63-66,108,119-136,194-199; wr:index.tsx:126-145,192-207,286-295; c2_res pando:Citlali.ts:125-136,194-199; wr:index.tsx:192-207,288-295; c1_flat pando:Citlali.ts:74-75,149-151,186-191; wr:index.tsx:157-177; c2_em_active pando:Citlali.ts:81-83,154-156,192-193; wr:index.tsx:179-190,297; gcsim internal/characters/citlali/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_freeze_melt",
+                "label": "Citlali in Nightsoul's Blessing and a party member triggered Frozen or Melt (A1)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c1_blades",
+                "label": "Opal Fire's Obsidian Blades consumed by a teammate's hit (C1)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_shield",
+                "label": "Shielded by Citlali, as the active character (C2)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.2,
+                "elements": [
+                  "pyro",
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_freeze_melt",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.2,
+                "elements": [
+                  "pyro",
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_freeze_melt",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage",
+                "value": 1600.0,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged",
+                  "plunge",
+                  "skill",
+                  "burst"
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c1_blades",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 250.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_shield",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Dawnfrost Darkstar shield",
+                "reason": "no damage effect: shield"
+              },
+              {
+                "what": "A4: Itzpapalotl's Star Garments: Frostfall Storm and Ice Storm DMG + a share of her Elemental Mastery",
+                "reason": "scoped to two rows (Frostfall Storm is a skill row beside Obsidian Tzitzimitl, Ice Storm a burst row beside the skulls), and read from her own EM, which the recipe cannot carry as flat damage per candidate yet"
+              },
+              {
+                "what": "C2: Citlali's own C2 +125 EM in the EM her C1 reads",
+                "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `final.eleMas` would include it"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:citlali/a1_freeze_melt": 1,
+        "kit:citlali/c1_blades": 1
+      },
+      "expected": 5189.573677859282,
+      "go_value": 5189.573677859282,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "yelan_a1_a4_on_her_own_skill",
+      "covers": "a value read from a table by the team's distinct elements (A1), and a ramping DMG buff (A4) as a base part and a per-second part",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Yelan.ts:62-69,109-125,139-141"
+      ],
+      "givers": [
+        {
+          "name": "Yelan",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "hydro",
+          "pyro",
+          "cryo",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 785.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 14450.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 548.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "skill",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P} Max HP",
+            "params": [
+              0.407045
+            ]
+          },
+          "multiplier": 0.407045,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:yelan",
+          "label": "Yelan (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Yelan.ts (pando), libs/gi/sheets/src/Characters/Yelan/index.tsx (wr) @ 2c13fc40 \u2014 a1_hp pando:Yelan.ts:62-64,109-113,139; wr:index.tsx:99,191; a4_base pando:Yelan.ts:65-69,96-101,114-125,141; wr:index.tsx:101-120,195,365-382; a4_stack pando:Yelan.ts:65-69,96-101,114-125,141; wr:index.tsx:101-120,195,365-382; gcsim internal/characters/yelan/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a4_stacks",
+                "label": "Seconds the active character has fought in Depth-Clarion Dice (A4)",
+                "kind": "number",
+                "default": 14.0,
+                "default_reason": "self",
+                "max": 14.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "hp_pct",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.01,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      1.0,
+                      2.0,
+                      3.0,
+                      4.0,
+                      5.0,
+                      6.0,
+                      7.0,
+                      8.0,
+                      9.0,
+                      10.0,
+                      11.0,
+                      12.0,
+                      13.0,
+                      14.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.035,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [],
+                "per": "a4_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A4: The first moment of Depth-Clarion Dice, before any second (1%)",
+                "reason": "GO's WR sheet offers a 0-second state at 1%; its pando port, followed here, starts at the first second. At the default (14, 50%) both agree"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 22853.659736245503,
+      "go_value": 22853.659736245503,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "escoffier_a4_c1_on_her_own_skill",
+      "covers": "a RES shred read from a table by the Hydro/Cryo count (A4), and a CRIT DMG buff gated on the whole party's composition (C1)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Escoffier.ts:70-82,111-129,143-145"
+      ],
+      "givers": [
+        {
+          "name": "Escoffier",
+          "constellation": 1,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "cryo",
+          "hydro",
+          "hydro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 956.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13348.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 732.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "skill",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P}",
+            "params": [
+              0.9072
+            ]
+          },
+          "multiplier": 0.9072,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:escoffier",
+          "label": "Escoffier (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Escoffier.ts (pando), libs/gi/sheets/src/Characters/Escoffier/index.tsx (wr) @ 2c13fc40 \u2014 a4_res pando:Escoffier.ts:70-77,107,111-118,143-144; wr:index.tsx:75-80,109-123,212-214; c1_cryo_crit_dmg pando:Escoffier.ts:80-82,119-129,145; wr:index.tsx:125-137,215; gcsim internal/characters/escoffier/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a4_hit",
+                "label": "Opponent hit by Escoffier's Elemental Skill or Burst (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c1_after",
+                "label": "After Escoffier used her Elemental Skill or Burst (C1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.55,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.6,
+                "elements": [
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c1_after",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Scoring Cuts healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A1: Better to Salivate Than Medicate healing",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 2685.286804457087,
+      "go_value": 2685.286804457087,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "chevreuse_a1_a4_on_xiangling",
+      "covers": "a teammate's ATK% from the giver's HP per 1,000, capped, for receivers of two elements; a RES shred gated on the party's composition",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Chevreuse.ts:64-71,103-132,147-149"
+      ],
+      "givers": [
+        {
+          "name": "Chevreuse",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": {
+            "base_hp": 11962.0,
+            "hp_pct": 1.398,
+            "flat_hp": 4780.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "pyro",
+          "electro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:chevreuse",
+          "label": "Chevreuse (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Chevreuse.ts (pando), libs/gi/sheets/src/Characters/Chevreuse/index.tsx (wr) @ 2c13fc40 \u2014 a1_res pando:Chevreuse.ts:64-66,95,103-114,147-148; wr:index.tsx:76-78,102-116,220-221; a4_atk pando:Chevreuse.ts:68-71,95,115-132,149; wr:index.tsx:80-84,118-145,224; gcsim internal/characters/chevreuse/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_overloaded",
+                "label": "A party member triggered Overloaded (A1)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_after_ball",
+                "label": "After Chevreuse fired an Overcharged Ball (A4)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.4,
+                "elements": [
+                  "pyro",
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_overloaded",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.33464876,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_after_ball",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Short-Range Rapid Interdiction Fire healing",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:chevreuse/a1_overloaded": 1,
+        "kit:chevreuse/a4_after_ball": 1
+      },
+      "expected": 3901.8292042629955,
+      "go_value": 3901.8292042629955,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "jean_c1_c4_on_her_own_skill",
+      "covers": "a self move-scoped DMG buff (C1) and an enemy RES shred (C4)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Jean.ts:68-77,92-103,117-122"
+      ],
+      "givers": [
+        {
+          "name": "Jean",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "anemo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "anemo",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 847.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 14695.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 769.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.932,
+        "flat_atk": 311.0,
+        "anemo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7
+      },
+      "set_pools": [],
+      "channel": "anemo",
+      "rows": [
+        {
+          "id": "skill",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              5.256
+            ]
+          },
+          "multiplier": 5.256,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:jean",
+          "label": "Jean (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Jean.ts (pando), libs/gi/sheets/src/Characters/Jean/index.tsx (wr) @ 2c13fc40 \u2014 c1_skill pando:Jean.ts:68-69,92-94,117; wr:index.tsx:109-115,171; c4_res pando:Jean.ts:76-77,101-103,122; wr:index.tsx:128-134,177; gcsim internal/characters/jean/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "c1_hold",
+                "label": "Gale Blade held for more than 1 second (C1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c4_field",
+                "label": "Opponent within Dandelion Breeze's field (C4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c1_hold",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.4,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c4_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Dandelion Breeze healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A1: Wind Companion healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A4: Let the Wind Lead: Energy",
+                "reason": "no damage effect: energy"
+              },
+              {
+                "what": "C2: People's Aegis: ATK SPD and Movement SPD",
+                "reason": "no damage effect per hit: attack speed changes a rotation's count, which is the user's"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 15194.913507950665,
+      "go_value": 15194.913507950665,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "zhongli_shield_and_a4_on_his_own_burst",
+      "covers": "an all-element RES shred (a cited constant), and self flat damage from his own HP per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Zhongli.ts:57,68-72,90,107-111,120-128"
+      ],
+      "givers": [
+        {
+          "name": "Zhongli",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character: his HP is the candidate's"
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "geo",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 859.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 14695.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 738.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "geo_dmg_bonus": 0.754,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              8.9972
+            ]
+          },
+          "multiplier": 8.9972,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:zhongli",
+          "label": "Zhongli (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Zhongli.ts (pando), libs/gi/sheets/src/Characters/Zhongli/index.tsx (wr) @ 2c13fc40 \u2014 shield_res pando:Zhongli.ts:57,90,120-123; wr:index.tsx:66,89-94; a4_auto pando:Zhongli.ts:68-72,97-111,124-128; wr:index.tsx:77-81,101-123,171-175; a4_skill pando:Zhongli.ts:68-72,97-111,124-128; wr:index.tsx:77-81,101-123,171-175; a4_burst pando:Zhongli.ts:68-72,97-111,124-128; wr:index.tsx:77-81,101-123,171-175; gcsim internal/characters/zhongli/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shielded",
+                "label": "Opponent near a character shielded by Jade Shield",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.2,
+                "elements": [
+                  "pyro",
+                  "hydro",
+                  "electro",
+                  "cryo",
+                  "anemo",
+                  "geo",
+                  "dendro",
+                  "physical"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shielded",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.0139,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged",
+                  "plunge"
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.019,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.33,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Jade Shield absorption",
+                "reason": "no damage effect: shield"
+              },
+              {
+                "what": "A1: Resonant Waves: shield strength",
+                "reason": "no damage effect: shield"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 31947.003210845585,
+      "go_value": 31947.003210845585,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "faruzan_burst_a4_on_her_own_burst",
+      "covers": "a DMG buff and a RES shred from talent rows, and flat damage from the giver's base ATK",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Faruzan.ts:55-57,67,86-97,111-114"
+      ],
+      "givers": [
+        {
+          "name": "Faruzan",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "anemo",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "anemo",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 804.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 9569.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 628.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.24
+      },
+      "artifacts": {
+        "atk_pct": 0.932,
+        "flat_atk": 311.0,
+        "anemo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7
+      },
+      "set_pools": [],
+      "channel": "anemo",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P}",
+            "params": [
+              6.7968
+            ]
+          },
+          "multiplier": 6.7968,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:faruzan",
+          "label": "Faruzan (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Faruzan.ts (pando), libs/gi/sheets/src/Characters/Faruzan/index.tsx (wr) @ 2c13fc40 \u2014 burst_anemo pando:Faruzan.ts:55,86-88,111; wr:index.tsx:79-84; burst_res pando:Faruzan.ts:57,89-91,113 (GO reads the level-1 entry, which the seeded row repeats at every level); wr:index.tsx:86-91; a4_anemo_flat pando:Faruzan.ts:67,93-97,114; wr:index.tsx:134-146; gcsim internal/characters/faruzan/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "burst_benefit",
+                "label": "Under Prayerful Wind's Benefit (Faruzan's burst)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "burst_hit",
+                "label": "Opponent under Perfidious Wind's Bale (Faruzan's burst)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_active",
+                "label": "Hurricane Guard proc on the Anemo hit (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.324,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "burst_benefit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.3,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "burst_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage",
+                "value": 257.28000000000003,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "burst_benefit",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "a4_active",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Impetuous Flow: faster charged shots",
+                "reason": "no damage effect: charge time"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 17610.813142885137,
+      "go_value": 17610.813142885137,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "sucrose_a4_on_xiangling",
+      "covers": "teammate EM buffs (one gated on the receiver's element) into an amplifying reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484",
+        "libs/gi/formula/src/data/char/Sucrose.ts:58-63,125-131,143-152"
+      ],
+      "givers": [
+        {
+          "name": "Sucrose",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": {
+            "elemental_mastery": 900.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "anemo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:sucrose",
+          "label": "Sucrose (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Sucrose.ts (pando), libs/gi/sheets/src/Characters/Sucrose/index.tsx (wr) @ 2c13fc40 \u2014 a1_em_pyro pando:Sucrose.ts:58-59,86-95,98-103,143-150; wr:index.tsx:72,95-112,222; a4_em pando:Sucrose.ts:62-63,125-131,152; wr:index.tsx:76,113-122,217; gcsim internal/characters/sucrose/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "swirl_pyro",
+                "label": "Sucrose triggered a Swirl with Pyro (A1)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "skill_hit",
+                "label": "Sucrose's Elemental Skill or Burst hit an opponent (A4)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 50.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_pyro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 180.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "skill_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Witch's Eve Rite (Hexerei): DMG Bonus after her skill or burst with two Hexerei party members, and C6's extra share to Hexerei members",
+                "reason": "the Hexerei party mechanic is not modelled: the estimate has no notion of a character's Hexerei membership yet"
+              },
+              {
+                "what": "KIT: Teammates' kit EM buffs in the EM her A4 reads",
+                "reason": "teammates' kit buffs to Sucrose's EM are not fed back into it (DESIGN \u00a72.6); GO's premod EM would include them"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:sucrose/swirl_pyro": 1,
+        "kit:sucrose/skill_hit": 1
+      },
+      "expected": 6339.783453749159,
+      "go_value": 6337.834384850319,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00030752916224804444
     }
   ]
 }

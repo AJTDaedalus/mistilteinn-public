@@ -1,0 +1,193 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Zhongli",
+ "nanoka_id": "10000030",
+ "slug": "zhongli",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Zhongli.ts",
+  "wr": "libs/gi/sheets/src/Characters/Zhongli/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/zhongli/",
+ "verified_by": [
+  "zhongli_shield_and_a4_on_his_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Zhongli.ts:116-117; wr:index.tsx:163,168",
+   "gcsim": "zhongli.go:24"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Zhongli.ts:116,118; wr:index.tsx:164,169",
+   "gcsim": "zhongli.go:23"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "4": [
+    0.0139,
+    0.019,
+    0.33,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "shielded",
+   "label": "Opponent near a character shielded by Jade Shield",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Zhongli.ts:87,90,120-123; wr:index.tsx:89-94"
+  }
+ ],
+ "effects": [
+  {
+   "key": "shield_res",
+   "label": "Jade Shield: all Elemental and Physical RES -20% near shielded characters",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro",
+    "physical"
+   ],
+   "value": {
+    "constant": -0.2,
+    "cite": "no seeded row carries it; GO pando:Zhongli.ts:57 `enemyRes_: -0.2`, gcsim shield.go:40"
+   },
+   "when": [
+    {
+     "condition": "shielded",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Zhongli.ts:57,90,120-123; wr:index.tsx:66,89-94",
+   "gcsim": "shield.go:27-45"
+  },
+  {
+   "key": "a4_auto",
+   "label": "A4 Dominance of Earth: normal, charged and plunging attack DMG + 1.39% of his Max HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal",
+    "charged",
+    "plunge"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "go": "pando:Zhongli.ts:68-72,97-111,124-128; wr:index.tsx:77-81,101-123,171-175",
+   "gcsim": "asc.go:20-47"
+  },
+  {
+   "key": "a4_skill",
+   "label": "A4 Dominance of Earth: Stone Stele, resonance and hold DMG + 1.9% of his Max HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1,
+    "times_stat": "hp"
+   },
+   "go": "pando:Zhongli.ts:68-72,97-111,124-128; wr:index.tsx:77-81,101-123,171-175",
+   "gcsim": "asc.go:20-47"
+  },
+  {
+   "key": "a4_burst",
+   "label": "A4 Dominance of Earth: Planet Befall DMG + 33% of his Max HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2,
+    "times_stat": "hp"
+   },
+   "go": "pando:Zhongli.ts:68-72,97-111,124-128; wr:index.tsx:77-81,101-123,171-175",
+   "gcsim": "asc.go:20-47"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Jade Shield absorption",
+   "reason": "no damage effect: shield"
+  },
+  {
+   "source": "a1",
+   "what": "Resonant Waves: shield strength",
+   "reason": "no damage effect: shield"
+  },
+  {
+   "source": "c1",
+   "what": "Rock, the Backbone of Earth: two steles",
+   "reason": "a damage instance, not a buff (a row's count is the user's)"
+  },
+  {
+   "source": "c2",
+   "what": "Stone, the Cradle of Jade: a shield from the burst",
+   "reason": "no damage effect: shield"
+  },
+  {
+   "source": "c4",
+   "what": "Topaz, Unbreakable and Fearless: burst AoE and petrification",
+   "reason": "no damage effect: area and duration"
+  },
+  {
+   "source": "c6",
+   "what": "Chrysos, Bounty of Dominator: healing",
+   "reason": "no damage effect: healing"
+  }
+ ]
+}
