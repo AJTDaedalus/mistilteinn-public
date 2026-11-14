@@ -204,6 +204,28 @@ A `value` names exactly one of:
 optionally `"times_stat"`: multiplied by one of the giver's stats (`base_atk`/`base_hp`/
 `base_def`, `atk`/`hp`/`def`, `elemental_mastery`, `energy_recharge`).
 
+**Added for the ungated sheets (task 11), each small and in the format's spirit:**
+
+| addition | where | why |
+|---|---|---|
+| `"negate": true` on a value | `ValueRef` | a seeded list publishes a reduction as a positive number (Vodyanitsa's "Hydro/Cryo RES Reduction" 0.3); GO negates it into `enemyRes_` |
+| `"times_param"` on a value | `ValueRef` | one seeded parameter times another: Vesna's C4 multiplies her A4 by its 2.0 (GO `prod(a4, 1 + c4)`, written as A4 plus a C4 effect of A4 × C4) |
+| `per` on an effect | `SheetEffect` | P1's stack multiplier, carried through: Nefer's burst DMG per Veil, Mitya's EM per Beacon, Valeriy's A4 per Momentum |
+| `receiver_elements` | `SheetEffect` | a buff that reaches receivers of some elements (GO `target.char.ele`, Linnea's C2), decided in `resolve` from the subject's element |
+| `per_team_elements` | `SheetEffect` | times the count of team members of some elements (GO `team.common.count.<ele>`, Vesna's A4), decided in `resolve` from the members' elements |
+| `flat_damage_from_def`, and `flat_damage` from ATK → `flat_damage_from_atk` | `SELF_CONVERSIONS`, `formula-recipe.ts` | a giver who is the subject adding flat damage from their own DEF (Kachina's A4) or ATK (Valeriy's Offensive Directive and A4): the recipe's resolved flat-term conversion, which `recipe-eval.ts` already evaluated from DEF |
+
+`resolve` takes `receiver_element` and `team_elements` (`kit_buffs.team_kit` passes both); an
+effect that needs one and is not given it is withheld by name, and one whose receiver is not of
+its elements, or whose team count is 0, is absent, like a locked constellation.
+
+**Not added, and named in the sheets instead:** a threshold and cap on a value (Vodyanitsa's A4,
+flat damage from her HP above 40,000, capped); a talent boost gated on a condition (Lohen's High
+Spirits, skill +1); an unlock-free passive's list (Lohen's Hexerei rite); a stack condition whose
+maximum moves with a constellation (Nefer's C2, Valeriy's C4: the C0 maximum is kept); a
+base-damage multiplier (GO `baseMulti`: Nefer's Phantasm Performance, Lohen's Will, Vesna's Spirit
+Blade, Vodyanitsa's Song); and a buff scoped to one talent row rather than a move.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.
@@ -242,9 +264,10 @@ resonance, sets and kits. This is reversible: if a kit ever needs a condition *i
    giver, `others` only when they are not.
 4. **A giver who is the optimized character** resolves against their equipped build for
    constants only. A value reading `base_*` is a constant (artifacts do not move it). A value
-   reading a stat artifacts move becomes a per-candidate term the recipe evaluates — today
-   only `dmg_bonus` from EM → `dmg_bonus_from_em`, `bonus += coefficient × (calibrated EM +
-   candidate EM)` in `recipe-eval.ts` — or it is withheld by name. The equipped artifacts
+   reading a stat artifacts move becomes a per-candidate term the recipe evaluates —
+   `dmg_bonus` from EM → `dmg_bonus_from_em`, `bonus += coefficient × (calibrated EM +
+   candidate EM)` in `recipe-eval.ts`, and `flat_damage` from ATK or DEF →
+   `flat_damage_from_atk`/`_def` (task 11) — or it is withheld by name. The equipped artifacts
    never reach the estimate as a number.
 5. **No cycles, by construction.** A giver stat never includes another kit's buff, so no buff
    can feed itself or another. **The cost:** where a teammate's kit raises a stat another
@@ -268,6 +291,19 @@ resonance, sets and kits. This is reversible: if a kit ever needs a condition *i
 - **Kazuha's A4 EM.** GO reads `premod.eleMas` (which would include teammates' EM buffs);
   gcsim `NonExtraStat(EM)` at swirl time; we read pass-1 EM (rule 5). Identical for every team
   that has no EM-sharing kit sheet.
+
+#### Where GO's own files disagree: the talent boosts (task 11)
+
+At `2c13fc40` GO carries two sheets per character, the WR sheet the app runs on and a pando
+port. For Mitya and Valeriy the pando file is an unfilled template (its C3/C5 lines are marked
+`TODO: Double check these`), and for Vesna and Vodyanitsa it swaps C3 and C5. The game data
+settles it: `BinOutput/Talent/AvatarTalents/ConfigTalent_<name>.json` at the YuanShenResources
+pin (`f11cf545`, read through `scripts.yuanshen.fetch` into the gitignored cache, never at run
+time) gives each constellation's talent index and +3 (1 normal attack, 2 skill, 9 burst; checked
+on Bennett first). It agrees with the WR sheet in all eight characters, so the sheets follow WR:
+Mitya C3 skill / C5 normal attack, Valeriy C3 normal attack / C5 skill, everyone else C3 skill /
+C5 burst. Each `talent_boosts` entry cites both. Effects are cited to pando where pando is
+filled in and to WR for Mitya and Valeriy.
 
 #### Recorded constants
 
