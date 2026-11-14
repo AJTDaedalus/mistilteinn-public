@@ -8,6 +8,7 @@ import {
   type FormulaRow,
   type FormulaSetTier,
   type FormulaTeam,
+  hitMove,
   rowHits,
   suggestMove,
   synthesizeRecipe,
@@ -533,6 +534,37 @@ describe('kit buffs (P2)', () => {
     const unnamed = rowHits(row(context()), [scoped], TEAM, {});
     expect(unnamed.hits[0].bonusDmg).toBeCloseTo(0.1, 9);
     expect(unnamed.skipped.join()).toMatch(/talent row is unknown/);
+  });
+
+  it('a Seven-Phase Flash buff never reaches an ordinary Normal Attack of the same label', () => {
+    // DECISIONS §40 (iv): Skirk's A4 names her skill talent's "1-Hit DMG"; her ordinary
+    // normal-attack "1-Hit DMG" is the same move and the same label, and must not receive it.
+    const flash = {
+      ...KIT('base_dmg_bonus', 0.7),
+      bonus: {
+        conditions: [], unmodelled: [],
+        effects: [{
+          stat: 'base_dmg_bonus', value: 0.7, when: [],
+          rows: [{ talent: 'elemental_skill', label: '1-Hit DMG' }],
+        }],
+      },
+    };
+    const talent = (hit: FormulaRow['hit']) => rowHits(
+      row(context(), { hit, move: 'normal' }), [flash], TEAM, {},
+    ).hits[0].talent;
+    const sevenPhase = talent({ talent: 'elemental_skill', label: '1-Hit DMG' });
+    const ordinary = talent({ talent: 'normal_attack', label: '1-Hit DMG' });
+    expect(sevenPhase / ordinary).toBeCloseTo(1.7, 9);
+  });
+});
+
+describe('hitMove', () => {
+  it("takes the sheet's move where /hits names one, and the label's guess otherwise", () => {
+    // Skirk's Seven-Phase Flash 1-Hit DMG is a skill-talent row GO deals as a Normal Attack.
+    expect(hitMove({ talent: 'elemental_skill', label: '1-Hit DMG', move: 'normal' }))
+      .toBe('normal');
+    expect(hitMove({ talent: 'elemental_skill', label: '1-Hit DMG', move: null })).toBe('skill');
+    expect(hitMove({ talent: 'normal_attack', label: 'Charged Attack DMG' })).toBe('charged');
   });
 });
 

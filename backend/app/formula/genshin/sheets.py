@@ -665,6 +665,10 @@ class SheetUnmodelled(_Strict):
     source: Source | Literal["kit"]
     what: str
     reason: str
+    #: Whom the note concerns: `teammate` when it is about the kit reaching someone else, so a
+    #: giver who is the subject — for whom the effect itself is withheld, with its own reason —
+    #: is not told the same thing twice (Nahida's A1, found driving it); `subject` the reverse.
+    receiver: Literal["any", "subject", "teammate"] = "any"
 
 
 class TalentBoost(_Strict):
@@ -1236,7 +1240,9 @@ def resolve(
     calculator = Calculator(giver.registry)
     unmodelled: list[Unmodelled] = [
         Unmodelled(what=f"{u.source.upper()}: {u.what}", reason=u.reason)
-        for u in sheet.unmodelled if u.source == "kit" or _unlocked(u.source, giver)
+        for u in sheet.unmodelled
+        if (u.source == "kit" or _unlocked(u.source, giver))
+        and u.receiver in ("any", "subject" if giver_is_subject else "teammate")
     ]
     conditions = tuple(
         c.resolve(giver_is_subject=giver_is_subject,

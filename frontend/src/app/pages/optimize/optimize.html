@@ -643,7 +643,7 @@ Only part of your inventory was searched.
 
     @if (result(); as found) {
       @if (resultIsFormula()) {
-        <formula-label class="results-label" />
+        <formula-label class="results-label" [assumptions]="formulaAssumptions()" />
       }
       <!-- **Saving is offered, never automatic.** A search a user was only trying out should
            not accumulate in their library — the list is a record they curate, and a page that

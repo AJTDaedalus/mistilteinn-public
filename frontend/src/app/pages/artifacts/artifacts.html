@@ -334,7 +334,7 @@
 
       @if (hasRanking() && rankFormula()) {
         <!-- Every score on the cards below comes from this recipe, so the label sits over them. -->
-        <formula-label />
+        <formula-label [assumptions]="rankFormula() ?? []" />
       }
 
       @if (hasRanking()) {

@@ -127,3 +127,22 @@ def test_on_herself_her_a4_is_a_capped_thresholded_conversion_priced_per_build()
     kit = sheets.resolve(_sheet("vodyanitsa"), _vodyanitsa(15000.0), giver_is_subject=True)
     [a4] = [e for e in kit.bonus.effects if e.stat == "flat_damage_from_hp"]
     assert (a4.value, a4.threshold, a4.cap) == (pytest.approx(0.14), 40000.0, 3500.0)
+
+
+def test_nahidas_a1_is_named_once_when_she_is_the_subject():
+    """Found driving it: the sheet's note about her A1 reaching a teammate, and the withheld A1
+    on herself, were both listed under "Not applied". The note concerns a teammate only."""
+    from tests.unit.test_go_formula_fixtures import _pinned, _ungated_giver
+    cons, pas = _pinned("10000073")
+    giver = _ungated_giver("Nahida", "10000073", cons=cons, passives=pas,
+                           stats={"elemental_mastery": 800.0})
+    own = sheets.resolve(_sheet("nahida"), giver, giver_is_subject=True,
+                         receiver_element="dendro", team_elements=["dendro", "pyro"],
+                         team_max={"elemental_mastery": 500.0})
+    assert len([u for u in own.bonus.unmodelled if u.what.startswith("A1:")]) == 1
+    mate = sheets.resolve(_sheet("nahida"), giver, giver_is_subject=False,
+                          receiver_element="pyro", team_elements=["dendro", "pyro"],
+                          team_max={"elemental_mastery": 500.0})
+    note = ("A1: Compassion Illuminated when the optimized character's own Elemental Mastery "
+            "is the party's highest")
+    assert [u.what for u in mate.bonus.unmodelled if u.what.startswith("A1:")] == [note]

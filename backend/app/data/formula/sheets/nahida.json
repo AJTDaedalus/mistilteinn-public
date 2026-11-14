@@ -335,7 +335,8 @@
   {
    "source": "a1",
    "what": "Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
-   "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+   "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger",
+   "receiver": "teammate"
   },
   {
    "source": "c2",

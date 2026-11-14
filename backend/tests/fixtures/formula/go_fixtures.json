@@ -7142,10 +7142,6 @@
             ],
             "unmodelled": [
               {
-                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
-                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
-              },
-              {
                 "what": "C2: The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
                 "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
               },
@@ -13523,10 +13519,6 @@
             ],
             "unmodelled": [
               {
-                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
-                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
-              },
-              {
                 "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
                 "reason": "no damage effect: they change how often and how long, not how much a hit deals"
               },
@@ -13684,10 +13676,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
-                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
-              },
               {
                 "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
                 "reason": "no damage effect: they change how often and how long, not how much a hit deals"

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { FormulaEstimateService } from '../../pages/optimize/formula-estimate.service';
 import type { ConditionGroup } from '../../sim/formula-calibration';
-import { FormulaLabel } from './formula-label';
+import { FormulaLabel, kitGivers } from './formula-label';
 import { FormulaPanel } from './formula-panel';
 
 /**
@@ -191,5 +191,45 @@ describe('FormulaLabel', () => {
     expect(text).toContain('Formula estimate — no simulation');
     expect(text).toContain('Damage for the chosen sequence');
     expect(text).not.toMatch(/\bDPS\b/);
+  });
+});
+
+describe('FormulaLabel, given the estimate\'s assumptions', () => {
+  it('names the kits it applied instead of saying none are modelled', () => {
+    // Driven: the results label said "No kit buffs … are modelled" over results that carried
+    // Bennett's and Kazuha's buffs.
+    TestBed.configureTestingModule({ imports: [FormulaLabel] });
+    const fixture = TestBed.createComponent(FormulaLabel);
+    fixture.componentRef.setInput('assumptions', [
+      'Formula estimate: no simulation. Not calibrated by gcsim.',
+      'Kit buffs from Bennett: verified against Genshin Optimizer.',
+      'Kit buffs from Kaedehara Kazuha: unverified (cited to Genshin Optimizer).',
+      'No kit buffs modelled for Xingqiu.',
+    ]);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent!;
+    expect(text).toContain('Kit buffs applied from Bennett, Kaedehara Kazuha');
+    expect(text).not.toContain('No kit buffs');
+    expect(kitGivers(['No kit buffs modelled: talents, passives.'])).toEqual([]);
+  });
+});
+
+describe('FormulaPanel, a kit condition\'s default reason', () => {
+  it('shows the curated note: the usual value and why, or why it stays off', () => {
+    const { el, fixture } = render();
+    fixture.componentRef.setInput('groups', [{
+      sourceId: 'kit:arlecchino', label: 'Arlecchino (kit)', citation: 'GO Arlecchino.ts',
+      kind: 'kit', verified: true, unmodelled: [],
+      conditions: [
+        { key: 'bond', label: 'Bond of Life', kind: 'number', default: 130,
+          default_reason: 'usual', default_note: 'she starts at 130% Bond of Life', max: 200 },
+        { key: 'mate', label: 'A teammate\'s field', kind: 'toggle', default: 1,
+          default_reason: 'teammate', default_note: null },
+      ],
+    }] satisfies ConditionGroup[]);
+    fixture.detectChanges();
+    const text = el.querySelector('.assumptions')!.textContent!;
+    expect(text).toContain('Default 130 — she starts at 130% Bond of Life');
+    expect(text).toContain('Default on — a teammate\'s buff, assumed up as they play it');
   });
 });
