@@ -96,7 +96,7 @@ def test_a1_without_the_teams_highest_is_withheld_and_on_nahida_herself_too():
 
 def test_times_team_max_names_a_stat_and_not_the_givers_too():
     with pytest.raises(ValidationError, match="times_team_max must be one of"):
-        sheets.ValueRef(passive=1, param=0, times_team_max="crit_rate")
+        sheets.ValueRef(passive=1, param=0, times_team_max="crit_dmg")
     with pytest.raises(ValidationError, match="not both"):
         sheets.ValueRef(passive=1, param=0, times_team_max="atk", times_stat="atk")
 

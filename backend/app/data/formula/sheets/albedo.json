@@ -1,0 +1,302 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Albedo",
+ "nanoka_id": "10000038",
+ "slug": "albedo",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Albedo.ts",
+  "wr": "libs/gi/sheets/src/Characters/Albedo/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/albedo/",
+ "verified_by": [
+  "albedo_c2_on_his_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Albedo.ts:217-218",
+   "gcsim": "albedo.go:29"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Albedo.ts:217,219",
+   "gcsim": "albedo.go:30"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.3,
+    3.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.3,
+    3.0,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.5,
+    0.25,
+    2.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    125.0,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "low_hp",
+   "label": "Opponents below 50% HP (A1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "holds only for the last half of an opponent's HP"
+   },
+   "go": "pando:Albedo.ts:119,130-134"
+  },
+  {
+   "key": "burst_used",
+   "label": "After his burst (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Albedo.ts:118,125-129"
+  },
+  {
+   "key": "c2_stacks",
+   "label": "Opening of Phanerozoic: Fatal Reckoning stacks from Transient Blossoms (C2)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 4,
+   "step": 1,
+   "go": "pando:Albedo.ts:84-91,120,135-140"
+  },
+  {
+   "key": "in_field",
+   "label": "The active character in his Solar Isotoma field (C4, C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Albedo.ts:121,141-145"
+  },
+  {
+   "key": "c6_shield",
+   "label": "Protected by a Crystallize shield (C6)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "needs a Crystallize shield: set it on in a team that crystallizes"
+   },
+   "go": "pando:Albedo.ts:122,146-156"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_blossom",
+   "label": "A1 Calcite Might: Transient Blossom DMG",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Transient Blossom DMG"
+    }
+   ],
+   "value": {
+    "passive": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Albedo.ts:62-66,130-134,240-248",
+   "gcsim": "asc.go:22-23"
+  },
+  {
+   "key": "a4_em",
+   "label": "A4 Homuncular Nature: party EM after his burst",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "elemental_mastery",
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "burst_used",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Albedo.ts:67-70,125-129,223",
+   "gcsim": "asc.go:47-49"
+  },
+  {
+   "key": "c2_burst",
+   "label": "C2 Opening of Phanerozoic: burst DMG + a share of his DEF per stack",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0,
+    "times_stat": "def"
+   },
+   "per": "c2_stacks",
+   "go": "pando:Albedo.ts:84-91,135-140,222",
+   "gcsim": "burst.go:46,74"
+  },
+  {
+   "key": "c4_plunge",
+   "label": "C4 Descent of Divinity: Plunging Attack DMG in his field",
+   "source": "c4",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "moves": [
+    "plunge"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "in_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Albedo.ts:92-96,141-145,226",
+   "gcsim": "cons.go:37-38"
+  },
+  {
+   "key": "c6_dmg",
+   "label": "C6 Dust of Purification: DMG in his field, under a Crystallize shield",
+   "source": "c6",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "value": {
+    "constant": 0.17,
+    "cite": "GO pando:Albedo.ts:97-98 `bonus_dmg_: 0.17`; gcsim albedo/cons.go:73 `m[attributes.DmgP] = 0.17`; his seeded C6 list carries the Hexerei parts"
+   },
+   "when": [
+    {
+     "condition": "in_field",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c6_shield",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Albedo.ts:97-101,146-156,229",
+   "gcsim": "cons.go:73-74"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Witch's Eve Rite: Solar and Silver Isotoma DMG, A1's Blossom increase, C1 DEF, C2 EM at four stacks and its hit, C4 impact DMG, C6 Fatal Blossom increase",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "c1",
+   "what": "Flower of Eden: Energy",
+   "reason": "no damage effect"
+  }
+ ]
+}

@@ -100,11 +100,16 @@ CAPPED = {"alhaitham", "tighnari"}
 BATCH6 = {"chasca", "kinich", "wanderer", "keqing", "sangonomiya_kokomi", "yae_miko",
           "kamisato_ayato", "baizhu", "dehya", "layla", "kirara", "lynette", "thoma", "beidou",
           "ororon", "iansan", "lan_yan"}
+#: Task 11's seventh batch: the commonly played characters next on the list.
+BATCH7 = {"xiao", "venti", "nilou", "albedo", "chiori", "sigewinne", "sethos", "shikanoin_heizou",
+          "freminet", "rosaria", "candace", "mika", "diluc", "klee", "lisa", "ningguang",
+          "chongyun"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED, *BATCH6}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED, *BATCH6,
+        *BATCH7}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

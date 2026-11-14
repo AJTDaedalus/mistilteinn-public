@@ -1,0 +1,275 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Rosaria",
+ "nanoka_id": "10000045",
+ "slug": "rosaria",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Rosaria.ts",
+  "wr": "libs/gi/sheets/src/Characters/Rosaria/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/rosaria/",
+ "verified_by": [
+  "rosaria_a4_c6_on_eula"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Rosaria.ts:91-92",
+   "gcsim": "rosaria.go:20"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Rosaria.ts:91,93",
+   "gcsim": "rosaria.go:19"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    0.1,
+    0.1,
+    4.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.2,
+    10.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.12,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.15,
+    10.0,
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_behind",
+   "label": "After her skill strikes an opponent from behind (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Rosaria.ts:84,95-97"
+  },
+  {
+   "key": "a4_share",
+   "label": "After her burst (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Rosaria.ts:84,99-110"
+  },
+  {
+   "key": "c1_crit",
+   "label": "After her attack crits (C1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Rosaria.ts:84,111-118"
+  },
+  {
+   "key": "c6_hit",
+   "label": "Opponents hit by her burst (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Rosaria.ts:84,119-121"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_cr",
+   "label": "A1 Regina Probationum: CRIT Rate",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a1_behind",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Rosaria.ts:59-62,95-97",
+   "gcsim": "asc.go:28-29"
+  },
+  {
+   "key": "a4_cr",
+   "label": "A4 Shadow Samaritan: a share of her CRIT Rate to the other party members, capped",
+   "source": "a4",
+   "receivers": "others",
+   "stat": "crit_rate",
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "crit_rate",
+    "cap": {
+     "passive": 4,
+     "param": 2
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_share",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Rosaria.ts:63-67,99-110",
+   "gcsim": "asc.go:55-61"
+  },
+  {
+   "key": "c1_normal",
+   "label": "C1 Unholy Revelation: Normal Attack DMG",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c1_crit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Rosaria.ts:68-72,116-118",
+   "gcsim": "cons.go:33-34"
+  },
+  {
+   "key": "c6_res",
+   "label": "C6 Divine Retribution: opponent Physical RES",
+   "source": "c6",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "c6_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Rosaria.ts:73-76,119-121",
+   "gcsim": "cons.go:93"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a4",
+   "receiver": "teammate",
+   "what": "Shadow Samaritan: her CRIT Rate as GO reads it",
+   "reason": "GO reads it with her own A1 applied; the estimate reads her build's CRIT Rate without any kit buff (two-pass rule 5), so with A1 up GO's share is higher until the cap"
+  },
+  {
+   "source": "c1",
+   "what": "Unholy Revelation: ATK SPD",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Land Without Promise: Ice Lance duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Painful Grace: Energy",
+   "reason": "no damage effect"
+  }
+ ]
+}

@@ -1,0 +1,151 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Klee",
+ "nanoka_id": "10000029",
+ "slug": "klee",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Klee.ts",
+  "wr": "libs/gi/sheets/src/Characters/Klee/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/klee/",
+ "verified_by": [
+  "klee_a1_c2_c6_on_her_own_charged"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Klee.ts:142-143",
+   "gcsim": "klee.go:22"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Klee.ts:142,144",
+   "gcsim": "klee.go:23"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "spark",
+   "label": "A Charged Attack consuming Explosive Spark (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Klee.ts:67-69,163-174"
+  },
+  {
+   "key": "c2_frags",
+   "label": "Opponents hit by her Jumpy Dumpty mines (C2)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Klee.ts:104,125-127"
+  },
+  {
+   "key": "c6_delight",
+   "label": "During her burst (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Klee.ts:104,128-130"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_charged",
+   "label": "A1 Pounding Surprise: Charged Attack DMG with Explosive Spark",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constant": 0.5,
+    "cite": "GO pando:Klee.ts:67-69 `charged_dmg_: 0.5`, applied on its own Charged Attack row (:163-174); her seeded A1 list is empty"
+   },
+   "when": [
+    {
+     "condition": "spark",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Klee.ts:67-69,163-174"
+  },
+  {
+   "key": "c2_def",
+   "label": "C2 Explosive Frags: opponent DEF",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "def_reduction",
+   "value": {
+    "constant": 0.23,
+    "cite": "GO pando:Klee.ts:84-86 `enemyDefRed_: 0.23` (followed: GO is the comparator; gcsim klee/cons.go:49-51 writes -0.233); her seeded C2 list is empty"
+   },
+   "when": [
+    {
+     "condition": "c2_frags",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Klee.ts:84-86,125-127,148",
+   "gcsim": "cons.go:49-51"
+  },
+  {
+   "key": "c6_pyro",
+   "label": "C6 Blazing Delight: party Pyro DMG during her burst",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constant": 0.1,
+    "cite": "GO pando:Klee.ts:91-96 `team_pyro_dmg_: 0.1`; gcsim klee/burst.go:99 `m[attributes.PyroP] = .1`; her seeded C6 list carries the Hexerei parts"
+   },
+   "when": [
+    {
+     "condition": "c6_delight",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Klee.ts:91-96,128-130,149-151",
+   "gcsim": "burst.go:99-101"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Witch's Eve Rite: Badge multiplier, C1 ATK, C4 and C6 Pyro DMG under Hexerei",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "a1",
+   "what": "Pounding Surprise: GO prices it on a separate Charged Attack row",
+   "reason": "the catalogue has one Charged Attack row; the toggle carries it there"
+  },
+  {
+   "source": "a4",
+   "what": "Sparkling Burst: Energy on a crit",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Chained Reactions: Chained Reactions sparks",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "Sparkly Explosion: an explosion on leaving the field",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

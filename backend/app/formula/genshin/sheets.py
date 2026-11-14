@@ -124,6 +124,8 @@ GIVER_STATS: dict[str, AnyNode] = {
     tags.Q_DEF: stats.DEF_NODE,
     tags.Q_ELEMENTAL_MASTERY: stats.ELEMENTAL_MASTERY_NODE,
     tags.Q_ENERGY_RECHARGE: stats.ENERGY_RECHARGE_NODE,
+    # Rosaria's A4 shares a part of her own CRIT Rate (GO `own.premod.critRate_`).
+    tags.Q_CRIT_RATE: stats.CRIT_RATE_NODE,
 }
 
 #: Giver stats artifacts do not move: character and weapon base only. A buff that reads one of
