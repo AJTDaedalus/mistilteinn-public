@@ -121,7 +121,7 @@ for (const f of data.fixtures) {
     if (f.kit_must_not_reach) {
       // The kit is there to prove it does **not** reach these rows (a DMG% on a reaction
       // row, P3): moving every one of its values must change nothing.
-      if (Math.abs(off - f.expected) / f.expected > TOLERANCE) {
+      if (Math.abs(off - got) / got > TOLERANCE) {
         failures.push(`${f.name} (a kit buff that must not reach the rows moved the figure)`);
       }
     } else if (Math.abs(off - f.expected) / f.expected <= TOLERANCE) {
