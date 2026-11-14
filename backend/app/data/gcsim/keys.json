@@ -3296,5 +3296,519 @@
       "swap",
       "walk"
     ]
+  },
+  "character_talent_boosts": {
+    "aetheranemo": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "aethercryo": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "aetherdendro": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "aetherelectro": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "aethergeo": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "aetherhydro": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "aetherpyro": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "aino": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "albedo": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "alhaitham": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "aloy": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "alyosha": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "amber": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "aratakiitto": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "arlecchino": {
+      "elemental_burst": 5,
+      "normal_attack": 3
+    },
+    "baizhu": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "barbara": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "beidou": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "bennett": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "candace": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "charlotte": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "chasca": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "chevreuse": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "chiori": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "chongyun": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "citlali": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "clorinde": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "collei": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "columbina": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "cyno": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "dahlia": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "dehya": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "diluc": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "diona": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "dori": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "durin": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "emilie": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "escoffier": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "eula": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "faruzan": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "fischl": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "flins": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "freminet": {
+      "elemental_skill": 5,
+      "normal_attack": 3
+    },
+    "furina": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "gaming": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "ganyu": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "gorou": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "hutao": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "iansan": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "ifa": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "illuga": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "ineffa": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "jahoda": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "jean": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "kaedeharakazuha": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "kaeya": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "kamisatoayaka": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "kamisatoayato": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "kaveh": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "keqing": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "kinich": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "kirara": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "klee": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "kujousara": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "kukishinobu": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "lanyan": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "lauma": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "layla": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "lisa": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "lumineanemo": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "luminecryo": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "luminedendro": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "lumineelectro": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "luminegeo": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "luminehydro": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "luminepyro": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "lynette": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "lyney": {
+      "elemental_burst": 5,
+      "normal_attack": 3
+    },
+    "mavuika": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "mika": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "mona": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "mualani": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "nahida": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "navia": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "neuvillette": {
+      "elemental_burst": 5,
+      "normal_attack": 3
+    },
+    "nicole": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "nilou": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "ningguang": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "noelle": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "odette": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "ororon": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "prune": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "qiqi": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "raidenshogun": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "razor": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "rosaria": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "sandrone": {
+      "elemental_burst": 5,
+      "normal_attack": 3
+    },
+    "sangonomiyakokomi": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "sayu": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "sethos": {
+      "elemental_burst": 5,
+      "normal_attack": 3
+    },
+    "shenhe": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "shikanoinheizou": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "sigewinne": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "skirk": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "sucrose": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "tartaglia": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "thoma": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "tighnari": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "varesa": {
+      "elemental_burst": 3,
+      "normal_attack": 5
+    },
+    "varka": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "venti": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "wanderer": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "wriothesley": {
+      "elemental_burst": 5,
+      "normal_attack": 3
+    },
+    "xiangling": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "xianyun": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "xiao": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "xilonen": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "xingqiu": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "xinyan": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "yaemiko": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "yanfei": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "yaoyao": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "yelan": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "yoimiya": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "yumemizukimizuki": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "yunjin": {
+      "elemental_burst": 3,
+      "elemental_skill": 5
+    },
+    "zhongli": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    },
+    "zibai": {
+      "elemental_burst": 5,
+      "elemental_skill": 3
+    }
   }
 }

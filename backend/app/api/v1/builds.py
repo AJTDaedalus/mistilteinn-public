@@ -109,6 +109,7 @@ from app.services.gcsim_keys import GcsimKeyError, pinned_commit
 from app.services.quotas import enforce_quota
 from app.services.rotation_compiler import RotationCompileError, compile_rotation
 from app.services.stat_calculator import StatInputError
+from app.services.talent_boosts import TalentBoostError, effective_talent_levels
 from app.services.talent_hits import (
     TalentHitUnavailableError,
     available_hits,
@@ -366,7 +367,7 @@ async def build_hits(
                 for term in hit.extra_terms
             ],
         )
-        for hit in available_hits(build.character, build.talent_levels or {})
+        for hit in available_hits(build.character, _hit_levels(build))
     ]
 
 
@@ -388,7 +389,7 @@ async def build_refused_hits(
         return []
     return [
         RefusedHitRead(talent=r.talent, label=r.label, spec=r.spec, reason=r.reason)
-        for r in refused_hits(build.character, build.talent_levels or {})
+        for r in refused_hits(build.character, _hit_levels(build))
     ]
 
 
@@ -925,6 +926,24 @@ def _base_contributions(build: "Build") -> "tuple[Contribution, ...]":
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def _hit_levels(build: "Build") -> dict[str, int]:
+    """The talent levels this build's own hits are read at: stored, plus C3/C5 boosts.
+
+    Math-fallback 9b. Every reader of a hit here — `/hits`, `/hits/refused`, `/explain`,
+    `/search-context` — goes through this, so the picker, the explanation and the kernel see
+    the same multiplier. The gcsim config does **not**: gcsim adds the boost itself
+    (`app/services/talent_boosts.py` lists who adds it and why).
+    """
+    if build.character is None:
+        return dict(build.talent_levels or {})
+    try:
+        return effective_talent_levels(
+            build.character, build.constellation_level, build.talent_levels or {},
+        )
+    except TalentBoostError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 def _hit(spec: HitSpec, build: "Build") -> Hit:
     """The hit to score, with a named talent resolved against the build's own character.
 
@@ -944,7 +963,7 @@ def _hit(spec: HitSpec, build: "Build") -> Hit:
         try:
             resolved = resolve_talent_hit(
                 build.character,
-                build.talent_levels or {},
+                _hit_levels(build),
                 spec.talent.talent,
                 spec.talent.label,
                 index=spec.talent.index,
