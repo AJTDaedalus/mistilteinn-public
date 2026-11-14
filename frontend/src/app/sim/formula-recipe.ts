@@ -62,7 +62,7 @@ import {
 import {
   cappedAmount,
   type ConversionSource, type ConvertedTerm, type FormulaMove, type FormulaProvenance,
-  type PercentTerm, type ReactionTerm, type Recipe, type RecipeHit, type RecipeScaling,
+  type ReactionTerm, type Recipe, type RecipeHit, type RecipeScaling,
   type StatConversion,
 } from './recipe';
 import { evaluateHit, NO_STATS } from './recipe-eval';
