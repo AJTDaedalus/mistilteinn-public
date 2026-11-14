@@ -189,7 +189,7 @@ sheet.** It carries structure, cited, and references into our seeded rows:
 | `verified_by` | GO fixtures in `go_fixtures.json` that check this sheet. Empty = **unverified**; the API and the panel say which |
 | `talent_boosts` | which constellation raises which talent by 3 (GO `ownBuff.char.<t>.add(cmpGE(constellation, n, 3))`, gcsim `SkillCon`/`BurstCon`) |
 | `pins` | the talent-row labels, constellation `param_list`s and passive `param_list`s the sheet was curated against |
-| `conditions` | P1's condition vocabulary, but the default is **derived** (§39): `self` on at max, `situational` off, and `giver_is_subject` — `self` when the giver is the optimized character, `situational` when a teammate is (Bennett standing in his own field is his doing; a teammate standing in it depends on the fight) |
+| `conditions` | P1's condition vocabulary, the default **derived** in one place (`SheetCondition.resolve`, `DECISIONS.md` §41): a curated `usual` (value, reason, citation) wins; else `self` is on at its maximum and `giver_is_subject` is `self` for the optimized character and a teammate's buff, on at its maximum, for anyone else; a `situational` condition must carry a `usual` (0 with its reason where it stays off). Was §39's "teammate and situational off" until §40 (ii) |
 | `effects` | each: `source` (`talent`, `a1`, `a4`, `c1`–`c6`; gated on ascension phase / constellation as GO's `input.asc` / `cmpGE`), `receivers` (`self` / `active` / `team` / `others` / `enemy`), `stat` (P1's `EffectStat`, plus `flat_atk` and `dmg_bonus_from_em`), scope (`elements`, `moves`, `reactions`), `when`, a `value` reference, and its `go` (and `gcsim`) file:lines |
 | `unmodelled` | each part of the kit not applied, with its reason (cooldowns and healing: "no damage effect"; infusions, extra hits, deferred parts named) |
 
@@ -300,7 +300,8 @@ seeded A4 list publishes 0.0001; GO multiplies it by 20 (`pando Mavuika.ts:80`, 
 says so) and gcsim writes `burstStacks*0.002` (`asc.go:50`). The sheet uses a `constant` 0.002 citing
 both.
 
-**Scoped by move where GO scopes by row, said in each sheet.** The estimate scopes a buff by move,
+**Scoped by move where GO scopes by row, said in each sheet** *(resolved since by row scope and
+per-row moves, §40 (iv): see "Defaults at usual values, per-row moves, row scope" below)*. The estimate scopes a buff by move,
 not by talent row. Three sheets carry buffs that GO limits to a subset of one move: Neuvillette's A1
 and C2 (Equitable Judgment only, not the ordinary Charged Attack), Skirk's Void Rift bonus, A4 and C2
 (the Seven-Phase Flash attacks only, not her ordinary ones). They are applied to the whole move and
@@ -309,7 +310,7 @@ characters' players do not use those rows in the modes the buffs belong to. Mavu
 Normal and Charged Attack bonuses are **not** applied, because her ordinary physical attacks are rows
 people do use.
 
-**Found: Skirk's Seven-Phase Flash and Mavuika's Flamestrider attacks are skill-talent rows.**
+**Found: Skirk's Seven-Phase Flash and Mavuika's Flamestrider attacks are skill-talent rows.** *(Resolved by the sheets' `row_moves`, §40 (iv).)*
 `suggestMove` gives every elemental-skill row the move `skill`. GO counts them as normal, charged and
 plunging attacks. A teammate's Normal Attack buff, and Skirk's own, reach those rows only once the
 user sets the row's move. Both sheets say so. Deriving the move from the label would be the guess
@@ -420,9 +421,42 @@ fixtures, both sides of the cap.
 
 **Still withheld:** Nahida's A1 on herself (a conversion *into* EM from the party's highest, her
 own included), Chevreuse's A4 on herself (ATK% from HP, a pair the recipe does not carry),
-Raiden's and Mona's A4 (a second ER conversion per hit), Vodyanitsa's A4 (§40 (vi), a later
-branch). Alhaitham's C4 Dendro DMG follows GO's pando port, which loses WR's "0 consumed at C6"
+Raiden's and Mona's A4 (a second ER conversion per hit). Vodyanitsa's A4 is priced since §41. Alhaitham's C4 Dendro DMG follows GO's pando port, which loses WR's "0 consumed at C6"
 state; said in his sheet.
+
+**Defaults at usual values, per-row moves, row scope and Vodyanitsa's A4 (owner rulings
+2026-11-14, `DECISIONS.md` §40 (ii), (iv), (vi), built as §41; `test_formula_sheets_defaults.py`,
+`test_formula_sheets_rowscope.py`, `go_fixtures_rowscope.py`).**
+
+| addition | where | why |
+|---|---|---|
+| `usual` on a condition (`value`, `reason`, `cite`; `value` may be `"max"`, or `"receiver_element"` for a choice of elements) | `SheetCondition`, `Usual`, `Condition.default_note`, `FormulaConditionRead` | the curated usual value of §40 (ii), its reason shown in the panel (`formula-recipe.ts:defaultWhy`). Required on a `situational` condition, so nothing is off without a reason |
+| `receiver_elements` on a usual | `Usual` | a usual that holds only for some receivers: Kazuha's and Sucrose's swirl toggles are on for the optimized character's element |
+| `default_reason` `usual` / `teammate` | `formula_effects.DefaultReason` | the two new reasons; `usual` may hold any value in range and must carry its note, `teammate` is on at its maximum |
+| `row_moves` (`talent`, `labels`, `move`, `go`) | `Sheet`, `RowMove`, `sheets.row_move`, `AvailableHitRead.move`, `formula-recipe.ts:hitMove` | a row's move where GO declares one that is not its talent's (Skirk's Seven-Phase Flash, Mavuika's Flamestrider, Clorinde's Night Vigil, Cyno's Pactsworn, Lohen's skill attacks, Neuvillette's Equitable Judgment, Ganyu's aimed shots); `/hits` reports it and the label guess covers the rest. The per-hit `attack[]` import was checked first and cannot give it: `attack_type` is strike geometry (`Melee`/`Range`/`Default`) and no entry links to a row |
+| `receiver` on an unmodelled note | `SheetUnmodelled` | a note about the kit reaching a teammate is not repeated beside the withheld effect when the giver is the subject (Nahida's A1) |
+
+Row scope reuses `rows` (self effects naming the giver's own talent rows); the change is in the
+sheets that scoped by move what GO scopes by row. Skirk's Void Rift bonus stays by move: GO adds it
+to every Normal Attack (`premod.dmg_.normal`). Wriothesley's Gracious Rebuke stays by move with
+its toggle, because GO makes it a row the catalogue does not have.
+
+| sheet | scoped or added | GO |
+|---|---|---|
+| Neuvillette | A1 base multiplier and C2 CRIT DMG: Equitable Judgment only | `pando Neuvillette.ts:122-130,143-154` |
+| Skirk | A4 normal multiplier: Seven-Phase Flash 1-5-Hit; C2 ATK: the Seven-Phase Flash attacks (removed from her ordinary attacks and burst in GO) | `pando Skirk.ts:146-151,192-195,223-274,298-306` |
+| Mavuika | Flamestrider Normal/Charged Attack DMG per Fighting Spirit and C2's share of ATK: flat damage on those rows (were withheld) | `pando Mavuika.ts:137-146,185-198,217-222,258-294` |
+| Ganyu | A1 CRIT Rate: Frostflake Arrow and Bloom only | `pando Ganyu.ts:116-135` |
+| Navia | C2 CRIT Rate, C6 CRIT DMG: Rosula Shardshot only | `pando Navia.ts:183-192` |
+| Lohen | C6 CRIT DMG: the Etched hit only | `pando Lohen.ts:223-231` |
+| Linnea | C2: Lumi's Million Ton Crush CRIT DMG (was withheld) | `pando Linnea.ts:209-211,280-290` |
+| Valeriy | C6: Thunderburst Shell DMG +100% (was withheld) | `wr Valeriy/index.tsx:233,271-273` |
+| Xiangling | C6 on her own 3-Hit Swing, the burst row `antiC6` leaves it on | `pando Xiangling.ts:97-98,128-150` |
+| Vodyanitsa | A4 Lead Vocal: flat Hydro/Cryo damage from Max HP above 40,000, 140 per 1,000, capped at 3,500; a number for a teammate, a per-build conversion on herself | `pando Vodyanitsa.ts:134-145,161-163,178-182,281-283` |
+
+Nine GO fixtures, each naming its row (`hit`), so `formula:verify` also checks that the figure
+misses with the row unnamed; Vodyanitsa's have one build below the cap and one past it, and a
+teammate's figure. All agree with GO exactly (relative ≤ 3e-8, the f32 floor).
 
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
