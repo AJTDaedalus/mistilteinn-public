@@ -70,8 +70,17 @@ def _effects(kit: sheets.ResolvedKit) -> dict[tuple[str, tuple[str, ...] | None]
 # ── the committed sheets ─────────────────────────────────────────────────────────────────
 
 
+#: Task 11: every released character gcsim cannot run at the pin, with a kit to model. Derived
+#: from `gcsim_status` over the seeded catalogue (7.2.51): Kachina, Nefer, Lohen, Linnea,
+#: Mitya, Valeriy, Vodyanitsa and Vesna. Excluded: the practice mannequins, the beta
+#: characters, and the two element-less Traveler bodies (10000134/10000135), which have no
+#: talents, passives or constellations to write a sheet from.
+UNGATED = {"kachina", "nefer", "lohen", "linnea", "mitya", "valeriy", "vodyanitsa", "vesna"}
+
+
 def test_every_sheet_loads_and_is_named_after_its_slug():
-    assert {s.slug for s in sheets.all_sheets().values()} == {"bennett", "kaedehara_kazuha"}
+    assert {s.slug for s in sheets.all_sheets().values()} == {
+        "bennett", "kaedehara_kazuha", *UNGATED}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

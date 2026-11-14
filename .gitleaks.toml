@@ -32,3 +32,20 @@ paths = [
 regexes = [
   '''ttl_seconds=30''',
 ]
+
+# Formula sheets and their fixtures name each condition with a `key` field
+# (`"key": "a1_nightsoul_burst"`), which `generic-api-key` reads as a credential. A rule-level
+# allowlist, because gitleaks 8.21 ignores `condition = "AND"` on the global one: here both the
+# path and the snake_case shape must match. `release/gate.py` carries the same rule.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Formula sheet condition keys"
+condition = "AND"
+paths = [
+  '''^backend/app/data/formula/sheets/[a-z0-9_]+\.json$''',
+  '''^backend/tests/fixtures/formula/go_fixtures\.json$''',
+]
+regexTarget = "match"
+regexes = ['''^key": "[a-z][a-z0-9]{0,11}(_[a-z0-9]{1,12})+"$''']

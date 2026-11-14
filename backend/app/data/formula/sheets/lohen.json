@@ -1,0 +1,253 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Lohen",
+ "nanoka_id": "10000129",
+ "slug": "lohen",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Lohen.ts",
+  "wr": "libs/gi/sheets/src/Characters/Lohen/index.tsx"
+ },
+ "verified_by": [
+  "lohen_a4_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Lohen.ts:196-200; wr:index.tsx:276-285; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Lohen.json Lohen_Constellation_3 (talent index 2, +3)"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Lohen.ts:196-200; wr:index.tsx:276-285; game data agrees: YuanShenResources f11cf545 BinOutput/Talent/AvatarTalents/ConfigTalent_Lohen.json Lohen_Constellation_5 (talent index 9, +3)"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    5.0,
+    200.0,
+    8.0,
+    4.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    7.0,
+    1.75,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.15,
+    0.15,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a4_master_cryo",
+   "label": "After a nearby party member triggers a Cryo reaction while in Masterstroke mode",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Lohen.ts:129-136,156-161; wr:index.tsx:159-174"
+  },
+  {
+   "key": "c2_blade",
+   "label": "Evilsbane Blade triggered",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Lohen.ts:165-167; wr:index.tsx:191-197"
+  },
+  {
+   "key": "c6_burst_master",
+   "label": "Masterstroke mode active while unleashing the burst",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Lohen.ts:173-175; wr:index.tsx:204-208"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_self_atk",
+   "label": "A4 Flippant Masterpiece: Lohen's ATK +",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "a4_master_cryo",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lohen.ts:83-87,156-158,202; wr:index.tsx:170-174,286"
+  },
+  {
+   "key": "a4_team_atk",
+   "label": "A4 Flippant Masterpiece: other party members' ATK +",
+   "source": "a4",
+   "receivers": "others",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a4_master_cryo",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lohen.ts:83-87,159-161,206-207; wr:index.tsx:159-168,293"
+  },
+  {
+   "key": "c2_em",
+   "label": "C2 In Flight, I Strike Whatever Flies: other party members' EM +",
+   "source": "c2",
+   "receivers": "others",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c2_blade",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lohen.ts:102-107,165-167,208; wr:index.tsx:191-197,294"
+  },
+  {
+   "key": "c6_etch_crit",
+   "label": "C6: Etched Into Bone and Soul CRIT DMG + (every Elemental Skill-move hit)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "go": "pando:Lohen.ts:112-115,168-172,223-231; wr:index.tsx:199-203,249"
+  },
+  {
+   "key": "c6_burst_crit",
+   "label": "C6: burst CRIT DMG + in Masterstroke mode",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c6_burst_master",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lohen.ts:112-115,173-175,205; wr:index.tsx:204-208,289"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Will to Win consumed: the Etched and burst DMG multipliers",
+   "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+  },
+  {
+   "source": "kit",
+   "what": "High Spirits: skill talent +1 while active",
+   "reason": "a conditional talent-level boost: the format's talent boosts are constellation-gated only"
+  },
+  {
+   "source": "kit",
+   "what": "Witch's Eve Rite: Normal/Charged DMG + at 50% Will (Hexerei)",
+   "reason": "needs a Hexerei team count and is an unlock-free passive, which the format cannot reference (it reads A1/A4 lists)"
+  },
+  {
+   "source": "a1",
+   "what": "Moratorium on Questioning: Will to Win gain",
+   "reason": "no damage effect directly: it feeds the Will multipliers above"
+  },
+  {
+   "source": "c1",
+   "what": "O Breezes, That So Oft Bear Sorrowful Lament: Will to Win limit",
+   "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+  },
+  {
+   "source": "c2",
+   "what": "In Flight, I Strike Whatever Flies: an extra Cryo hit of 500% ATK",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "Radiant Love, Laughing Death: Energy",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c6",
+   "what": "C6's Etched CRIT DMG limited to the Etched hit alone",
+   "reason": "the format scopes by move, so the estimate applies it to every row whose move is the Elemental Skill"
+  }
+ ]
+}

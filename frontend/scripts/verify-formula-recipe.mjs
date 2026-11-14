@@ -43,6 +43,8 @@ function score(f, sources) {
       hit: {
         multiplier: r.multiplier,
         scalingStat: r.scaling_stat,
+        // A mixed-stat row (`ATK + EM`) is one hit with several terms (P0, task 1).
+        extraTerms: r.extra_terms ?? [],
         flatDamage: 0,
         baseDamageBonus: 0,
         amplifying: r.amplifying,
@@ -105,6 +107,19 @@ for (const f of data.fixtures) {
         : e)));
       if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
         failures.push(`${f.name} (a frozen self EM conversion still passes)`);
+      }
+    }
+    // Task 11 — the same mistake for flat damage from the subject's own ATK or DEF (Valeriy's
+    // Offensive Directive, Kachina's A4): frozen at the zero-artifact total instead of moving.
+    const flatFrom = { flat_damage_from_atk: 'atk', flat_damage_from_def: 'def' };
+    if (kits.some((s) => s.bonus.effects.some((e) => e.stat in flatFrom))) {
+      const zero = (stat) => f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`])
+        + f.base[`flat_${stat}`];
+      const frozen = score(f, planted((e) => (e.stat in flatFrom
+        ? { ...e, stat: 'flat_damage', value: e.value * zero(flatFrom[e.stat]) }
+        : e)));
+      if (Math.abs(frozen - f.expected) / f.expected <= TOLERANCE) {
+        failures.push(`${f.name} (a frozen self flat-damage conversion still passes)`);
       }
     }
   }
