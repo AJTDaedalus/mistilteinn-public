@@ -88,6 +88,11 @@ def resolve_talent_hit(
 ) -> TalentHit:
     """The multiplier for one hit of one talent, at the level this build has it.
 
+    `talent_levels` are the levels to **read the rows at** — the effective ones, with C3/C5
+    boosts, from `talent_boosts.effective_talent_levels`. A build's stored levels exclude them
+    (GOOD's numbers), so passing those scores a C3+ character's boosted talent three levels
+    low; `api/v1/builds._hit_levels` is how every endpoint gets them.
+
     Refuses rather than defaults at every step. A missing level is not level 1: a talent-9
     burst reported at talent 1 is 59% of its real multiplier, and the result still looks
     like a damage figure.

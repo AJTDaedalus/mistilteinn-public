@@ -460,3 +460,56 @@ async def test_a_strangers_sets_are_not_offered(
     sets = await ArtifactRepository(db_session, owner_id=owner_id).owned_sets()
 
     assert 15028 not in {s.nanoka_id for s in sets}
+
+
+# ── constellation talent boosts (math-fallback 9b) ───────────────────────────
+
+
+async def _with_a_level_12_row(db_session: AsyncSession, build: str, constellation: int) -> None:
+    """Ayaka with burst still **stored** at 9. Her C3 raises the burst (gcsim
+    `internal/characters/ayaka/ayaka.go:21`, `c.BurstCon = 3`), so from C3 every hit reader
+    must read the level-12 row: 2.386375, from the committed `character_10000002.json`."""
+    talent = (await db_session.execute(select(Talent))).scalars().one()
+    db_session.add(TalentScaling(
+        talent_id=str(talent.id), level=12,
+        labels=["Cutting DMG|{param1:P}", "Energy Cost|{param2:I}"], params=[2.386375, 80],
+    ))
+    row = await db_session.get(Build, build)
+    row.constellation_level = constellation
+    await db_session.flush()
+    db_session.expire_all()
+
+
+async def test_a_c3_build_reads_its_boosted_burst_everywhere_a_hit_is_read(
+    authed_client: AsyncClient, db_session: AsyncSession, build: str,
+):
+    """`/search-context` (the kernel), `/hits` (the picker) and `/explain` must agree: a
+    picker offering one multiplier while the kernel scores another is two numbers on screen
+    for a reason nobody can see."""
+    await _with_a_level_12_row(db_session, build, 3)
+
+    context = (await authed_client.post(
+        f"{BUILDS}/{build}/search-context", json=_body(),
+    )).json()
+    hits = (await authed_client.get(f"{BUILDS}/{build}/hits")).json()
+    explained = await authed_client.post(f"{BUILDS}/{build}/explain", json=_body())
+
+    assert context["hit"]["multiplier"] == pytest.approx(2.386375)
+    assert [h["multiplier"] for h in hits if h["label"] == "Cutting DMG"] == [
+        pytest.approx(2.386375),
+    ]
+    assert explained.status_code == 200, explained.text
+    stored = (await db_session.get(Build, build)).talent_levels
+    assert stored == {"elemental_burst": 9}, "the boost is applied on read, never stored"
+
+
+async def test_a_c2_build_reads_its_stored_burst(
+    authed_client: AsyncClient, db_session: AsyncSession, build: str,
+):
+    await _with_a_level_12_row(db_session, build, 2)
+
+    context = (await authed_client.post(
+        f"{BUILDS}/{build}/search-context", json=_body(),
+    )).json()
+
+    assert context["hit"]["multiplier"] == pytest.approx(1.9091)
