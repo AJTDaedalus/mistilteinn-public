@@ -1,0 +1,149 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Furina",
+ "nanoka_id": "10000089",
+ "slug": "furina",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Furina.ts",
+  "wr": "libs/gi/sheets/src/Characters/Furina/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/furina/",
+ "verified_by": [
+  "furina_fanfare_c2_on_her_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Furina.ts:196-197; wr:index.tsx:336,342",
+   "gcsim": "furina.go:52"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Furina.ts:196,198; wr:index.tsx:337,341",
+   "gcsim": "furina.go:51"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Fanfare to DMG Increase Conversion Ratio|{param5:F2P}"
+   ]
+  },
+  "constellations": {
+   "1": [
+    150.0,
+    100.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    -0.714286,
+    0.0035,
+    400.0,
+    2.5,
+    1.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "fanfare",
+   "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
+   "kind": "number",
+   "default_by": "giver_is_subject",
+   "max": 300,
+   "step": 50,
+   "max_raise": {
+    "constellation": 1,
+    "param": 1
+   },
+   "go": "pando:Furina.ts:114-119,129-133; wr:index.tsx:135-148,613-634"
+  },
+  {
+   "key": "c2_overstack",
+   "label": "C2: Fanfare points beyond the limit",
+   "kind": "number",
+   "default_by": "self",
+   "max": 400,
+   "step": 50,
+   "go": "pando:Furina.ts:120-125,160-164; wr:index.tsx:190-200,645-659"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_dmg",
+   "label": "Let the People Rejoice: DMG Bonus per Fanfare point",
+   "source": "talent",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Fanfare to DMG Increase Conversion Ratio"
+   },
+   "per": "fanfare",
+   "go": "pando:Furina.ts:133-137,201-202; wr:index.tsx:149-155,351-354",
+   "gcsim": "burst.go:136"
+  },
+  {
+   "key": "c2_hp",
+   "label": "C2 A Woman Adapts Like Duckweed in Water: Max HP per Fanfare point beyond the limit",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "per": "c2_overstack",
+   "go": "pando:Furina.ts:160-164,200; wr:index.tsx:190-200,343",
+   "gcsim": "cons.go:28-33"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Let the People Rejoice: Incoming Healing Bonus per Fanfare point",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "talent",
+   "what": "Salon Solitaire: Salon members' DMG multiplier from the number of party members whose HP they consume (110-140%)",
+   "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+  },
+  {
+   "source": "a1",
+   "what": "Endless Waltz healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "a4",
+   "what": "Unheard Confession: Salon members' DMG + 0.7% per 1,000 of Furina's Max HP, up to 28%",
+   "reason": "scoped to the Salon members' rows (not her Ousia bubble, which is the same move), and read from her own HP, which moves with every candidate through a cap the recipe cannot carry per candidate"
+  },
+  {
+   "source": "c4",
+   "what": "They Know Not Life, Who Dwelt in the Netherworld Not!: Energy",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c6",
+   "what": "Hear Me — Let Us Raise the Chalice of Love!: Hydro infusion, and normal, charged and plunging attack DMG + a share of Furina's Max HP",
+   "reason": "an infusion changes a hit's element (G4), and the flat damage reads her own HP, which the recipe cannot carry per candidate yet"
+  }
+ ]
+}

@@ -57,7 +57,7 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.formula.builder import const, prod_, read_, tag_
+from app.formula.builder import const, min_, prod_, read_, tag_
 from app.formula.genshin import stats, tags
 from app.formula.genshin.formula_effects import (
     AMPLIFYING_REACTIONS,
@@ -130,6 +130,10 @@ SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     # into `formula.base` — the recipe's resolved flat-term conversion (`recipe-eval.ts`).
     ("flat_damage", tags.Q_ATK): "flat_damage_from_atk",
     ("flat_damage", tags.Q_DEF): "flat_damage_from_def",
+    # Zhongli's A4 on his own hits (GO `prod(percent(x), own.premod.hp)` into `formula.base`),
+    # and the same from EM: the recipe resolves a flat term from any of its four sources.
+    ("flat_damage", tags.Q_HP): "flat_damage_from_hp",
+    ("flat_damage", tags.Q_ELEMENTAL_MASTERY): "flat_damage_from_em",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -140,7 +144,8 @@ class _Strict(BaseModel):
 
 
 class ParamRef(_Strict):
-    """A second parameter a value is multiplied by (Vesna's C4 multiplying her A4)."""
+    """Another seeded parameter a value reads: a factor (Vesna's C4 multiplying her A4), a cap
+    (Chevreuse's A4 at 40%), or a raise to a condition's maximum (Furina's C1)."""
 
     constellation: int | None = None
     passive: int | None = None
@@ -151,6 +156,64 @@ class ParamRef(_Strict):
         if (self.constellation is None) == (self.passive is None):
             raise ValueError("a parameter reference names a constellation or a passive")
         return self
+
+
+class Cited(_Strict):
+    """A number no seeded list carries, with where it was read (GO's `1 / 1000`)."""
+
+    constant: float
+    cite: str
+
+
+class TeamIndex(_Strict):
+    """A value read from a seeded **table** indexed by a team count (GO `subscript(count,
+    table)`): Escoffier's A4 by Hydro/Cryo members, Yelan's A1 by distinct elements. The value
+    at count `k` is the list's entry `param + k - 1`; a count of 0 is no buff, and a count above
+    `size` (the table's length) is withheld rather than read past the table's end."""
+
+    #: `elements`: members whose element is one of `elements` (the receiver included, GO
+    #: `team.common.count`); `distinct`: how many different elements the team has (GO
+    #: `own.common.eleCount`).
+    count: Literal["elements", "distinct"]
+    elements: tuple[str, ...] | None = None
+    size: int
+
+    @model_validator(mode="after")
+    def _named(self) -> TeamIndex:
+        if (self.count == "elements") != (self.elements is not None):
+            raise ValueError("an `elements` count names its elements, a `distinct` one none")
+        for element in self.elements or ():
+            if element not in VISIONS:
+                raise ValueError(f"{element!r} is not one of {VISIONS}")
+        return self
+
+
+class TeamGate(_Strict):
+    """A buff that holds only for some team compositions: every member's element is one of
+    `only`, each of `includes` is present, and (when given) the team has `members` members.
+    GO `cmpEq(own.common.eleCount, 2, …)` with `count.electro >= 1` (Chevreuse's A1, a Pyro and
+    Electro team), `cmpEq(count.hydro + count.cryo, 4, …)` (Escoffier's C1)."""
+
+    only: tuple[str, ...]
+    includes: tuple[str, ...] = ()
+    members: int | None = None
+
+    @model_validator(mode="after")
+    def _visions(self) -> TeamGate:
+        for element in (*self.only, *self.includes):
+            if element not in VISIONS:
+                raise ValueError(f"{element!r} is not one of {VISIONS}")
+        return self
+
+    def holds(self, team_elements: Sequence[str | None]) -> bool:
+        """Whether this team (every member's element, the receiver's included) qualifies."""
+        present = [e.lower() for e in team_elements if e is not None]
+        if len(present) != len(team_elements):
+            return False
+        if self.members is not None and len(present) != self.members:
+            return False
+        return (all(e in self.only for e in present)
+                and all(e in present for e in self.includes))
 
 
 class ValueRef(_Strict):
@@ -170,6 +233,13 @@ class ValueRef(_Strict):
     negate: bool = False
     #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
     times_param: ParamRef | None = None
+    #: With `times_stat`: the stat is counted per this many points (GO `prod(percent(x), hp,
+    #: 1 / 1000)`, "per 1,000 Max HP"). A number, so it carries its citation.
+    stat_unit: Cited | None = None
+    #: The most the value can be: GO `min(…, percent(max))`, the maximum a seeded parameter.
+    cap: ParamRef | None = None
+    #: Read from a table indexed by a team count, decided in `resolve`.
+    index_by_team: TeamIndex | None = None
 
     @model_validator(mode="after")
     def _one_source(self) -> ValueRef:
@@ -192,7 +262,15 @@ class ValueRef(_Strict):
             raise ValueError("an ascension passive unlocks at phase 1 or 4")
         if self.times_stat is not None and self.times_stat not in GIVER_STATS:
             raise ValueError(f"times_stat must be one of {sorted(GIVER_STATS)}")
+        if self.stat_unit is not None and self.times_stat is None:
+            raise ValueError("a stat unit belongs to a value that reads a stat")
+        if self.index_by_team is not None and self.param is None:
+            raise ValueError("a team-indexed value reads a constellation or passive list")
         return self
+
+    def params_read(self) -> list[ParamRef]:
+        """The extra parameters this value reads besides its own: pinned like it."""
+        return [p for p in (self.times_param, self.cap) if p is not None]
 
 
 class SheetCondition(_Strict):
@@ -209,6 +287,10 @@ class SheetCondition(_Strict):
     max: float | None = None
     step: float | None = None
     options: tuple[str, ...] | None = None
+    #: A constellation (or passive) that raises `max` by one of its parameters once unlocked:
+    #: Furina's C1 raises the Fanfare limit by its 100 (GO `sum(maxFanfare, cmpGE(constellation,
+    #: 1, fanfareLimitInc))`). Pinned like any value.
+    max_raise: ParamRef | None = None
     go: str
 
     @model_validator(mode="after")
@@ -218,24 +300,28 @@ class SheetCondition(_Strict):
                              "only a situational one (none chosen) is derivable")
         if self.kind in ("stacks", "number") and self.max is None:
             raise ValueError(f"{self.key}: a {self.kind} names its max")
+        if self.max_raise is not None and self.kind not in ("stacks", "number"):
+            raise ValueError(f"{self.key}: only a stacks or number condition has a max to raise")
         return self
 
-    def resolve(self, *, giver_is_subject: bool) -> Condition:
-        """The P1 `Condition` for this receiver, its default derived."""
+    def resolve(self, *, giver_is_subject: bool, raised: float = 0.0) -> Condition:
+        """The P1 `Condition` for this receiver, its default derived; `raised` is what an
+        unlocked `max_raise` adds to the maximum."""
         reason: Literal["self", "situational"]
         if self.default_by == "giver_is_subject":
             reason = "self" if giver_is_subject else "situational"
         else:
             reason = self.default_by
+        top = None if self.max is None else self.max + raised
         if self.kind == "choice":
             default: float | str = ""
         elif reason == "situational":
             default = 0
         else:
-            default = 1 if self.kind == "toggle" else float(self.max or 0)
+            default = 1 if self.kind == "toggle" else float(top or 0)
         return Condition(
             key=self.key, label=self.label, kind=self.kind, default=default,
-            default_reason=reason, max=self.max, step=self.step, options=self.options,
+            default_reason=reason, max=top, step=self.step, options=self.options,
         )
 
 
@@ -262,6 +348,11 @@ class SheetEffect(_Strict):
     #: (GO `sum(team.common.count.<ele>, …)`, Vesna's A4). Decided in `resolve` from the
     #: team's elements, which the caller names.
     per_team_elements: tuple[str, ...] | None = None
+    #: Holds only for these team compositions (Chevreuse's A1), decided in `resolve`.
+    team_gate: TeamGate | None = None
+    #: Also needs this ascension phase (GO `cmpGE(ascension, 4, …)` inside a constellation's
+    #: buff: Escoffier's C1 reads her A4's count).
+    min_ascension: int | None = None
     #: GO sheet file:lines (relative to the sheet's `go` roots).
     go: str
     #: gcsim file:lines at the pin, where gcsim implements the same buff.
@@ -338,33 +429,40 @@ class Sheet(_Strict):
         if len(set(effect_keys)) != len(effect_keys):
             raise ValueError(f"{self.slug}: effect keys repeat")
         for effect in self.effects:
-            for when in effect.when:
-                if when.condition not in keys:
-                    raise ValueError(f"{self.slug}/{effect.key}: unknown condition "
-                                     f"{when.condition!r}")
-            if effect.per is not None and not any(
-                c.key == effect.per and c.kind in ("stacks", "number") for c in self.conditions
-            ):
-                raise ValueError(f"{self.slug}/{effect.key}: `per` names a stacks or number "
-                                 f"condition, not {effect.per!r}")
-            ref = effect.value
-            if ref.talent is not None and not any(
-                label.split("|", 1)[0] == ref.row
-                for label in self.pins.talent_rows.get(ref.talent, ())
-            ):
-                raise ValueError(f"{self.slug}/{effect.key}: row {ref.row!r} is not pinned")
-            if ref.constellation is not None and ref.constellation not in self.pins.constellations:
-                raise ValueError(f"{self.slug}/{effect.key}: C{ref.constellation} not pinned")
-            if ref.passive is not None and ref.passive not in self.pins.passives:
-                raise ValueError(f"{self.slug}/{effect.key}: A{ref.passive} not pinned")
-            extra = ref.times_param
-            if extra is not None and (
-                (extra.constellation is not None
-                 and extra.constellation not in self.pins.constellations)
-                or (extra.passive is not None and extra.passive not in self.pins.passives)
-            ):
-                raise ValueError(f"{self.slug}/{effect.key}: times_param is not pinned")
+            self._check_effect(effect, keys)
+        for condition in self.conditions:
+            if condition.max_raise is not None and not self._pinned(condition.max_raise):
+                raise ValueError(f"{self.slug}/{condition.key}: max_raise is not pinned")
         return self
+
+    def _check_effect(self, effect: SheetEffect, keys: list[str]) -> None:
+        for when in effect.when:
+            if when.condition not in keys:
+                raise ValueError(f"{self.slug}/{effect.key}: unknown condition "
+                                 f"{when.condition!r}")
+        if effect.per is not None and not any(
+            c.key == effect.per and c.kind in ("stacks", "number") for c in self.conditions
+        ):
+            raise ValueError(f"{self.slug}/{effect.key}: `per` names a stacks or number "
+                             f"condition, not {effect.per!r}")
+        ref = effect.value
+        if ref.talent is not None and not any(
+            label.split("|", 1)[0] == ref.row
+            for label in self.pins.talent_rows.get(ref.talent, ())
+        ):
+            raise ValueError(f"{self.slug}/{effect.key}: row {ref.row!r} is not pinned")
+        if ref.constellation is not None and ref.constellation not in self.pins.constellations:
+            raise ValueError(f"{self.slug}/{effect.key}: C{ref.constellation} not pinned")
+        if ref.passive is not None and ref.passive not in self.pins.passives:
+            raise ValueError(f"{self.slug}/{effect.key}: A{ref.passive} not pinned")
+        for extra in ref.params_read():
+            if not self._pinned(extra):
+                raise ValueError(f"{self.slug}/{effect.key}: {extra} is not pinned")
+
+    def _pinned(self, ref: ParamRef) -> bool:
+        if ref.constellation is not None:
+            return ref.constellation in self.pins.constellations
+        return ref.passive in self.pins.passives
 
 
 @cache
@@ -461,19 +559,23 @@ def effective_level(sheet: Sheet, giver: Giver, talent: str) -> int:
     return level
 
 
-def _number(sheet: Sheet, giver: Giver, ref: ValueRef) -> float:
+def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> float:
     """The constant part of a value: one parameter (or two multiplied), from our own seeded
-    rows, negated where the list publishes a reduction as a positive number."""
-    number = _parameter(sheet, giver, ref)
+    rows, negated where the list publishes a reduction as a positive number. `shift` moves
+    along a team-indexed table (`TeamIndex`)."""
+    number = _parameter(sheet, giver, ref, shift=shift)
     if ref.times_param is not None:
-        extra = ref.times_param
-        number *= _parameter(sheet, giver, ValueRef(
-            constellation=extra.constellation, passive=extra.passive, param=extra.param,
-        ))
+        number *= _extra(sheet, giver, ref.times_param)
     return -number if ref.negate else number
 
 
-def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef) -> float:
+def _extra(sheet: Sheet, giver: Giver, extra: ParamRef) -> float:
+    return _parameter(sheet, giver, ValueRef(
+        constellation=extra.constellation, passive=extra.passive, param=extra.param,
+    ))
+
+
+def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> float:
     if ref.constant is not None:
         return ref.constant
     if ref.talent is not None:
@@ -503,7 +605,10 @@ def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef) -> float:
             f"{name} param_list changed since curation: curated {list(pin)}, seeded "
             f"{None if live is None else list(live)}; withheld rather than read by a stale index",
         )
-    return float(pin[ref.param or 0])
+    index = (ref.param or 0) + shift
+    if index >= len(pin):
+        raise _Withheld(f"{name} has no entry {index} to read")
+    return float(pin[index])
 
 
 def _unlocked(source: str, giver: Giver) -> bool:
@@ -524,15 +629,22 @@ def _reaches(receivers: str, *, giver_is_subject: bool) -> bool:
     }[receivers]
 
 
-def _value_node(sheet: Sheet, giver: Giver, effect: SheetEffect) -> AnyNode:
-    """The effect's value as a node: its parameter, times the giver's stat where it reads one."""
-    factor = const(_number(sheet, giver, effect.value))
-    stat = effect.value.times_stat
-    return factor if stat is None else prod_(factor, GIVER_STATS[stat])
+def _value_node(sheet: Sheet, giver: Giver, effect: SheetEffect, *, shift: int = 0) -> AnyNode:
+    """The effect's value as a node: its parameter, times the giver's stat where it reads one
+    (per `stat_unit` points), capped where it has a cap."""
+    ref = effect.value
+    factor = const(_number(sheet, giver, ref, shift=shift))
+    if ref.times_stat is None:
+        return factor
+    unit = 1.0 if ref.stat_unit is None else 1.0 / ref.stat_unit.constant
+    node = prod_(factor, const(unit), GIVER_STATS[ref.times_stat])
+    if ref.cap is not None:
+        node = min_(node, const(_extra(sheet, giver, ref.cap)))
+    return node
 
 
 def _effect_node(
-    sheet: Sheet, giver: Giver, effect: SheetEffect, *, giver_is_subject: bool,
+    sheet: Sheet, giver: Giver, effect: SheetEffect, *, giver_is_subject: bool, shift: int = 0,
 ) -> tuple[EffectStat, AnyNode]:
     """The stat an effect writes and the node of its value, for this receiver.
 
@@ -543,15 +655,40 @@ def _effect_node(
     """
     reads = effect.value.times_stat
     if not (giver_is_subject and reads is not None and reads not in STATIC_STATS):
-        return effect.stat, _value_node(sheet, giver, effect)
+        return effect.stat, _value_node(sheet, giver, effect, shift=shift)
     converted = SELF_CONVERSIONS.get((effect.stat, reads))
+    if converted is not None and (effect.value.cap is not None
+                                  or effect.value.stat_unit is not None):
+        msg = (
+            f"it reads {sheet.character}'s own {reads}, which moves with every candidate, "
+            "through a cap or a unit the recipe cannot carry per candidate"
+        )
+        raise _Withheld(msg)
     if converted is None:
         msg = (
             f"it reads {sheet.character}'s own {reads}, which moves with every candidate, and "
             f"the recipe cannot carry {effect.stat} from {reads} per candidate yet"
         )
         raise _Withheld(msg)
-    return converted, const(_number(sheet, giver, effect.value))
+    return converted, const(_number(sheet, giver, effect.value, shift=shift))
+
+
+def _team_shift(effect: SheetEffect, team_elements: Sequence[str | None] | None) -> int | None:
+    """For a team-indexed value: how far along its table this team reads (count − 1), or None
+    when the count is 0 and there is no buff."""
+    index = effect.value.index_by_team
+    if index is None:
+        return 0
+    if team_elements is None:
+        raise _Withheld("it is read by the team's elements, which were not given")
+    present = [e.lower() for e in team_elements if e is not None]
+    if index.count == "distinct":
+        count = len(set(present))
+    else:
+        count = sum(1 for e in present if e in (index.elements or ()))
+    if count > index.size:
+        raise _Withheld(f"its table has {index.size} entries and the team counts {count}")
+    return None if count == 0 else count - 1
 
 
 def _team_factor(
@@ -559,6 +696,11 @@ def _team_factor(
     team_elements: Sequence[str | None] | None,
 ) -> float:
     """The receiver- and team-dependent part of an effect: 1, 0, or a member count."""
+    if effect.team_gate is not None:
+        if team_elements is None:
+            raise _Withheld("it depends on the team's elements, which were not given")
+        if not effect.team_gate.holds(team_elements):
+            return 0.0
     if effect.receiver_elements is not None:
         if receiver_element is None:
             raise _Withheld("it depends on the receiver's element, which was not given")
@@ -570,6 +712,25 @@ def _team_factor(
         return float(sum(1 for e in team_elements
                          if e is not None and e.lower() in effect.per_team_elements))
     return 1.0
+
+
+def _raised(sheet: Sheet, giver: Giver, condition: SheetCondition,
+            unmodelled: list[Unmodelled]) -> float:
+    """What an unlocked `max_raise` adds to a condition's maximum; a stale pin keeps the
+    maximum unraised and says so."""
+    ref = condition.max_raise
+    if ref is None:
+        return 0.0
+    if ref.constellation is not None and giver.constellation < ref.constellation:
+        return 0.0
+    if ref.passive is not None and giver.ascension_phase < ref.passive:
+        return 0.0
+    try:
+        return _extra(sheet, giver, ref)
+    except _Withheld as why:
+        unmodelled.append(Unmodelled(what=f"{condition.label}: the raised maximum",
+                                     reason=f"withheld: {why}"))
+        return 0.0
 
 
 def resolve(
@@ -588,26 +749,34 @@ def resolve(
     unmodelled with the reason, never dropped.
     """
     calculator = Calculator(giver.registry)
-    conditions = tuple(c.resolve(giver_is_subject=giver_is_subject) for c in sheet.conditions)
-    effects: list[Effect] = []
     unmodelled: list[Unmodelled] = [
         Unmodelled(what=f"{u.source.upper()}: {u.what}", reason=u.reason)
         for u in sheet.unmodelled if u.source == "kit" or _unlocked(u.source, giver)
     ]
+    conditions = tuple(
+        c.resolve(giver_is_subject=giver_is_subject,
+                  raised=_raised(sheet, giver, c, unmodelled))
+        for c in sheet.conditions
+    )
+    effects: list[Effect] = []
     used_conditions: set[str] = set()
     applied: list[str] = []
     for effect in sheet.effects:
         if not _unlocked(effect.source, giver):
+            continue
+        if effect.min_ascension is not None and giver.ascension_phase < effect.min_ascension:
             continue
         if not _reaches(effect.receivers, giver_is_subject=giver_is_subject):
             continue
         try:
             factor = _team_factor(effect, receiver_element=receiver_element,
                                   team_elements=team_elements)
-            if factor == 0:
+            shift = _team_shift(effect, team_elements)
+            if factor == 0 or shift is None:
                 # Like a locked constellation: this receiver is not one the effect reaches.
                 continue
-            stat, node = _effect_node(sheet, giver, effect, giver_is_subject=giver_is_subject)
+            stat, node = _effect_node(sheet, giver, effect, giver_is_subject=giver_is_subject,
+                                      shift=shift)
             # Registered under `{sheet, name}` and evaluated with both cleared, so the
             # formula's own stat reads gather the giver's stats — and not, through the subset
             # rule, the formula itself (a read under `{sheet, name, q}` would match it).

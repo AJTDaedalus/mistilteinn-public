@@ -1,0 +1,264 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Chevreuse",
+ "nanoka_id": "10000090",
+ "slug": "chevreuse",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Chevreuse.ts",
+  "wr": "libs/gi/sheets/src/Characters/Chevreuse/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/chevreuse/",
+ "verified_by": [
+  "chevreuse_a1_a4_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Chevreuse.ts:142-143; wr:index.tsx:210,215"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Chevreuse.ts:142,144; wr:index.tsx:211,216"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "1": [
+    0.4,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.01,
+    30.0,
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "6": [
+    12.0,
+    0.1,
+    0.2,
+    8.0,
+    3.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_overloaded",
+   "label": "A party member triggered Overloaded (A1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Chevreuse.ts:64-66,95,103-114,147-148; wr:index.tsx:76-78,102-116,220-221"
+  },
+  {
+   "key": "a4_after_ball",
+   "label": "After Chevreuse fired an Overcharged Ball (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Chevreuse.ts:68-71,95,115-132,149; wr:index.tsx:80-84,118-145,224"
+  },
+  {
+   "key": "c6_stacks",
+   "label": "Stacks after Chevreuse's healing (C6)",
+   "kind": "number",
+   "default_by": "giver_is_subject",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Chevreuse.ts:81-87,96-101,133-137,150-151; wr:index.tsx:147-163,222-223"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_res",
+   "label": "A1 Vanguard's Coordinated Tactics: Pyro and Electro RES reduction, in a party of only Pyro and Electro characters with one of each",
+   "source": "a1",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro",
+    "electro"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0,
+    "negate": true
+   },
+   "team_gate": {
+    "only": [
+     "pyro",
+     "electro"
+    ],
+    "includes": [
+     "pyro",
+     "electro"
+    ]
+   },
+   "when": [
+    {
+     "condition": "a1_overloaded",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Chevreuse.ts:64-66,95,103-114,147-148; wr:index.tsx:76-78,102-116,220-221"
+  },
+  {
+   "key": "a4_atk",
+   "label": "A4 Vertical Force Coordination: ATK +1% per 1,000 of Chevreuse's Max HP, up to 40%, for Pyro and Electro party members",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "atk_pct",
+   "receiver_elements": [
+    "pyro",
+    "electro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Chevreuse.ts:120 `prod(percent(atk_), own.premod.hp, 1 / 1000)`; the seeded A4 list carries the 1% and the 40% cap, not the 1,000"
+    },
+    "cap": {
+     "passive": 4,
+     "param": 2
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_after_ball",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Chevreuse.ts:68-71,95,115-132,149; wr:index.tsx:80-84,118-145,224"
+  },
+  {
+   "key": "c6_pyro",
+   "label": "C6 In Pursuit of Ending Evil: party Pyro DMG Bonus per stack",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 2
+   },
+   "per": "c6_stacks",
+   "go": "pando:Chevreuse.ts:81-87,96-101,133-137,150-151; wr:index.tsx:147-163,222-223"
+  },
+  {
+   "key": "c6_electro",
+   "label": "C6 In Pursuit of Ending Evil: party Electro DMG Bonus per stack",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 2
+   },
+   "per": "c6_stacks",
+   "go": "pando:Chevreuse.ts:81-87,96-101,133-137,150-151; wr:index.tsx:147-163,222-223"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Short-Range Rapid Interdiction Fire healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c1",
+   "what": "Stable Front Line's Resolve: Energy",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c2",
+   "what": "Sniper Induced Explosion: extra explosions",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "The Secret to Rapid-Fire Multishots: skill charges",
+   "reason": "no damage effect: charges (a row's count is the user's)"
+  },
+  {
+   "source": "c6",
+   "what": "In Pursuit of Ending Evil healing",
+   "reason": "no damage effect: healing"
+  }
+ ]
+}

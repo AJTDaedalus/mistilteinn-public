@@ -1,0 +1,148 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Jean",
+ "nanoka_id": "10000003",
+ "slug": "jean",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Jean.ts",
+  "wr": "libs/gi/sheets/src/Characters/Jean/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/jean/",
+ "verified_by": [
+  "jean_c1_c4_on_her_own_skill"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Jean.ts:113-114; wr:index.tsx:164,170"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Jean.ts:113,115; wr:index.tsx:165,169"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "c1_hold",
+   "label": "Gale Blade held for more than 1 second (C1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Jean.ts:68-69,90,92-94; wr:index.tsx:109-115,262-275"
+  },
+  {
+   "key": "c4_field",
+   "label": "Opponent within Dandelion Breeze's field (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Jean.ts:76-77,90,101-103; wr:index.tsx:128-134,318-331"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c1_skill",
+   "label": "C1 Spiraling Tempest: Gale Blade DMG +40% when held",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c1_hold",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Jean.ts:68-69,92-94,117; wr:index.tsx:109-115,171"
+  },
+  {
+   "key": "c4_res",
+   "label": "C4 Lands of Dandelion: Anemo RES reduction in the field",
+   "source": "c4",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "c4_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Jean.ts:76-77,101-103,122; wr:index.tsx:128-134,177"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Dandelion Breeze healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "a1",
+   "what": "Wind Companion healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "a4",
+   "what": "Let the Wind Lead: Energy",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "c2",
+   "what": "People's Aegis: ATK SPD and Movement SPD",
+   "reason": "no damage effect per hit: attack speed changes a rotation's count, which is the user's"
+  },
+  {
+   "source": "c6",
+   "what": "Lion's Fang, Fair Protector of Mondstadt: DMG reduction",
+   "reason": "no damage effect: damage reduction"
+  }
+ ]
+}

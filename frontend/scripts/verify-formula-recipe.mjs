@@ -109,12 +109,16 @@ for (const f of data.fixtures) {
         failures.push(`${f.name} (a frozen self EM conversion still passes)`);
       }
     }
-    // Task 11 — the same mistake for flat damage from the subject's own ATK or DEF (Valeriy's
-    // Offensive Directive, Kachina's A4): frozen at the zero-artifact total instead of moving.
-    const flatFrom = { flat_damage_from_atk: 'atk', flat_damage_from_def: 'def' };
+    // Task 11 — the same mistake for flat damage from the subject's own ATK, HP, DEF or EM
+    // (Valeriy's Offensive Directive, Kachina's A4, Zhongli's A4): frozen at the zero-artifact
+    // total instead of moving.
+    const flatFrom = {
+      flat_damage_from_atk: 'atk', flat_damage_from_hp: 'hp', flat_damage_from_def: 'def',
+      flat_damage_from_em: 'em',
+    };
     if (kits.some((s) => s.bonus.effects.some((e) => e.stat in flatFrom))) {
-      const zero = (stat) => f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`])
-        + f.base[`flat_${stat}`];
+      const zero = (stat) => (stat === 'em' ? f.base.elemental_mastery
+        : f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`]) + f.base[`flat_${stat}`]);
       const frozen = score(f, planted((e) => (e.stat in flatFrom
         ? { ...e, stat: 'flat_damage', value: e.value * zero(flatFrom[e.stat]) }
         : e)));

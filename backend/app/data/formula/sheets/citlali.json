@@ -1,0 +1,314 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Citlali",
+ "nanoka_id": "10000107",
+ "slug": "citlali",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Citlali.ts",
+  "wr": "libs/gi/sheets/src/Characters/Citlali/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/citlali/",
+ "verified_by": [
+  "citlali_c2_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Citlali.ts:177-178; wr:index.tsx:276,282"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Citlali.ts:177,179; wr:index.tsx:277,281"
+  }
+ ],
+ "pins": {
+  "passives": {
+   "1": [
+    16.0,
+    8.0,
+    0.2,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "constellations": {
+   "1": [
+    2.0,
+    10.0,
+    3.0,
+    8.0,
+    0.45,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    125.0,
+    250.0,
+    1.0,
+    0.2,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.015,
+    0.015,
+    0.025,
+    40.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_freeze_melt",
+   "label": "Citlali in Nightsoul's Blessing and a party member triggered Frozen or Melt (A1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Citlali.ts:63-66,108,119-136,194-199; wr:index.tsx:126-145,192-207,286-295"
+  },
+  {
+   "key": "c1_blades",
+   "label": "Opal Fire's Obsidian Blades consumed by a teammate's hit (C1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Citlali.ts:74-75,108,149-151,186-191; wr:index.tsx:157-177"
+  },
+  {
+   "key": "c2_shield",
+   "label": "Shielded by Citlali, as the active character (C2)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Citlali.ts:81-83,108,154-156,192-193; wr:index.tsx:179-190,297"
+  },
+  {
+   "key": "c6_points",
+   "label": "Nightsoul points Citlali consumed (C6)",
+   "kind": "number",
+   "default_by": "giver_is_subject",
+   "max": 40,
+   "step": 2,
+   "go": "pando:Citlali.ts:94-98,112-117,158-172,182-185; wr:index.tsx:209-235,286-296"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_res",
+   "label": "A1 Mamaloaco's Frigid Rain: Pyro and Hydro RES reduction",
+   "source": "a1",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro",
+    "hydro"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 2,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "a1_freeze_melt",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Citlali.ts:63-66,108,119-136,194-199; wr:index.tsx:126-145,192-207,286-295"
+  },
+  {
+   "key": "c2_res",
+   "label": "C2 Heart Devourer's Travail: the A1 RES reduction again",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro",
+    "hydro"
+   ],
+   "min_ascension": 1,
+   "value": {
+    "passive": 1,
+    "param": 2,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "a1_freeze_melt",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Citlali.ts:125-136,194-199; wr:index.tsx:192-207,288-295"
+  },
+  {
+   "key": "c1_flat",
+   "label": "C1 Radiant Blades of Centzon Mimixcoah: teammates' DMG + 200% of Citlali's Elemental Mastery",
+   "source": "c1",
+   "receivers": "others",
+   "stat": "flat_damage",
+   "moves": [
+    "normal",
+    "charged",
+    "plunge",
+    "skill",
+    "burst"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "times_stat": "elemental_mastery"
+   },
+   "when": [
+    {
+     "condition": "c1_blades",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Citlali.ts:74-75,149-151,186-191; wr:index.tsx:157-177"
+  },
+  {
+   "key": "c2_em_self",
+   "label": "C2: Citlali's Elemental Mastery",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "go": "pando:Citlali.ts:81-82,153,181; wr:index.tsx:178,276-283"
+  },
+  {
+   "key": "c2_em_active",
+   "label": "C2: Elemental Mastery to the shielded active teammate",
+   "source": "c2",
+   "receivers": "others",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c2_shield",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Citlali.ts:81-83,154-156,192-193; wr:index.tsx:179-190,297"
+  },
+  {
+   "key": "c6_pyro",
+   "label": "C6 Teoiztac's Secret Pact: party Pyro DMG Bonus per Nightsoul point consumed",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "per": "c6_points",
+   "go": "pando:Citlali.ts:94-98,112-117,158-172,182-185; wr:index.tsx:209-235,286-296"
+  },
+  {
+   "key": "c6_hydro",
+   "label": "C6 Teoiztac's Secret Pact: party Hydro DMG Bonus per Nightsoul point consumed",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "per": "c6_points",
+   "go": "pando:Citlali.ts:94-98,112-117,158-172,182-185; wr:index.tsx:209-235,286-296"
+  },
+  {
+   "key": "c6_all",
+   "label": "C6 Teoiztac's Secret Pact: Citlali's DMG Bonus per Nightsoul point consumed",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "constellation": 6,
+    "param": 2
+   },
+   "per": "c6_points",
+   "go": "pando:Citlali.ts:94-98,112-117,158-172,182-185; wr:index.tsx:209-235,286-296"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Dawnfrost Darkstar shield",
+   "reason": "no damage effect: shield"
+  },
+  {
+   "source": "a4",
+   "what": "Itzpapalotl's Star Garments: Frostfall Storm and Ice Storm DMG + a share of her Elemental Mastery",
+   "reason": "scoped to two rows (Frostfall Storm is a skill row beside Obsidian Tzitzimitl, Ice Storm a burst row beside the skulls), and read from her own EM, which the recipe cannot carry as flat damage per candidate yet"
+  },
+  {
+   "source": "c4",
+   "what": "Death Defier's Spirit Skull: an extra hit",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c2",
+   "what": "Citlali's own C2 +125 EM in the EM her C1 reads",
+   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `final.eleMas` would include it"
+  }
+ ]
+}

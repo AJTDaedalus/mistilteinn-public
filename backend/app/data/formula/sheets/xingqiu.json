@@ -1,0 +1,109 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Xingqiu",
+ "nanoka_id": "10000025",
+ "slug": "xingqiu",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Xingqiu.ts",
+  "wr": "libs/gi/sheets/src/Characters/Xingqiu/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/xingqiu/",
+ "verified_by": [
+  "xingqiu_c2_on_his_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Xingqiu.ts:99-100; wr:index.tsx:141,146",
+   "gcsim": "xingqiu.go:26"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Xingqiu.ts:99,101; wr:index.tsx:142,145",
+   "gcsim": "xingqiu.go:27"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "rain_swords",
+   "label": "Opponent hit by Xingqiu's Rain Swords (during Raincutter)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xingqiu.ts:79,107-110; wr:index.tsx:85-90"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_hydro",
+   "label": "A4 Blades Amidst Raindrops: Hydro DMG Bonus",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constant": 0.2,
+    "cite": "the seeded A4 list is all zeros; GO pando:Xingqiu.ts:61 `hydro_dmg_: 0.2`, gcsim asc.go:18"
+   },
+   "go": "pando:Xingqiu.ts:61,103-106; wr:index.tsx:72,83,147",
+   "gcsim": "asc.go:13-27"
+  },
+  {
+   "key": "c2_res",
+   "label": "C2 Rainbow Upon the Azure Sky: Hydro RES -15% to opponents hit by Rain Swords",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constant": -0.15,
+    "cite": "the seeded C2 list is all zeros; GO pando:Xingqiu.ts:64 `hydro_enemyRes_: -0.15`, gcsim burst.go:118"
+   },
+   "when": [
+    {
+     "condition": "rain_swords",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xingqiu.ts:64,107-110; wr:index.tsx:75,85-90,151",
+   "gcsim": "burst.go:113-121"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Guhua Sword: Raincutter: Rain Sword damage reduction",
+   "reason": "no damage effect: damage reduction"
+  },
+  {
+   "source": "a1",
+   "what": "Hydropathic healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c2",
+   "what": "Raincutter duration +3s",
+   "reason": "no damage effect: duration"
+  },
+  {
+   "source": "c4",
+   "what": "Evilsoother: Fatal Rainscreen DMG x1.5 during Raincutter",
+   "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+  },
+  {
+   "source": "c6",
+   "what": "Hence, Call Them My Own Verses: Energy",
+   "reason": "no damage effect: energy"
+  }
+ ]
+}

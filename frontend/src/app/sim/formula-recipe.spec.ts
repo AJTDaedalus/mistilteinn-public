@@ -427,9 +427,20 @@ describe('kit buffs (P2)', () => {
       TEAM))).toContain('def_pct');
   });
 
+  it("flat damage from the subject's own HP or EM follows the candidate (Zhongli's A4)", () => {
+    const ctx = context({ multiplier: 1 });
+    for (const [stat, from, quantity] of [['flat_damage_from_hp', 'hp', 'hp_pct'],
+      ['flat_damage_from_em', 'em', 'elemental_mastery']] as const) {
+      const [hit] = rowHits(row(ctx), [KIT(stat, 0.33)], TEAM, {}).hits;
+      expect(hit.conversions.flatDamage).toEqual({ from, perUnit: 0.33 });
+      expect(liveQuantitiesFor(synthesizeRecipe([row(ctx)], [KIT(stat, 0.33)], TEAM)))
+        .toContain(quantity);
+    }
+  });
+
   it('refuses flat damage converted from ATK and DEF on one hit', () => {
     expect(() => rowHits(row(context()), [KIT('flat_damage_from_atk', 0.4),
-      KIT('flat_damage_from_def', 0.2)], TEAM, {})).toThrow(/both ATK and DEF/);
+      KIT('flat_damage_from_def', 0.2)], TEAM, {})).toThrow(/converted from atk and def/);
   });
 });
 

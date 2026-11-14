@@ -78,9 +78,15 @@ def _effects(kit: sheets.ResolvedKit) -> dict[tuple[str, tuple[str, ...] | None]
 UNGATED = {"kachina", "nefer", "lohen", "linnea", "mitya", "valeriy", "vodyanitsa", "vesna"}
 
 
+#: Task 11, second batch: the buffers and supports in the owner's saved teams, then the most
+#: used ones (`TASKS_team_math_fallback.md`).
+BUFFERS = {"furina", "xingqiu", "xiangling", "citlali", "yelan", "escoffier", "chevreuse",
+           "jean", "zhongli", "faruzan", "sucrose"}
+
+
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

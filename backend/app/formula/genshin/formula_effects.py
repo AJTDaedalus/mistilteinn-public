@@ -63,6 +63,9 @@ AMPLIFYING_REACTIONS: tuple[str, ...] = ("vaporize", "reverse_vaporize", "melt",
 #: - `flat_damage_from_def` — the same, from the candidate's total DEF: a kit whose giver is
 #:   the optimized character adding flat damage from their own DEF (Kachina's A4, P2). GO
 #:   `prod(percent(x), own.premod.def)` into `formula.base`.
+#: - `flat_damage_from_hp`, `flat_damage_from_em` — the same, from the candidate's total HP
+#:   (Zhongli's A4 on his own hits, GO `prod(percent(x), own.premod.hp)` into `formula.base`)
+#:   or Elemental Mastery (task 11).
 #: - `dmg_bonus_from_energy_recharge` — DMG% of `value` × total Energy Recharge, capped at
 #:   `cap` (GO `min(cap, prod(rate, input.premod.enerRech_))`), likewise per candidate.
 #: - `flat_atk` — flat ATK added after the percentage (GO `total.atk`/`final.atk`), the shape
@@ -76,7 +79,8 @@ EffectStat = Literal[
     "atk_pct", "hp_pct", "def_pct", "elemental_mastery", "energy_recharge",
     "crit_rate", "crit_dmg",
     "dmg_bonus", "reaction_bonus", "enemy_res",
-    "flat_damage", "flat_damage_from_atk", "flat_damage_from_def",
+    "flat_damage", "flat_damage_from_atk", "flat_damage_from_hp", "flat_damage_from_def",
+    "flat_damage_from_em",
     "dmg_bonus_from_energy_recharge",
     "flat_atk", "dmg_bonus_from_em",
 ]

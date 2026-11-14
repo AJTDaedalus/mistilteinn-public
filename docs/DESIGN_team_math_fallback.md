@@ -226,6 +226,32 @@ maximum moves with a constellation (Nefer's C2, Valeriy's C4: the C0 maximum is 
 base-damage multiplier (GO `baseMulti`: Nefer's Phantasm Performance, Lohen's Will, Vesna's Spirit
 Blade, Vodyanitsa's Song); and a buff scoped to one talent row rather than a move.
 
+**Added for the buffers (task 11, second batch), each small and in the format's spirit:**
+
+| addition | where | why |
+|---|---|---|
+| `max_raise` on a condition | `SheetCondition` | a constellation parameter raising a stack maximum once unlocked: Furina's C1 adds its 100 to the Fanfare limit (GO `sum(maxFanfare, cmpGE(constellation, 1, fanfareLimitInc))`). The `self` default follows the raised maximum; a stale pin keeps the maximum and says so |
+| `index_by_team` on a value | `ValueRef`, `TeamIndex` | a value read from a seeded **table** by a team count (GO `subscript(count, table)`): Escoffier's A4 by Hydro/Cryo members, Yelan's A1 by distinct elements. Count 0 is no buff; a count past the table's `size` is withheld rather than read into the next field |
+| `team_gate` on an effect | `SheetEffect`, `TeamGate` | a buff that holds only for some compositions: Chevreuse's A1 (only Pyro and Electro, one of each), Escoffier's C1 (four Hydro/Cryo members) |
+| `cap` and `stat_unit` on a value | `ValueRef` | GO `min(prod(percent(x), stat, 1 / 1000), max)`: Chevreuse's A4, ATK 1% per 1,000 of her HP up to 40%. The unit is a cited constant (no seeded list carries the 1,000); the cap is a pinned parameter. On a giver who is the subject, a capped value from an artifact-moved stat is withheld by name |
+| `min_ascension` on an effect | `SheetEffect` | a constellation buff that also needs an ascension (GO `cmpGE(ascension, 4, …)` inside C1): Escoffier's C1 reads her A4's count, Citlali's C2 copies her A1 shred |
+| `flat_damage_from_hp`, `flat_damage_from_em` | `SELF_CONVERSIONS`, `formula-recipe.ts` | a giver who is the subject adding flat damage from their own HP (Zhongli's A4) or EM: the recipe already resolved a flat term from any of ATK, HP, DEF and EM (`recipe.ts:ConversionSource`); `formula-recipe.ts` now emits all four, one per hit |
+
+**Constants no seeded list carries.** Xingqiu's A4 (Hydro DMG 20%) and C2 (Hydro RES -15%), and
+Zhongli's Jade Shield RES -20%, are all-zero or absent in the seeded lists. They are `constant`
+values, each citing GO's sheet line and gcsim's, which agree.
+
+**Still not added, and named in the sheets:** a value from the team's **highest** stat (Nahida's
+A1, 25% of the party's highest EM), a talent row chosen by a team count (Nahida's burst, one or
+two Pyro members), a capped conversion of the subject's own stat (Furina's A4, Nahida's A4 — the
+owner's open question in `DECISIONS.md` §39), enemy DEF reduction (no `def_reduction` effect stat:
+Nahida's C2, Raiden's C2), and the Hexerei party mechanic (Sucrose's Witch's Eve Rite). No sheet was
+written for Nahida for that reason: every buff she gives a teammate needs one of these.
+
+`max_raise` now exists, so Nefer's C2 and Valeriy's C4 (named above as "fixed max") could use it;
+their sheets were not revisited in this batch. Vodyanitsa's A4 still needs a **threshold** (HP above
+40,000) and is a self conversion, so `cap` alone does not unlock it.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.
