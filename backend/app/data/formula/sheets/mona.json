@@ -11,7 +11,9 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/mona/",
  "verified_by": [
-  "mona_omen_c1_c4_on_xiangling"
+  "mona_omen_c1_c4_on_xiangling",
+  "mona_c1_hydro_swirl_on_kazuha",
+  "lunar_crystallize_aubade_mona_c4"
  ],
  "talent_boosts": [
   {
@@ -256,10 +258,13 @@
   },
   {
    "key": "c1_swirl",
-   "label": "C1 Prophecy of Submersion: party Swirl DMG against Omen (every swirl, as GO applies it; gcsim and the text limit it to a Hydro swirl)",
+   "label": "C1 Prophecy of Submersion: party Hydro Swirl DMG against Omen (a Hydro swirl only, as gcsim and the text have it; GO applies it to every swirl: owner ruling 2026-11-14, DECISIONS \u00a744)",
    "source": "c1",
    "receivers": "team",
    "stat": "reaction_bonus",
+   "elements": [
+    "hydro"
+   ],
    "reactions": [
     "swirl"
    ],
@@ -276,7 +281,7 @@
     }
    ],
    "go": "pando:Mona.ts:87,137-139,248-250",
-   "gcsim": "internal/characters/mona/cons.go:71-80 (Hydro swirl only)"
+   "gcsim": "internal/characters/mona/cons.go:71-80 (Hydro swirl only, followed)"
   },
   {
    "key": "c1_lunar_crystallize",

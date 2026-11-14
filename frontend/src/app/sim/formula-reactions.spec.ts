@@ -7,6 +7,7 @@ import {
   type FormulaRow,
   type FormulaSource,
   type FormulaTeam,
+  LUNAR_SOLO_WEIGHT,
   reactionAssumptions,
   synthesizeRecipe,
 } from './formula-recipe';
@@ -141,15 +142,18 @@ describe('a Lunar reaction row', () => {
     ])], TEAM);
     const candidate = stats({ elementalMastery: 200, critRate: 0.4, critDmg: 1 });
     const crit = 1 + Math.min(0.05 + 0.3 + 0.4, 1) * (0.5 + 1);
-    const expected = 2 * lunarBase('lunar_charged', LV90, 300, 0, 0.2) * resMultiplier(0.1) * crit;
+    // gcsim's solo contributor weight, 0.6, by default (owner ruling 2026-11-14).
+    const expected = 0.6 * 2 * lunarBase('lunar_charged', LV90, 300, 0, 0.2) * resMultiplier(0.1)
+      * crit;
     expect(evaluateRecipe(recipe, candidate)).toBeCloseTo(expected, 2);
   });
 
-  it('scales by a stated contributor weight, refusing one outside (0, 1]', () => {
-    const whole = synthesizeRecipe([reactionRow({ reaction: 'lunar_crystallize' })], [], TEAM);
-    const ranked = synthesizeRecipe([reactionRow({ reaction: 'lunar_crystallize', weight: 0.6 })],
+  it('weights a solo contribution at gcsim\'s 0.6 by default; a stated weight overrides, in (0, 1]', () => {
+    const solo = synthesizeRecipe([reactionRow({ reaction: 'lunar_crystallize' })], [], TEAM);
+    const whole = synthesizeRecipe([reactionRow({ reaction: 'lunar_crystallize', weight: 1 })],
       [], TEAM);
-    expect(evaluateRecipe(ranked, NO_STATS) / evaluateRecipe(whole, NO_STATS)).toBeCloseTo(0.6, 9);
+    expect(evaluateRecipe(solo, NO_STATS) / evaluateRecipe(whole, NO_STATS)).toBeCloseTo(0.6, 9);
+    expect(LUNAR_SOLO_WEIGHT).toBe(0.6);
     expect(() => synthesizeRecipe([reactionRow({ reaction: 'lunar_charged', weight: 2 })], [],
       TEAM)).toThrow(/weight/);
   });

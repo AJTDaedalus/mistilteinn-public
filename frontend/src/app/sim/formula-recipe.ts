@@ -264,11 +264,17 @@ export interface FormulaReaction {
   /** A swirl's element; required for a swirl, refused for anything else. */
   swirled?: string | null;
   /**
-   * A Lunar contribution's weight: 1 is GO's whole contribution (the default); gcsim ranks
-   * every contributor and weights them 0.6/0.3/0.05/0.05 (`lunarcharged.go:22`).
+   * A Lunar contribution's weight. **Default 0.6, gcsim's weight for a solo (top-ranked)
+   * contributor** (owner ruling 2026-11-14, `DECISIONS.md` §44): gcsim ranks every contributor
+   * and weights them 0.6/0.3/0.05/0.05 (`pkg/reactable/lunarcharged.go:22,171-184`,
+   * `lunarcrystallize.go:27,220-230`). GO prices the whole contribution (1), a recorded
+   * divergence; a stated weight in (0, 1] overrides.
    */
   weight?: number;
 }
+
+/** gcsim's weight for the top-ranked (here: the only priced) Lunar contributor. */
+export const LUNAR_SOLO_WEIGHT = 0.6;
 
 export interface FormulaTeam {
   /** The optimized character's element, lower case — `wearer` in an effect. */
@@ -881,7 +887,7 @@ export function reactionRowHits(
       critRate: buffs.reactionCritRate, critDmg: buffs.reactionCritDmg, count: row.count,
     };
   } else {
-    const weight = reaction.weight ?? 1;
+    const weight = reaction.weight ?? LUNAR_SOLO_WEIGHT;
     if (!(weight > 0 && weight <= 1)) throw new Error(`row ${row.id}: a weight is in (0, 1]`);
     term = {
       kind: 'lunar', reaction: name as Lunar, levelBase, reactionBonus: buffs.reactionBonus,
@@ -946,8 +952,9 @@ export function reactionAssumptions(rows: readonly FormulaRow[], subject: string
       + 'for them is about 1 - 1e-5, a recorded divergence.');
   }
   if (reactionRows.some((r) => isLunar(r.reaction!.reaction))) {
-    out.push(`Lunar reactions: ${who}'s own contribution, as Genshin Optimizer prices it; gcsim `
-      + 'ranks every contributor and weights them 0.6/0.3/0.05/0.05.');
+    out.push(`Lunar reactions: ${who}'s own contribution at gcsim's solo weight 0.6 (gcsim ranks `
+      + 'every contributor 0.6/0.3/0.05/0.05); Genshin Optimizer prices the whole contribution, '
+      + 'a recorded divergence.');
   }
   return out;
 }

@@ -9894,7 +9894,9 @@
               {
                 "stat": "reaction_bonus",
                 "value": 0.15,
-                "elements": null,
+                "elements": [
+                  "hydro"
+                ],
                 "element_from": null,
                 "moves": null,
                 "rows": null,
@@ -32438,10 +32440,287 @@
         "kit:flins/c2_hit": 1,
         "kit:flins/moonsign": 1
       },
-      "expected": 30167.84638354101,
+      "expected": 18100.707830124607,
       "go_value": 30167.544708090914,
-      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
-      "relative_divergence_from_go": 1.0000000099971674e-05
+      "divergence": "Lunar contributor weight: gcsim's solo 0.6 (ours, owner 2026-11-14) against GO's whole contribution; and transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 0.39999399999994
+    },
+    {
+      "name": "mona_c1_hydro_swirl_on_kazuha",
+      "covers": "a teammate's swirl bonus scoped to one swirled element (Mona's C1, Hydro swirls only, owner ruling 2026-11-14): it reaches the Hydro swirl row and not the Pyro one",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/formula/src/data/char/Mona.ts:84-92,128-139,248-250",
+        "gcsim: internal/characters/mona/cons.go:71-80"
+      ],
+      "givers": [
+        {
+          "name": "Kaedehara Kazuha",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        },
+        {
+          "name": "Mona",
+          "constellation": 1,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "anemo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "anemo",
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 905.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13348.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 807.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 280.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 680.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.4
+      },
+      "set_pools": [],
+      "channel": "anemo",
+      "rows": [
+        {
+          "id": "swirl_pyro",
+          "label": "swirl (pyro)",
+          "move": null,
+          "count": 1,
+          "reaction": {
+            "reaction": "swirl",
+            "swirled": "pyro"
+          },
+          "conditionals": {}
+        },
+        {
+          "id": "swirl_hydro",
+          "label": "swirl (hydro)",
+          "move": null,
+          "count": 1,
+          "reaction": {
+            "reaction": "swirl",
+            "swirled": "hydro"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:mona",
+          "label": "Mona (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Mona.ts (pando), libs/gi/sheets/src/Characters/Mona/index.tsx (wr) @ 2c13fc40 \u2014 omen_dmg pando:Mona.ts:61,130,232; wr:index.tsx:75,129-134,388; c1_vaporize pando:Mona.ts:86,140-142,251-258; wr:index.tsx:100,152-155,392-396; c1_electro_charged pando:Mona.ts:85,131-136,236-247; c1_swirl pando:Mona.ts:87,137-139,248-250; c1_lunar_crystallize pando:Mona.ts:92,143-145,254-259; gcsim internal/characters/mona/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "omen",
+                "label": "The opponent is affected by Omen (Stellaris Phantasm)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c1_omen",
+                "label": "Party members' reactions on an opponent affected by Omen (C1 Prophecy of Submersion)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: it depends on the party's reactions on an Omen-affected opponent",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "vaporize",
+                  "reverse_vaporize"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "electro_charged",
+                  "lunar_charged"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": [
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "swirl"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              },
+              {
+                "stat": "reaction_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "c1_omen",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Witch's Eve Rite (Hexerei) and every Hexerei part of her constellations",
+                "reason": "the Hexerei party mechanic is not modelled (as Sucrose's)"
+              },
+              {
+                "what": "A1: \"Come 'n' Get Me, Hag!\": the Phantom's explosion",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "TALENT: Stellaris Phantasm: the Illusory Bubble",
+                "reason": "no damage effect: crowd control"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:mona/omen": 1,
+        "kit:mona/c1_omen": 1
+      },
+      "expected": 9789.574624279638,
+      "go_value": 9906.67069233735,
+      "divergence": "Mona's C1 on a Pyro swirl: a Hydro swirl only (gcsim and her text, ours, owner 2026-11-14) against GO's every swirl; and transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 0.011819921313048565
     },
     {
       "name": "lunar_crystallize_aubade_mona_c4",
@@ -32757,7 +33036,9 @@
               {
                 "stat": "reaction_bonus",
                 "value": 0.15,
-                "elements": null,
+                "elements": [
+                  "hydro"
+                ],
                 "element_from": null,
                 "moves": null,
                 "rows": null,
@@ -32837,10 +33118,10 @@
         "kit:mona/c1_omen": 1,
         "kit:mona/c6_stacks": 0
       },
-      "expected": 31824.30147904076,
+      "expected": 19094.580887424458,
       "go_value": 31823.98323920519,
-      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
-      "relative_divergence_from_go": 1.0000000099896248e-05
+      "divergence": "Lunar contributor weight: gcsim's solo 0.6 (ours, owner 2026-11-14) against GO's whole contribution; and transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 0.39999399999994006
     }
   ]
 }

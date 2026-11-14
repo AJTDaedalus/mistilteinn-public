@@ -52,6 +52,12 @@ LV90 = reaction_level_multiplier(90)
 GO_TRANS_DEF = 99999999 / (99999999 + (5 * 100 + 500))
 TRANS_DIVERGENCE = ("transformative DEF: gcsim ignores DEF (1, ours) against GO's "
                     "enemy.transDef, about 1 - 1e-5")
+#: Owner ruling 2026-11-14 (`DECISIONS.md` §44): a Lunar row's contribution is weighted as gcsim
+#: weights a solo (top-ranked) contributor, 0.6 (`pkg/reactable/lunarcharged.go:22,171-184`,
+#: `lunarcrystallize.go:27,220-230`), where GO prices the whole contribution (1).
+LUNAR_SOLO_WEIGHT = 0.6
+LUNAR_DIVERGENCE = ("Lunar contributor weight: gcsim's solo 0.6 (ours, owner 2026-11-14) "
+                    "against GO's whole contribution; and " + TRANS_DIVERGENCE)
 
 
 def _crit(rate: float, dmg: float) -> float:
@@ -79,6 +85,12 @@ def _go_def(figure: Any) -> Any:
     its own term. The amplifying coefficient a reaction fixture does not use is ignored."""
     return lambda coefficient: figure(
         1.0 if coefficient == base.OUR_EM_COEFFICIENT else GO_TRANS_DEF)
+
+
+def _lunar_weight(figure: Any) -> Any:
+    """`figure` with ours at gcsim's solo weight and GO's whole: the Lunar rows' own figure."""
+    return lambda coefficient: figure(coefficient) * (
+        LUNAR_SOLO_WEIGHT if coefficient == base.OUR_EM_COEFFICIENT else 1.0)
 
 
 def _reaction_row(row_id: str, reaction: str, count: float, *, swirled: str | None = None,
@@ -132,6 +144,25 @@ def _swirl(trans_def: float) -> float:
     em = base._stats(base.KAZUHA_BASE, base.KAZUHA_ARTIFACTS)["elemental_mastery"]
     return (2 * _trans(0.6, em, 0.6, trans_def=trans_def, res=0.1 - 0.4)
             + _trans(0.6, em, 0.6, trans_def=trans_def))
+
+
+def _mona_c1_swirl(coefficient: float) -> float:
+    """**A Pyro and a Hydro swirl by Kazuha with a C1 Mona's Omen**: her C1's 15% Swirl DMG.
+
+    Owner ruling 2026-11-14 (`DECISIONS.md` §44): **a Hydro swirl only**, as gcsim
+    (`internal/characters/mona/cons.go:71-80`, `AttackTagSwirlHydro`) and her text have it:
+    ours. GO adds it to every swirl (`pando Mona.ts:87,137-139,248-250`, `swirl_dmg_`): GO's
+    figure, so the Pyro swirl is the recorded divergence."""
+    em = base._stats(base.KAZUHA_BASE, base.KAZUHA_ARTIFACTS)["elemental_mastery"]
+    ours = coefficient == base.OUR_EM_COEFFICIENT
+    trans_def = 1.0 if ours else GO_TRANS_DEF
+    pyro_bonus = 0.0 if ours else 0.15
+    return (_trans(0.6, em, pyro_bonus, trans_def=trans_def)
+            + _trans(0.6, em, 0.15, trans_def=trans_def))
+
+
+MONA_DIVERGENCE = ("Mona's C1 on a Pyro swirl: a Hydro swirl only (gcsim and her text, ours, "
+                   "owner 2026-11-14) against GO's every swirl; and " + TRANS_DIVERGENCE)
 
 
 # ── Aggravate: Keqing's Last Attack in Thundering Fury ──────────────────────────────────────
@@ -375,7 +406,28 @@ def reaction_fixtures() -> list[dict[str, Any]]:
          b4._kit("10000120", b6._giver("Flins", "10000120", 2, b8.FLINS_BASE), subject=True)],
         {"set:15041:4/gleaming_moon": "ascendant_gleam", "kit:flins/c2_hit": 1,
          "kit:flins/moonsign": 1},
-        _go_def(_lunar_charged), TRANS_DIVERGENCE))
+        _lunar_weight(_go_def(_lunar_charged)), LUNAR_DIVERGENCE))
+
+    swirl_team = ["anemo", "hydro", "pyro"]
+    out.append(_fixture(
+        "mona_c1_hydro_swirl_on_kazuha",
+        "a teammate's swirl bonus scoped to one swirled element (Mona's C1, Hydro swirls only, "
+        "owner ruling 2026-11-14): it reaches the Hydro swirl row and not the Pyro one",
+        [TRANS, CONSTANTS, f"{PANDO}Mona.ts:84-92,128-139,248-250",
+         "gcsim: internal/characters/mona/cons.go:71-80"],
+        [b6._subject("Kaedehara Kazuha", 0),
+         {"name": "Mona", "constellation": 1, "ascension_phase": 6,
+          "talent_levels": {"elemental_burst": 10}, "stats": {}}],
+        {"element": "anemo", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": swirl_team},
+        (base.KAZUHA_BASE, base.KAZUHA_ARTIFACTS), [], "anemo",
+        [_reaction_row("swirl_pyro", "swirl", 1, swirled="pyro", label="swirl (pyro)"),
+         _reaction_row("swirl_hydro", "swirl", 1, swirled="hydro", label="swirl (hydro)")],
+        [b4._kit("10000041", b4._giver("Mona", "10000041", constellation=1,
+                                       rows={("elemental_burst", 13): b4.MONA_BURST_13}),
+                 subject=False, receiver_element="anemo", team_elements=swirl_team)],
+        {"kit:mona/omen": 1, "kit:mona/c1_omen": 1},
+        _mona_c1_swirl, MONA_DIVERGENCE))
 
     mona_team = ["geo", "hydro"]
     out.append(_fixture(
@@ -396,5 +448,5 @@ def reaction_fixtures() -> list[dict[str, Any]]:
                  subject=False, receiver_element="geo", team_elements=mona_team)],
         {"set:15043:4/off_field": 1, "set:15043:4/moonsign": "ascendant_gleam",
          "kit:mona/omen": 1, "kit:mona/c1_omen": 1, "kit:mona/c6_stacks": 0},
-        _go_def(_lunar_crystallize), TRANS_DIVERGENCE))
+        _lunar_weight(_go_def(_lunar_crystallize)), LUNAR_DIVERGENCE))
     return out

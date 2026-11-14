@@ -61,7 +61,9 @@ column; `tests/unit/test_reactions.py` holds all three to agree.
    contributor's damage, ranked, at weights 0.6/0.3/0.05/0.05 (`lunarcharged.go:22,159-185`,
    `lunarcrystallize.go:27`); GO prices one character's whole contribution
    (`special.ts:92-121`, no ranking). The estimate scores the optimized character's own
-   contribution as GO does, at a stated `weight` that defaults to 1 (GO); the panel says so.
+   contribution at a stated `weight` that defaults to **0.6, gcsim's weight for a solo
+   (top-ranked) contributor** (owner ruling 2026-11-14, `DECISIONS.md` §44; it was GO's 1 until
+   then); each Lunar GO fixture records the 0.6 against GO's whole contribution.
 """
 
 from __future__ import annotations
