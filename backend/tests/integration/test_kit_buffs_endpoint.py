@@ -320,7 +320,9 @@ async def test_the_party_highest_em_is_read_from_the_teammates_pass_one(
     nahida_kit = {s["id"]: s for s in response.json()["sources"]}["kit:nahida"]
     kazuha_em = (await _base(authed_client, team["kazuha"], "Slashing DMG")).get(
         "elemental_mastery", 0.0) + 200
-    assert nahida_kit["giver_stats"] == {"team_max_elemental_mastery": pytest.approx(kazuha_em)}
+    # Her own EM is reported too since DECISIONS §40 (her A4 reads it, on her own hits only).
+    assert set(nahida_kit["giver_stats"]) == {"team_max_elemental_mastery", "elemental_mastery"}
+    assert nahida_kit["giver_stats"]["team_max_elemental_mastery"] == pytest.approx(kazuha_em)
     [a1] = [e for e in nahida_kit["bonus"]["effects"] if e["stat"] == "elemental_mastery"]
     assert a1["value"] == pytest.approx(min(0.25 * kazuha_em, 250.0))
 
