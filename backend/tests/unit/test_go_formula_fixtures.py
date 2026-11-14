@@ -1333,6 +1333,273 @@ def buffer_fixtures() -> list[dict[str, Any]]:
     return out
 
 
+# ── Math-fallback P2, task 11 (third batch): the DPS characters in the owner's teams ─────────
+#
+# One fixture per sheet, on its main self buff, by the same method: GO's formula worked by hand
+# from its sheet, with our numbers. Talent rows are verbatim from the seeded catalogue (nanoka
+# 7.2.51); constellation and passive lists are the sheets' pins. Each subject resolves its own
+# sheet against its base stats, as the buffers' fixtures do.
+
+AYAKA_CHARGED = ("Charged Attack DMG|{param8:F1P}\u00d73", [0.84007, 0.894438, 1.150493, 0.416061,
+                                                      0.0, 0.0, 1.436362, 1.01278])
+AYAKA_SELF_BASE = _base_stats(base_atk=950.0, base_hp=12858.0, base_def=784.0, crit_dmg=0.884)
+AYAKA_SELF_ARTIFACTS = {"atk_pct": 0.466, "flat_atk": 311.0, "cryo_dmg_bonus": 0.466,
+                        "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _ayaka(_: float) -> float:
+    """**Kamisato Ayaka, C0, on her own Charged Attack** (three hits), both passives her own
+    doing: A1's 30% Normal and Charged Attack DMG after Hyouka and A4's 18% Cryo DMG.
+
+    GO: `dmg('charged', info, 'atk', dm.charged.dmg1, 'charged')` (`pando KamisatoAyaka.ts:143`);
+    A1 `ownBuff.premod.dmg_.charged` = `passive1.dmg_bonus` (`:59-62,99-103,128`); A4
+    `ownBuff.premod.dmg_.cryo` = `passive2.cryo` (`:63-67,104-108,130`)."""
+    stats = _stats(AYAKA_SELF_BASE, AYAKA_SELF_ARTIFACTS)
+    one = _go_general(base=_multiplier(AYAKA_CHARGED) * _total(stats, "atk"), flat=0.0,
+                      dmg_bonus=stats["cryo_dmg_bonus"] + 0.3 + 0.18,
+                      crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+    return 3 * one
+
+
+KUKI_RING = ("Grass Ring of Sanctification DMG|{param4:F1P}", [1.287104, 0.051, 587.4528,
+                                                             0.42908])
+KUKI_BASE = _base_stats(base_atk=772.0, base_hp=12289.0, hp_pct=0.24, base_def=751.0)
+KUKI_ARTIFACTS = {"elemental_mastery": 747.0, "flat_atk": 311.0, "electro_dmg_bonus": 0.466,
+                  "crit_rate": 0.2, "crit_dmg": 0.4}
+
+
+def _kuki(_: float) -> float:
+    """**Kuki Shinobu, C0, on her own Grass Ring**: A4 adds 25% of her Elemental Mastery to the
+    ring's base, which moves with every candidate.
+
+    GO: `dmg('ringDmg', info, 'atk', dm.skill.ringDmg, 'skill')` (`pando KukiShinobu.ts:143`);
+    A4 `ownBuff.formula.base.skill` = `prod(percent(passive2.emSkillDmg_), final.eleMas)`
+    (`:66-69,102-106,119`)."""
+    stats = _stats(KUKI_BASE, KUKI_ARTIFACTS)
+    return _go_general(base=_multiplier(KUKI_RING) * _total(stats, "atk"),
+                       flat=0.25 * stats["elemental_mastery"],
+                       dmg_bonus=stats["electro_dmg_bonus"], crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"])
+
+
+NOELLE_NORMAL_4 = ("4-Hit DMG|{param4:P}", [1.4536, 1.34774, 1.58474, 2.08402])
+NOELLE_BURST_LABELS = ["Burst DMG|{param1:P}", "Skill DMG|{param2:P}", "ATK Bonus|{param3:P} DEF",
+                       "Duration|{param4:F1}s", "CD|{param5:F1}s", "Energy Cost|{param6:I}"]
+NOELLE_BURST_9 = [1.1424, 1.5776, 0.68, 15.0, 15.0, 60.0]
+NOELLE_BASE = _base_stats(base_atk=701.0, base_hp=12071.0, base_def=799.0, def_pct=0.3)
+NOELLE_ARTIFACTS = {"def_pct": 1.166, "flat_def": 39.0, "flat_atk": 311.0,
+                    "geo_dmg_bonus": 0.466, "crit_rate": 0.3, "crit_dmg": 0.8}
+
+
+def _noelle(_: float) -> float:
+    """**Noelle, C0, on her own 4-Hit DMG during Sweeping Time** (Geo, infused): her ATK gains
+    68% of her own DEF (burst 9), which moves with every candidate's DEF.
+
+    GO: `dmg('normal_3', info, 'atk', …, 'normal')` (`pando Noelle.ts:145-147`); `ownBuff.
+    premod.atk.add(SweepingTime.ifOn(prod(own.premod.def, talentSubscript(burst,
+    defToAtk))))` (`:64-71,99-110,137`)."""
+    stats = _stats(NOELLE_BASE, NOELLE_ARTIFACTS)
+    atk = _total(stats, "atk") + 0.68 * _total(stats, "def")
+    return _go_general(base=_multiplier(NOELLE_NORMAL_4) * atk, flat=0.0,
+                       dmg_bonus=stats["geo_dmg_bonus"], crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"])
+
+
+NEUVILLETTE_JUDGMENT = ("Charged Attack: Equitable Judgment|{param5:F2P} Max HP",
+                        [0.982382, 0.832421, 1.302077, 2.4624, 0.14467])
+NEUVILLETTE_BASE = _base_stats(base_atk=601.0, base_hp=14695.0, base_def=576.0, crit_dmg=0.884)
+NEUVILLETTE_ARTIFACTS = {"hp_pct": 0.932, "flat_hp": 4780.0, "hydro_dmg_bonus": 0.466,
+                         "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _neuvillette(_: float) -> float:
+    """**Neuvillette, C0, on his own Equitable Judgment**, set by the user (both are situational,
+    DECISIONS §39): three A1 stacks (base DMG ×1.6) and HP 50 points above 30% (A4, +30% Hydro
+    DMG).
+
+    GO: `dmg('charged_judgment', info, 'hp', dm.charged.judgmentDmg, 'charged', {baseMulti:
+    1 + subscript(a1Stacks, [0, …passive1])})` (`pando Neuvillette.ts:58-66,91-96,122-130`); A4
+    `ownBuff.premod.dmg_.hydro` = `prod(a4Hp, passive2[2][0] / 100)` (`:67-72,97-101,115`)."""
+    stats = _stats(NEUVILLETTE_BASE, NEUVILLETTE_ARTIFACTS)
+    return _go_general(base=_multiplier(NEUVILLETTE_JUDGMENT) * _total(stats, "hp") * (1 + 0.6),
+                       flat=0.0, dmg_bonus=stats["hydro_dmg_bonus"] + 50 * 0.6 / 100,
+                       crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+MAVUIKA_BURST_LABELS = [
+    "Skill DMG|{param1:F1P}", "Crucible of Death and Life Duration|{param2:F1}s",
+    "Sunfell Slice DMG Bonus|{param3:F1P} ATK per Fighting Spirit",
+    "Flamestrider Normal Attack DMG Bonus|{param4:F2P} ATK per Fighting Spirit",
+    "Flamestrider Charged Attack DMG Bonus|{param5:F2P} ATK per Fighting Spirit",
+    "CD|{param8:F1}s", "Fighting Spirit Limit|{param9:I}"]
+MAVUIKA_BURST_10 = [8.0064, 7.0, 0.0288, 0.0051, 0.0102, 1.0, 1.5, 18.0, 200.0]
+MAVUIKA_BURST = ("Skill DMG|{param1:F1P}", [8.0064])
+MAVUIKA_BASE = _base_stats(base_atk=1013.0, base_hp=12552.0, base_def=792.0, crit_dmg=0.884)
+MAVUIKA_ARTIFACTS = {"atk_pct": 0.466, "flat_atk": 311.0, "pyro_dmg_bonus": 0.466,
+                     "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _mavuika(_: float) -> float:
+    """**Mavuika, C2, on her own Sunfell Slice**, every condition her own doing at its maximum:
+    200 Fighting Spirit (Sunfell's ATK per point, and A4's DMG to the active character), A1's
+    and C1's ATK, C2's base ATK in either form and its share of ATK in Flamestrider form.
+
+    GO: `dmg('burst', info, 'atk', dm.burst.skillDmg, 'burst')` (`pando Mavuika.ts:303-311`);
+    `ownBuff.formula.base.burst` = Sunfell `prod(final.atk, burst row, spirit)` + C2 `prod(
+    final.atk, constellation2.burst_dmgInc)` (`:132-136,199-205,234`); `ownBuff.base.atk` +C2
+    (`:168-176,232`); `premod.atk_` A1 + C1 (`:148-150,165-167,231`); `teamBuff.premod.dmg_` A4
+    at 0 s = `0.0001 × 20 × spirit` (`:78-83,151-164,236-242`)."""
+    stats = _stats(MAVUIKA_BASE, MAVUIKA_ARTIFACTS)
+    atk = (MAVUIKA_BASE["base_atk"] + 200.0) * (1 + stats["atk_pct"] + 0.3 + 0.4) \
+        + stats["flat_atk"]
+    return _go_general(base=_multiplier(MAVUIKA_BURST) * atk, flat=(200 * 0.0288 + 1.2) * atk,
+                       dmg_bonus=stats["pyro_dmg_bonus"] + 200 * 0.002,
+                       crit_rate=stats["crit_rate"], crit_dmg=stats["crit_dmg"])
+
+
+SKIRK_BURST_LABELS = [
+    "Slash DMG|{param1:F1P} \u00d75", "Final Slash DMG|{param2:F1P}",
+    "Serpent's Subtlety Bonus|{param3:F2P} ATK Per Point",
+    "0/1/2/3 Void Rift Absorption DMG Bonus|{param4:F1P}/{param5:F1P}/{param6:F1P}/{param7:F1P}",
+    "CD|{param8:F1}s"]
+SKIRK_BURST_10 = [2.20968, 3.6828, 0.34782, 0.08, 0.12, 0.16, 0.2, 15.0]
+SKIRK_FINAL = ("Final Slash DMG|{param2:F1P}", [2.20968, 3.6828])
+SKIRK_BASE = _base_stats(base_atk=1015.0, base_hp=12417.0, base_def=806.0, crit_dmg=0.884)
+SKIRK_ARTIFACTS = {"atk_pct": 0.932, "flat_atk": 311.0, "cryo_dmg_bonus": 0.466,
+                   "crit_rate": 0.3, "crit_dmg": 0.6}
+
+
+def _skirk(_: float) -> float:
+    """**Skirk, C0, on her own Havoc: Ruin final slash**, with 12 points of Serpent's Subtlety
+    above 50 (the C0 maximum, her own doing): each adds the burst row's share of her ATK.
+
+    GO: `burstHit('burst_finalDmg', dm.burst.finalDmg)` (`pando Skirk.ts:265-278,308`) with
+    `ownBuff.formula.base.add(prod(serpentStacks, talentSubscript(burst, serpentBonus),
+    a4mult, final.atk))` (`:159-171`), A4 at 0 stacks (situational) so `a4mult` is 1."""
+    stats = _stats(SKIRK_BASE, SKIRK_ARTIFACTS)
+    atk = _total(stats, "atk")
+    return _go_general(base=_multiplier(SKIRK_FINAL) * atk, flat=12 * 0.34782 * atk,
+                       dmg_bonus=stats["cryo_dmg_bonus"], crit_rate=stats["crit_rate"],
+                       crit_dmg=stats["crit_dmg"])
+
+
+def dps_fixtures() -> list[dict[str, Any]]:
+    """Task 11, third batch: one fixture per DPS sheet, on its main self buff."""
+    formula = "libs/gi/wr/src/formula.ts:357,434-453,505-514"
+    pando = "libs/gi/formula/src/data/char/"
+    out: list[dict[str, Any]] = []
+
+    def subject(name: str, constellation: int, talent_levels: dict[str, int] | None = None
+                ) -> dict[str, Any]:
+        giver: dict[str, Any] = {"name": name, "constellation": constellation,
+                                 "ascension_phase": 6}
+        if talent_levels:
+            giver["talent_levels"] = talent_levels
+        giver["stats"] = "the optimized character"
+        return giver
+
+    cons, pas = _pinned("10000002")
+    out.append(_buffer(
+        "ayaka_a1_a4_on_her_own_charged",
+        "two self DMG buffs, one move-scoped (A1) and one element-scoped (A4), over a three-hit "
+        "row",
+        [formula, f"{pando}KamisatoAyaka.ts:59-67,99-108,127-130,143"],
+        subject("Kamisato Ayaka", 0),
+        {"element": "cryo", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["cryo", "hydro"]},
+        AYAKA_SELF_BASE, AYAKA_SELF_ARTIFACTS, "cryo",
+        _row("charged", "Charged Attack DMG", "charged", 3, AYAKA_CHARGED, None),
+        _kit_source("10000002", _ungated_giver(
+            "Kamisato Ayaka", "10000002", cons=cons, passives=pas, stats=AYAKA_SELF_BASE),
+            subject=True),
+        {}, _ayaka))
+
+    cons, pas = _pinned("10000065")
+    out.append(_buffer(
+        "kuki_a4_on_her_own_ring",
+        "self flat damage from her own Elemental Mastery on one move, per candidate",
+        [formula, f"{pando}KukiShinobu.ts:66-69,102-106,119,143"],
+        subject("Kuki Shinobu", 0),
+        {"element": "electro", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["electro", "dendro"]},
+        KUKI_BASE, KUKI_ARTIFACTS, "electro",
+        _row("ring", "Grass Ring of Sanctification DMG", "skill", 1, KUKI_RING, None),
+        _kit_source("10000065", _ungated_giver(
+            "Kuki Shinobu", "10000065", cons=cons, passives=pas, stats=KUKI_BASE),
+            subject=True),
+        {}, _kuki))
+
+    cons, pas = _pinned("10000034")
+    out.append(_buffer(
+        "noelle_burst_on_her_own_normal",
+        "self flat ATK from her own DEF (a talent row), per candidate, into an ATK-scaling hit",
+        [formula, f"{pando}Noelle.ts:64-71,99-110,137,145-147"],
+        subject("Noelle", 0, {"elemental_burst": 9}),
+        {"element": "geo", "weapon_type": "WEAPON_CLAYMORE", "member_elements": ["geo"]},
+        NOELLE_BASE, NOELLE_ARTIFACTS, "geo",
+        _row("normal_4", "4-Hit DMG", "normal", 1, NOELLE_NORMAL_4, None),
+        _kit_source("10000034", _ungated_giver(
+            "Noelle", "10000034", talent_levels={"elemental_burst": 9},
+            talent_rows={("elemental_burst", 9): sheets.TalentRow(NOELLE_BURST_LABELS,
+                                                                  NOELLE_BURST_9)},
+            cons=cons, passives=pas, stats=NOELLE_BASE), subject=True),
+        {}, _noelle))
+
+    cons, pas = _pinned("10000087")
+    out.append(_buffer(
+        "neuvillette_a1_a4_on_his_own_judgment",
+        "a base-damage multiplier read by a stack count (A1), and a DMG buff per percentage "
+        "point of HP counted per 100 (A4), both situational and set by the user",
+        [formula, f"{pando}Neuvillette.ts:58-72,91-101,115,122-130"],
+        subject("Neuvillette", 0),
+        {"element": "hydro", "weapon_type": "WEAPON_CATALYST",
+         "member_elements": ["hydro", "hydro"]},
+        NEUVILLETTE_BASE, NEUVILLETTE_ARTIFACTS, "hydro",
+        _row("judgment", "Charged Attack: Equitable Judgment", "charged", 1,
+             NEUVILLETTE_JUDGMENT, None),
+        _kit_source("10000087", _ungated_giver(
+            "Neuvillette", "10000087", cons=cons, passives=pas, stats=NEUVILLETTE_BASE),
+            subject=True),
+        {"kit:neuvillette/a1_stacks": 3, "kit:neuvillette/a4_hp": 50}, _neuvillette))
+
+    cons, pas = _pinned("10000106")
+    out.append(_buffer(
+        "mavuika_c2_on_her_own_burst",
+        "self flat damage from her own ATK per Fighting Spirit (a talent row) and from C2, base "
+        "ATK (C2), ATK% (A1, C1), and a DMG buff to the active character from a cited constant "
+        "(A4)",
+        [formula, f"{pando}Mavuika.ts:66,78-96,125-176,199-205,231-242,303-311"],
+        subject("Mavuika", 2, {"elemental_burst": 10}),
+        {"element": "pyro", "weapon_type": "WEAPON_CLAYMORE",
+         "member_elements": ["pyro", "pyro", "cryo", "anemo"]},
+        MAVUIKA_BASE, MAVUIKA_ARTIFACTS, "pyro",
+        _row("burst", "Skill DMG", "burst", 1, MAVUIKA_BURST, None),
+        _kit_source("10000106", _ungated_giver(
+            "Mavuika", "10000106", constellation=2, talent_levels={"elemental_burst": 10},
+            talent_rows={("elemental_burst", 10): sheets.TalentRow(MAVUIKA_BURST_LABELS,
+                                                                   MAVUIKA_BURST_10)},
+            cons=cons, passives=pas, stats=MAVUIKA_BASE), subject=True),
+        {}, _mavuika))
+
+    cons, pas = _pinned("10000114")
+    out.append(_buffer(
+        "skirk_serpent_on_her_own_burst",
+        "self flat damage from her own ATK per point of a stack count (a talent row)",
+        [formula, f"{pando}Skirk.ts:72-76,138-144,159-171,265-278,308"],
+        subject("Skirk", 0, {"elemental_burst": 10}),
+        {"element": "cryo", "weapon_type": "WEAPON_SWORD_ONE_HAND",
+         "member_elements": ["cryo", "hydro"]},
+        SKIRK_BASE, SKIRK_ARTIFACTS, "cryo",
+        _row("final", "Final Slash DMG", "burst", 1, SKIRK_FINAL, None),
+        _kit_source("10000114", _ungated_giver(
+            "Skirk", "10000114", talent_levels={"elemental_burst": 10},
+            talent_rows={("elemental_burst", 10): sheets.TalentRow(SKIRK_BURST_LABELS,
+                                                                   SKIRK_BURST_10)},
+            cons=cons, passives=pas, stats=SKIRK_BASE), subject=True),
+        {}, _skirk))
+    return out
+
+
 def build() -> dict[str, Any]:
     """Every fixture, inputs and figures, as the committed file holds them."""
     witch = _set_source(15006, 4, WITCH_PARAMS, [WITCH_TWO_PIECE_ROW])
@@ -1407,6 +1674,7 @@ def build() -> dict[str, Any]:
     fixtures.extend(sheet_fixtures())
     fixtures.extend(ungated_fixtures())
     fixtures.extend(buffer_fixtures())
+    fixtures.extend(dps_fixtures())
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {
@@ -1451,7 +1719,8 @@ def test_the_divergence_is_only_the_em_coefficient():
                  "kazuha_a4_pyro_on_xiangling", "kazuha_a4_on_his_own_burst",
                  *(f["name"] for f in ungated_fixtures()),
                  *(f["name"] for f in buffer_fixtures()
-                   if f["name"] != "sucrose_a4_on_xiangling")):
+                   if f["name"] != "sucrose_a4_on_xiangling"),
+                 *(f["name"] for f in dps_fixtures())):
         assert by_name[name]["relative_divergence_from_go"] == 0, name
     for name in ("crimson_witch_one_stack_reverse_vaporize", "xiangling_multi_target",
                  "sucrose_a4_on_xiangling"):
