@@ -1,0 +1,264 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Nahida",
+ "nanoka_id": "10000073",
+ "slug": "nahida",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Nahida.ts",
+  "wr": "libs/gi/sheets/src/Characters/Nahida/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/nahida/",
+ "verified_by": [
+  "nahida_a1_c2_on_xiangling",
+  "nahida_burst_c4_on_her_own_tri_karma"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Nahida.ts:201; wr:index.tsx:339,343"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Nahida.ts:202; wr:index.tsx:340,344"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Pyro: DMG Bonus|1 Character {param1:F1P}",
+    "Pyro: DMG Bonus|2 Characters {param2:F1P}"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.2,
+    0.3,
+    8.0,
+    0.1,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    100.0,
+    120.0,
+    140.0,
+    160.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.25,
+    250.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_field",
+   "label": "The active character is in the Shrine of Maya (A1 Compassion Illuminated)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Nahida.ts:112,168-182,212; wr:index.tsx:166-195,362"
+  },
+  {
+   "key": "shrine",
+   "label": "Shrine of Maya is active (Illusory Heart)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Nahida.ts:112,120-134,253; wr:index.tsx:113-131,226-231"
+  },
+  {
+   "key": "c2_quicken",
+   "label": "Opponents marked by Seeds of Skandha were hit by Quicken, Aggravate or Spread (C2 The Root of All Fullness)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Nahida.ts:112,116,230-233; wr:index.tsx:278-283,359"
+  },
+  {
+   "key": "c4_count",
+   "label": "Opponents near Nahida affected by Seeds of Skandha (C4 The Stem of Manifest Inference)",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 4,
+   "step": 1,
+   "go": "pando:Nahida.ts:115,204-210; wr:index.tsx:285-300,345"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_em",
+   "label": "A1 Compassion Illuminated: Elemental Mastery, 25% of the party's highest",
+   "source": "a1",
+   "receivers": "active",
+   "stat": "elemental_mastery",
+   "value": {
+    "passive": 1,
+    "param": 0,
+    "times_team_max": "elemental_mastery",
+    "cap": {
+     "passive": 1,
+     "param": 1
+    }
+   },
+   "when": [
+    {
+     "condition": "a1_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nahida.ts:79-82,168-182,212; wr:index.tsx:83-86,166-195,362"
+  },
+  {
+   "key": "burst_tri_karma",
+   "label": "Illusory Heart: Tri-Karma Purification DMG Bonus by the party's Pyro members (C1 counts one more)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Tri-Karma Purification DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Pyro: DMG Bonus",
+    "rows_by_team": {
+     "elements": [
+      "pyro"
+     ],
+     "labels": [
+      "Pyro: DMG Bonus|1 Character {param1:F1P}",
+      "Pyro: DMG Bonus|2 Characters {param2:F1P}"
+     ],
+     "count_bonus": {
+      "constellation": 1,
+      "add": {
+       "constant": 1.0,
+       "cite": "GO pando Nahida.ts:120 `sum(count.pyro, cmpGE(constellation, 1, 1))`, WR index.tsx:115; her C1 param_list is all zeros"
+      }
+     }
+    }
+   },
+   "when": [
+    {
+     "condition": "shrine",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nahida.ts:69-70,120-134,246-255; wr:index.tsx:73-74,115-131,226-231,313-318"
+  },
+  {
+   "key": "c2_def",
+   "label": "C2 The Root of All Fullness: DEF of opponents marked by Seeds of Skandha after Quicken, Aggravate or Spread",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "def_reduction",
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c2_quicken",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nahida.ts:89-94,230-233; wr:index.tsx:93-100,278-283,359"
+  },
+  {
+   "key": "c4_em",
+   "label": "C4 The Stem of Manifest Inference: Nahida's Elemental Mastery by the number of opponents affected",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "per": "c4_count",
+   "by_stack": true,
+   "go": "pando:Nahida.ts:95-97,204-210; wr:index.tsx:101-103,285-300,345"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
+   "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+  },
+  {
+   "source": "a4",
+   "what": "Awakening Elucidated: Tri-Karma Purification DMG and CRIT Rate from her Elemental Mastery above 200",
+   "reason": "a thresholded, capped conversion of the optimized character's own EM, which the recipe cannot carry per candidate: the owner's open question in DECISIONS.md §39"
+  },
+  {
+   "source": "c2",
+   "what": "The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
+   "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
+  },
+  {
+   "source": "c6",
+   "what": "The Fruit of Reason's Culmination: Tri-Karma Purification: Karmic Oblivion",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "talent",
+   "what": "Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
+   "reason": "no damage effect: they change how often and how long, not how much a hit deals"
+  },
+  {
+   "source": "kit",
+   "what": "Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
+   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+  }
+ ]
+}

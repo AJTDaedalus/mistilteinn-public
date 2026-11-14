@@ -263,6 +263,7 @@ export class FormulaEstimateService {
       id: row.id,
       label: row.label,
       move: row.move,
+      hit: { talent: row.hit.talent, label: row.hit.label },
       count: row.count,
       context: kernelContext(contexts[i]),
       conditionals: row.overrides,

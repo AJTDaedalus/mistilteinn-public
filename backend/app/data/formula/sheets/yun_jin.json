@@ -1,0 +1,235 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Yun Jin",
+ "nanoka_id": "10000064",
+ "slug": "yun_jin",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/YunJin.ts",
+  "wr": "libs/gi/sheets/src/Characters/YunJin/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/yunjin/",
+ "verified_by": [
+  "yun_jin_flying_cloud_on_a_teammate"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:YunJin.ts:115; wr:index.tsx:152,157"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:YunJin.ts:116; wr:index.tsx:153,156"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "DMG Increase|{param2:P} DEF"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.15,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.2,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.025,
+    0.05,
+    0.075,
+    0.115,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "flying_cloud",
+   "label": "Flying Cloud Flag Formation is active (Cliffbreaker's Banner)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:YunJin.ts:85,95-100,119; wr:index.tsx:96-109,163"
+  },
+  {
+   "key": "c4_crystallize",
+   "label": "After Yun Jin triggers Crystallize (C4 Flower and a Fighter)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:YunJin.ts:85,104-106,122; wr:index.tsx:117-122,158"
+  }
+ ],
+ "effects": [
+  {
+   "key": "cloud_flat",
+   "label": "Cliffbreaker's Banner: Normal Attack DMG from Yun Jin's DEF",
+   "source": "talent",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "DMG Increase",
+    "times_stat": "def"
+   },
+   "when": [
+    {
+     "condition": "flying_cloud",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:YunJin.ts:59,93-100,119; wr:index.tsx:65,96-109,163"
+  },
+  {
+   "key": "a4_flat",
+   "label": "A4 Breaking Conventions: more of Yun Jin's DEF by the party's distinct elements",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "def",
+    "index_by_team": {
+     "count": "distinct",
+     "size": 4
+    }
+   },
+   "when": [
+    {
+     "condition": "flying_cloud",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:YunJin.ts:66,88-100,119; wr:index.tsx:72,86-109,163"
+  },
+  {
+   "key": "c2_normal",
+   "label": "C2 Myriad Mise-En-Scène: Normal Attack DMG Bonus in Flying Cloud",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "flying_cloud",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:YunJin.ts:69,101-103,120; wr:index.tsx:75,111-115,164"
+  },
+  {
+   "key": "c4_def",
+   "label": "C4 Flower and a Fighter: Yun Jin's DEF after Crystallize",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "def_pct",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4_crystallize",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:YunJin.ts:72,104-106,122; wr:index.tsx:78,117-122,158"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Yun Jin's own C4 DEF (and teammates' DEF buffs) in the DEF her banner reads",
+   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `premod.def` would include her C4"
+  },
+  {
+   "source": "talent",
+   "what": "Cliffbreaker's Banner: the trigger quota",
+   "reason": "no damage effect per hit: how many Normal Attacks it reaches is the user's count of rows"
+  },
+  {
+   "source": "talent",
+   "what": "Opening Flourish: the shield",
+   "reason": "no damage effect: shield"
+  },
+  {
+   "source": "c6",
+   "what": "Decorous Harmony: Normal Attack SPD",
+   "reason": "no damage effect per hit: attack speed changes how many hits land, which is the user's count of rows"
+  },
+  {
+   "source": "c1",
+   "what": "Thespian Gallop: Opening Flourish cooldown",
+   "reason": "no damage effect: cooldown"
+  }
+ ]
+}

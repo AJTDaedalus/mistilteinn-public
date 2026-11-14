@@ -487,6 +487,53 @@ describe('kit buffs (P2)', () => {
     expect(() => rowHits(row(context()), [KIT('flat_damage_from_atk', 0.4),
       KIT('flat_damage_from_def', 0.2)], TEAM, {})).toThrow(/converted from atk and def/);
   });
+
+  // Task 11, fourth batch: DEF terms, flat DEF and a row scope.
+  const pieces = () => candidateStatsFrom(PIECES.map((p) => p.stats));
+
+  it("a kit's DEF reduction is the kernel's own DEF term with the target's reduction", () => {
+    const recipe = synthesizeRecipe([row(context())], [KIT('def_reduction', 0.3)], TEAM);
+    const target = { level: 100, resistance: 0.1, defReduction: 0.3, defIgnore: 0 };
+    const kernel = kernelScore({ ...context(), target });
+    expect(Math.abs(evaluateRecipe(recipe, pieces()) - kernel) / kernel).toBeLessThan(TOLERANCE);
+  });
+
+  it('DEF ignore is the other DEF input, multiplied separately from a reduction', () => {
+    const recipe = synthesizeRecipe([row(context())],
+      [KIT('def_reduction', 0.3), KIT('def_ignore', 0.6)], TEAM);
+    const target = { level: 100, resistance: 0.1, defReduction: 0.3, defIgnore: 0.6 };
+    const kernel = kernelScore({ ...context(), target });
+    expect(Math.abs(evaluateRecipe(recipe, pieces()) - kernel) / kernel).toBeLessThan(TOLERANCE);
+  });
+
+  it('flat DEF from a kit is flat DEF the kernel would see', () => {
+    const ctx = context({ scalingStat: 'def', multiplier: 1.4 });
+    const recipe = synthesizeRecipe([row(ctx)], [KIT('flat_def', 438)], TEAM);
+    const kernel = kernelScore(context({ scalingStat: 'def', multiplier: 1.4 }, { flat_def: 438 }));
+    expect(Math.abs(evaluateRecipe(recipe, pieces()) - kernel) / kernel).toBeLessThan(TOLERANCE);
+  });
+
+  it("a row-scoped buff reaches only the giver's named row, and an unnamed row says so", () => {
+    const scoped = {
+      ...KIT('dmg_bonus', 0.4),
+      bonus: {
+        conditions: [], unmodelled: [],
+        effects: [{
+          stat: 'dmg_bonus', value: 0.4, when: [],
+          rows: [{ talent: 'elemental_skill', label: 'Tri-Karma Purification DMG' }],
+        }],
+      },
+    };
+    const karma = { talent: 'elemental_skill', label: 'Tri-Karma Purification DMG' };
+    const press = { talent: 'elemental_skill', label: 'Press DMG' };
+    const bonus = (hit: FormulaRow['hit']) =>
+      rowHits(row(context(), { hit }), [scoped], TEAM, {}).hits[0].bonusDmg;
+    expect(bonus(karma)).toBeCloseTo(0.1 + 0.4, 9);
+    expect(bonus(press)).toBeCloseTo(0.1, 9);
+    const unnamed = rowHits(row(context()), [scoped], TEAM, {});
+    expect(unnamed.hits[0].bonusDmg).toBeCloseTo(0.1, 9);
+    expect(unnamed.skipped.join()).toMatch(/talent row is unknown/);
+  });
 });
 
 describe('suggestMove', () => {

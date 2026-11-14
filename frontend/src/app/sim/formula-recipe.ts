@@ -87,6 +87,11 @@ export interface FormulaEffect {
   elements?: string[] | null;
   element_from?: string[] | null;
   moves?: string[] | null;
+  /**
+   * The hit owner's own talent rows it reaches (`formula_effects.TalentRowScope`): a kit buff
+   * its giver applies to their own hits (Nahida's burst bonus, Tri-Karma Purification only).
+   */
+  rows?: { talent: string; label: string }[] | null;
   reactions?: string[] | null;
   when: { condition: string; values: ConditionValue[] }[];
   per?: string | null;
@@ -179,6 +184,11 @@ export interface FormulaRow {
    * `suggestMove` offers a default only where the label leaves no doubt.
    */
   move: FormulaMove | null;
+  /**
+   * The talent row the hit comes from, as `/hits` names it, for a row-scoped kit buff.
+   * Absent is "unknown": such a row receives no row-scoped buff, and the recipe says so.
+   */
+  hit?: { talent: string; label: string } | null;
   /** How many times it lands. Decimals allowed, as in GO; must be positive. */
   count: number;
   /**
@@ -318,6 +328,12 @@ interface Buffs {
   flatAtk: number;
   /** DMG% per point of the hit owner's own total EM (a giver who is the subject). */
   bonusFromEm: number;
+  /** Flat DEF, after the percentage (Gorou's banner). */
+  flatDef: number;
+  /** The target's DEF reduced (Nahida's C2), into the chain's own DEF term. */
+  defReduction: number;
+  /** The target's DEF ignored by this hit (Raiden's C2), the chain's other DEF input. */
+  defIgnore: number;
   /** Flat ATK per point of the hit owner's own total DEF (Noelle's Sweeping Time on herself). */
   atkFromDef: number;
   /** Base ATK, before the percentage (Mavuika's C2). */
@@ -331,7 +347,8 @@ function noBuffs(): Buffs {
     percent: { atk: 0, hp: 0, def: 0 }, em: 0, er: 0, critRate: 0, critDmg: 0, dmgBonus: 0,
     reactionBonus: 0, resistance: 0, flatDamage: 0, flatFrom: { atk: 0, hp: 0, def: 0, em: 0 },
     erConversion: null,
-    flatAtk: 0, bonusFromEm: 0, atkFromDef: 0, baseAtk: 0, baseDmgBonus: 0,
+    flatAtk: 0, bonusFromEm: 0, flatDef: 0, defReduction: 0, defIgnore: 0,
+    atkFromDef: 0, baseAtk: 0, baseDmgBonus: 0,
   };
 }
 
@@ -340,6 +357,8 @@ interface HitScope {
   element: string;
   move: FormulaMove | null;
   amplifying: Amplifying | null;
+  /** The talent row, for a row-scoped kit buff; `null` when the row did not say. */
+  hit: { talent: string; label: string } | null;
 }
 
 /**
@@ -380,6 +399,15 @@ export function applySources(
         }
         if (!effect.moves.includes(scope.move)) continue;
       }
+      if (effect.rows) {
+        if (scope.hit === null) {
+          skipped.push(`${source.label}: ${effect.stat} for ${effect.rows.map((r) => r.label)
+            .join('/')} not applied — the row's talent row is unknown`);
+          continue;
+        }
+        const { talent, label } = scope.hit;
+        if (!effect.rows.some((r) => r.talent === talent && r.label === label)) continue;
+      }
       if (effect.reactions && !(scope.amplifying && effect.reactions.includes(scope.amplifying))) {
         continue;
       }
@@ -419,6 +447,9 @@ export function applySources(
         case 'flat_damage_from_em': buffs.flatFrom.em += amount; break;
         case 'flat_atk': buffs.flatAtk += amount; break;
         case 'dmg_bonus_from_em': buffs.bonusFromEm += amount; break;
+        case 'flat_def': buffs.flatDef += amount; break;
+        case 'def_reduction': buffs.defReduction += amount; break;
+        case 'def_ignore': buffs.defIgnore += amount; break;
         case 'flat_atk_from_def': buffs.atkFromDef += amount; break;
         case 'base_atk': buffs.baseAtk += amount; break;
         case 'base_dmg_bonus': buffs.baseDmgBonus += amount; break;
@@ -455,7 +486,7 @@ export function rowHits(
   const { base, hit, target, characterLevel, dmgBonusQuantity } = row.context;
   const element = elementOfQuantity(dmgBonusQuantity);
   const { buffs, skipped } = applySources(
-    sources, { element, move: row.move, amplifying: hit.amplifying }, team,
+    sources, { element, move: row.move, amplifying: hit.amplifying, hit: row.hit ?? null }, team,
     row.conditionals ?? {}, teamState,
   );
   const flatSources = (Object.keys(buffs.flatFrom) as ConversionSource[])
@@ -481,7 +512,7 @@ export function rowHits(
     def: b('def_pct') + buffs.percent.def,
   };
   const calibratedFlat = {
-    atk: b('flat_atk') + buffs.flatAtk, hp: b('flat_hp'), def: b('flat_def'),
+    atk: b('flat_atk') + buffs.flatAtk, hp: b('flat_hp'), def: b('flat_def') + buffs.flatDef,
   };
   const calibratedEm = b('elemental_mastery') + buffs.em;
   const reactionBonus = hit.reactionBonus + buffs.reactionBonus;
@@ -539,8 +570,11 @@ export function rowHits(
       bonusDmg: b(dmgBonusQuantity) + buffs.dmgBonus,
       critRate: b('crit_rate') + buffs.critRate,
       critDmg: b('crit_dmg') + buffs.critDmg,
+      // A kit's DEF reduction and DEF ignore add to the target's own, into the same term
+      // (`damage.ts:defMultiplier`, capped there as GO `enemy.def` and gcsim cap them).
       defMultiplier: defMultiplier(
-        characterLevel, target.level, target.defReduction, target.defIgnore,
+        characterLevel, target.level, target.defReduction + buffs.defReduction,
+        target.defIgnore + buffs.defIgnore,
       ),
       resMultiplier: resMultiplier(target.resistance + buffs.resistance),
       ampMultiplier: hit.amplifying === null

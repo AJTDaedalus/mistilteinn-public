@@ -1,0 +1,377 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Shenhe",
+ "nanoka_id": "10000063",
+ "slug": "shenhe",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Shenhe.ts",
+  "wr": "libs/gi/sheets/src/Characters/Shenhe/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/shenhe/",
+ "verified_by": [
+  "shenhe_quill_burst_a1_a4_c2_on_ayaka"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Shenhe.ts:142; wr:index.tsx:182,186"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Shenhe.ts:143; wr:index.tsx:183,187"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "DMG Bonus|{param3:F1P} ATK"
+   ],
+   "elemental_burst": [
+    "RES Decrease|{param2:F1P}"
+   ]
+  },
+  "constellations": {
+   "4": [
+    0.05,
+    50.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.15,
+    10.0,
+    0.15,
+    15.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "quill",
+   "label": "Icy Quill stacks on the character (Spring Spirit Summoning)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Shenhe.ts:91,103-108,147; wr:index.tsx:93-101,192"
+  },
+  {
+   "key": "burst_field",
+   "label": "Opponents in the Talisman Spirit's field (Divine Maiden's Deliverance)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Shenhe.ts:92,109-117,148-149; wr:index.tsx:103-115,193-194"
+  },
+  {
+   "key": "a1_field",
+   "label": "The active character is in the Talisman Spirit's field (A1 Deific Embrace)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Shenhe.ts:93,118-121,150; wr:index.tsx:117-123,195"
+  },
+  {
+   "key": "a4_press",
+   "label": "After a press Spring Spirit Summoning (A4 Spirit Communion Seal)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Shenhe.ts:94,122-126,151-152; wr:index.tsx:125-132,196-197"
+  },
+  {
+   "key": "a4_hold",
+   "label": "After a hold Spring Spirit Summoning (A4 Spirit Communion Seal)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Shenhe.ts:95,127-131,153-155; wr:index.tsx:133-141,198-200"
+  },
+  {
+   "key": "c4_stacks",
+   "label": "Skyfrost Mantra stacks (C4 Insight)",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 50,
+   "step": 1,
+   "go": "pando:Shenhe.ts:77-78,96-101,136,145; wr:index.tsx:84-85,150-161,188"
+  }
+ ],
+ "effects": [
+  {
+   "key": "quill_flat",
+   "label": "Spring Spirit Summoning: Icy Quill Cryo DMG from Shenhe's ATK",
+   "source": "talent",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "DMG Bonus",
+    "times_stat": "atk"
+   },
+   "when": [
+    {
+     "condition": "quill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:48,103-108,147; wr:index.tsx:55,93-101,192"
+  },
+  {
+   "key": "burst_res_cryo",
+   "label": "Divine Maiden's Deliverance: Cryo RES decrease",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "RES Decrease",
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "burst_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:58,109-117,148; wr:index.tsx:65,103-115,193"
+  },
+  {
+   "key": "burst_res_physical",
+   "label": "Divine Maiden's Deliverance: Physical RES decrease",
+   "source": "talent",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "RES Decrease",
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "burst_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:58,109-117,149; wr:index.tsx:65,103-115,194"
+  },
+  {
+   "key": "a1_cryo",
+   "label": "A1 Deific Embrace: Cryo DMG Bonus to the active character in the field",
+   "source": "a1",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a1_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:65,118-121,150; wr:index.tsx:72,117-123,195"
+  },
+  {
+   "key": "a4_press",
+   "label": "A4 Spirit Communion Seal: Elemental Skill and Burst DMG after a press",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill",
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "a4_press",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:68,122-126,151-152; wr:index.tsx:75,125-132,196-197"
+  },
+  {
+   "key": "a4_hold",
+   "label": "A4 Spirit Communion Seal: Normal, Charged and Plunging DMG after a hold",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal",
+    "charged",
+    "plunge"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "a4_hold",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:70,127-131,153-155; wr:index.tsx:77,133-141,198-200"
+  },
+  {
+   "key": "c2_cryo_crit_dmg",
+   "label": "C2 Centered Spirit: Cryo CRIT DMG to the active character in the field",
+   "source": "c2",
+   "receivers": "active",
+   "stat": "crit_dmg",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "constant": 0.15,
+    "cite": "GO reads A1's 15% for C2's Cryo CRIT DMG (pando Shenhe.ts:132-135, WR index.tsx:143-148); gcsim writes 0.15 (cons.go:35). C2's own param_list carries only its duration"
+   },
+   "when": [
+    {
+     "condition": "a1_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Shenhe.ts:132-135,156; wr:index.tsx:143-148,201",
+   "gcsim": "internal/characters/shenhe/cons.go:29-35"
+  },
+  {
+   "key": "c4_skill",
+   "label": "C4 Insight: Shenhe's Elemental Skill DMG per Skyfrost Mantra stack",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "per": "c4_stacks",
+   "go": "pando:Shenhe.ts:77,136,145; wr:index.tsx:84,150-161,188"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Spring Spirit Summoning: the Icy Quill trigger quota",
+   "reason": "no damage effect per hit: how many hits the quill bonus reaches is the user's count of rows"
+  },
+  {
+   "source": "kit",
+   "what": "Teammates' ATK buffs in the ATK her Icy Quill reads",
+   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `final.atk` would include them"
+  },
+  {
+   "source": "c2",
+   "what": "Centered Spirit: longer Talisman Spirit",
+   "reason": "no damage effect: duration"
+  },
+  {
+   "source": "c6",
+   "what": "Mystical Abandon: quill stacks not consumed by Normal and Charged Attacks",
+   "reason": "no damage effect per hit: quota"
+  },
+  {
+   "source": "c1",
+   "what": "Clarity of Heart: an extra skill charge",
+   "reason": "no damage effect: charges"
+  }
+ ]
+}

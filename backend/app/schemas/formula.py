@@ -36,6 +36,14 @@ class FormulaConditionRead(BaseModel):
     options: list[str] | None = None
 
 
+class FormulaTalentRowRead(BaseModel):
+    """One of the hit owner's own talent rows an effect is scoped to. See
+    `formula_effects.TalentRowScope`."""
+
+    talent: str
+    label: str
+
+
 class FormulaEffectRead(BaseModel):
     """One buff, as a number and the scope it reaches. See `formula_effects.Effect`."""
 
@@ -44,6 +52,7 @@ class FormulaEffectRead(BaseModel):
     elements: list[str] | None = None
     element_from: list[str] | None = None
     moves: list[str] | None = None
+    rows: list[FormulaTalentRowRead] | None = None
     reactions: list[str] | None = None
     when: list[FormulaWhenRead]
     per: str | None = None

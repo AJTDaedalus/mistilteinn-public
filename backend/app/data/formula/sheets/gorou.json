@@ -1,0 +1,309 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Gorou",
+ "nanoka_id": "10000055",
+ "slug": "gorou",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Gorou.ts",
+  "wr": "libs/gi/sheets/src/Characters/Gorou/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/gorou/",
+ "verified_by": [
+  "gorou_banner_a1_a4_c6_on_his_own_burst"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Gorou.ts:133; wr:index.tsx:166,180"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Gorou.ts:134; wr:index.tsx:167,179"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "DEF Increase|{param2:I}",
+    "Geo DMG Bonus|{param3:P}"
+   ]
+  },
+  "constellations": {
+   "6": [
+    0.1,
+    0.2,
+    0.4,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.25,
+    12.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    1.56,
+    0.156,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "banner",
+   "label": "The active character is in the General's War Banner field (Inuzaka All-Round Defense)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Gorou.ts:86,89,93-102,136-137; wr:index.tsx:89-105,172-173"
+  },
+  {
+   "key": "after_burst",
+   "label": "After Juuga: Forward Unto Victory (A1 Heedless of the Wind and Weather)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Gorou.ts:87,104-107,138; wr:index.tsx:107-112,174"
+  },
+  {
+   "key": "after_skill_burst",
+   "label": "After his Elemental Skill or Burst (C6 Valiant Hound: Mountainous Fealty)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Gorou.ts:88,120-127,139; wr:index.tsx:125-137,175"
+  }
+ ],
+ "effects": [
+  {
+   "key": "banner_def",
+   "label": "General's War Banner: DEF to the active character (one Geo member)",
+   "source": "talent",
+   "receivers": "active",
+   "stat": "flat_def",
+   "value": {
+    "talent": "elemental_skill",
+    "row": "DEF Increase"
+   },
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "geo"
+      ],
+      "at_least": 1
+     }
+    ]
+   },
+   "when": [
+    {
+     "condition": "banner",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Gorou.ts:45,90-97,136; wr:index.tsx:54,89-95,172"
+  },
+  {
+   "key": "banner_geo",
+   "label": "General's War Banner: Geo DMG Bonus to the active character (three Geo members)",
+   "source": "talent",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Geo DMG Bonus"
+   },
+   "team_gate": {
+    "counts": [
+     {
+      "elements": [
+       "geo"
+      ],
+      "at_least": 3
+     }
+    ]
+   },
+   "when": [
+    {
+     "condition": "banner",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Gorou.ts:46,90,98-102,137; wr:index.tsx:55,96-105,173"
+  },
+  {
+   "key": "a1_def",
+   "label": "A1 Heedless of the Wind and Weather: party DEF after his burst",
+   "source": "a1",
+   "receivers": "team",
+   "stat": "def_pct",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Gorou.ts:59,104-107,138; wr:index.tsx:68,107-112,174"
+  },
+  {
+   "key": "a4_skill",
+   "label": "A4 A Favor Repaid: Elemental Skill DMG from Gorou's DEF",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "def"
+   },
+   "go": "pando:Gorou.ts:63,109-113,140; wr:index.tsx:72,114-118,181"
+  },
+  {
+   "key": "a4_burst",
+   "label": "A4 A Favor Repaid: Elemental Burst DMG from Gorou's DEF",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1,
+    "times_stat": "def"
+   },
+   "go": "pando:Gorou.ts:64,114-118,141; wr:index.tsx:73,119-123,182"
+  },
+  {
+   "key": "c6_geo_crit_dmg",
+   "label": "C6 Valiant Hound: Mountainous Fealty: party Geo CRIT DMG by the Geo count",
+   "source": "c6",
+   "receivers": "team",
+   "stat": "crit_dmg",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0,
+    "index_by_team": {
+     "count": "elements",
+     "elements": [
+      "geo"
+     ],
+     "size": 3,
+     "clamp": true
+    }
+   },
+   "when": [
+    {
+     "condition": "after_skill_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Gorou.ts:69-76,120-127,139; wr:index.tsx:78-85,125-137,175"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "General's War Banner at two Geo members: interruption resistance",
+   "reason": "no damage effect: interruption resistance"
+  },
+  {
+   "source": "c4",
+   "what": "Lapping Hound: Warm as Water: healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c1",
+   "what": "Rushing Hound: Swift as the Wind: cooldown",
+   "reason": "no damage effect: cooldown"
+  },
+  {
+   "source": "c2",
+   "what": "Sitting Hound: Steady as a Clock: longer Juuga",
+   "reason": "no damage effect: duration"
+  }
+ ]
+}

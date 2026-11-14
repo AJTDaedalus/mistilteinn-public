@@ -67,6 +67,7 @@ from app.formula.genshin.formula_effects import (
     ConditionKind,
     Effect,
     EffectStat,
+    TalentRowScope,
     Unmodelled,
     When,
     status_of,
@@ -100,6 +101,9 @@ SOURCE_LABEL: dict[str, str] = {
 MAX_CONSTELLATION = 6
 
 Receivers = Literal["self", "active", "team", "others", "enemy"]
+
+#: Stats an `enemy` debuff writes: the target's resistance, or its DEF (Nahida's C2).
+ENEMY_STATS: tuple[str, ...] = ("enemy_res", "def_reduction")
 
 #: A character's element, lower case, as `receiver_elements`/`per_team_elements` name it.
 VISIONS: tuple[str, ...] = ("pyro", "hydro", "electro", "cryo", "anemo", "geo", "dendro")
@@ -148,16 +152,28 @@ class _Strict(BaseModel):
 
 class ParamRef(_Strict):
     """Another seeded parameter a value reads: a factor (Vesna's C4 multiplying her A4), a cap
-    (Chevreuse's A4 at 40%), or a raise to a condition's maximum (Furina's C1)."""
+    (Chevreuse's A4 at 40%), or a raise to a condition's maximum (Furina's C1). A factor may
+    also be a talent row of the giver's, at their effective level (Raiden's Eye on herself is
+    the skill's per-Energy ratio times her burst's own "Energy Cost" row, GO `dm.burst.enerCost`).
+    """
 
     constellation: int | None = None
     passive: int | None = None
-    param: int
+    param: int | None = None
+    talent: str | None = None
+    row: str | None = None
 
     @model_validator(mode="after")
     def _one_list(self) -> ParamRef:
-        if (self.constellation is None) == (self.passive is None):
-            raise ValueError("a parameter reference names a constellation or a passive")
+        named = [x for x in (self.constellation, self.passive, self.talent) if x is not None]
+        if len(named) != 1:
+            raise ValueError("a parameter reference names a constellation, a passive or a "
+                             "talent row")
+        if self.talent is not None:
+            if self.talent not in TALENTS or not self.row or self.param is not None:
+                raise ValueError("a talent parameter names a talent and a row, not a param")
+        elif self.param is None:
+            raise ValueError("a constellation or passive parameter names its index")
         return self
 
 
@@ -180,6 +196,9 @@ class TeamIndex(_Strict):
     count: Literal["elements", "distinct"]
     elements: tuple[str, ...] | None = None
     size: int
+    #: A count past `size` reads the table's last entry instead of being withheld: GO writes
+    #: the last entry again (Gorou's C6, `[c6[0], c6[1], c6[2], c6[2]]` by the Geo count).
+    clamp: bool = False
 
     @model_validator(mode="after")
     def _named(self) -> TeamIndex:
@@ -191,15 +210,43 @@ class TeamIndex(_Strict):
         return self
 
 
+class TeamCount(_Strict):
+    """How many members (the receiver included) have one of `elements`: at least `at_least`,
+    at most `at_most`. GO `cmpGE(team.common.count.geo, 3, …)` (Gorou's banner at three Geo
+    members), `cmpLT(sum(count.pyro, count.hydro, count.cryo, count.electro), 3, …)`
+    (Xilonen's Geo sample, while fewer than three samplers are converted)."""
+
+    elements: tuple[str, ...]
+    at_least: int | None = None
+    at_most: int | None = None
+
+    @model_validator(mode="after")
+    def _bounded(self) -> TeamCount:
+        if self.at_least is None and self.at_most is None:
+            raise ValueError("a team count names a bound")
+        for element in self.elements:
+            if element not in VISIONS:
+                raise ValueError(f"{element!r} is not one of {VISIONS}")
+        return self
+
+    def holds(self, present: Sequence[str]) -> bool:
+        """Whether these members' (lower-case) elements satisfy both bounds."""
+        n = sum(1 for e in present if e in self.elements)
+        return ((self.at_least is None or n >= self.at_least)
+                and (self.at_most is None or n <= self.at_most))
+
+
 class TeamGate(_Strict):
     """A buff that holds only for some team compositions: every member's element is one of
-    `only`, each of `includes` is present, and (when given) the team has `members` members.
-    GO `cmpEq(own.common.eleCount, 2, …)` with `count.electro >= 1` (Chevreuse's A1, a Pyro and
-    Electro team), `cmpEq(count.hydro + count.cryo, 4, …)` (Escoffier's C1)."""
+    `only`, each of `includes` is present, (when given) the team has `members` members, and
+    every `counts` bound holds. GO `cmpEq(own.common.eleCount, 2, …)` with `count.electro >= 1`
+    (Chevreuse's A1, a Pyro and Electro team), `cmpEq(count.hydro + count.cryo, 4, …)`
+    (Escoffier's C1), `cmpGE(count.geo, 3, …)` (Gorou's banner)."""
 
-    only: tuple[str, ...]
+    only: tuple[str, ...] = VISIONS
     includes: tuple[str, ...] = ()
     members: int | None = None
+    counts: tuple[TeamCount, ...] = ()
 
     @model_validator(mode="after")
     def _visions(self) -> TeamGate:
@@ -216,7 +263,38 @@ class TeamGate(_Strict):
         if self.members is not None and len(present) != self.members:
             return False
         return (all(e in self.only for e in present)
-                and all(e in present for e in self.includes))
+                and all(e in present for e in self.includes)
+                and all(c.holds(present) for c in self.counts))
+
+
+class CountBonus(_Strict):
+    """A constellation that counts as one more member of the elements a row is chosen by:
+    Nahida's C1 (GO `sum(count.pyro, cmpGE(constellation, 1, 1))`). The 1 is GO's literal (her
+    C1 `param_list` is all zeros), so it is a cited constant."""
+
+    constellation: int
+    add: Cited
+
+
+class TeamRows(_Strict):
+    """A talent value whose **row** is chosen by a team count (GO `cmpGE(level, 1, cmpEq(level,
+    1, row_1, row_2))`): Nahida's burst bonus reads its one-Pyro row or its two-Pyro row. Count
+    0 is no buff; count `k` reads `labels[k - 1]`, and a count past the last label reads the
+    last, as GO's `cmpEq(…, 1, a, b)` gives `b` for every count above 1. The labels are written
+    in full, because the rows share the text before their `|`."""
+
+    elements: tuple[str, ...]
+    labels: tuple[str, ...]
+    count_bonus: CountBonus | None = None
+
+    @model_validator(mode="after")
+    def _named(self) -> TeamRows:
+        if not self.labels:
+            raise ValueError("a team-chosen row names its rows")
+        for element in self.elements:
+            if element not in VISIONS:
+                raise ValueError(f"{element!r} is not one of {VISIONS}")
+        return self
 
 
 class ValueRef(_Strict):
@@ -238,6 +316,10 @@ class ValueRef(_Strict):
     #: The seeded list publishes a reduction as a positive number (Vodyanitsa's "Hydro/Cryo
     #: RES Reduction" 0.3); GO writes it negated into `enemyRes_` (`.map((v) => -v)`).
     negate: bool = False
+    #: A talent row with several parameters: which one, 0 for the first `{paramN}` its format
+    #: string names. Raiden's "Resolve Bonus|{param2} Initial/{param3} ATK DMG Per Stack" is
+    #: GO's `resolveBonus1` (part 0) and `resolveBonus2` (part 1).
+    part: int = 0
     #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
     times_param: ParamRef | None = None
     #: With `times_stat`: the stat is counted per this many points (GO `prod(percent(x), hp,
@@ -249,6 +331,16 @@ class ValueRef(_Strict):
     cap: ParamRef | None = None
     #: Read from a table indexed by a team count, decided in `resolve`.
     index_by_team: TeamIndex | None = None
+    #: A talent row chosen by a team count (Nahida's burst bonus by the Pyro count).
+    rows_by_team: TeamRows | None = None
+    #: Multiplied by the **highest** value of this stat among the optimized character's
+    #: teammates, the giver included (GO `team.premod.eleMas.max`, Nahida's A1). Each member's
+    #: pass-1 value (DESIGN §2.6 rule 1); the subject's own never enters it, since it moves
+    #: with every candidate, and a giver who is the subject is withheld by name.
+    times_team_max: str | None = None
+    #: With `times_stat`: the stat is capped at this parameter before it is multiplied (GO
+    #: `prod(ratio, min(total.atk, maxAtk))`, Xianyun's A4).
+    stat_cap: ParamRef | None = None
 
     @model_validator(mode="after")
     def _one_source(self) -> ValueRef:
@@ -277,9 +369,22 @@ class ValueRef(_Strict):
             raise ValueError("a team-indexed value reads a constellation or passive list")
         return self
 
+    @model_validator(mode="after")
+    def _team_reads(self) -> ValueRef:
+        if self.rows_by_team is not None and self.talent is None:
+            raise ValueError("a team-chosen row belongs to a talent value")
+        if self.times_team_max is not None:
+            if self.times_team_max not in GIVER_STATS:
+                raise ValueError(f"times_team_max must be one of {sorted(GIVER_STATS)}")
+            if self.times_stat is not None:
+                raise ValueError("a value reads the giver's stat or the team's highest, not both")
+        if self.stat_cap is not None and self.times_stat is None:
+            raise ValueError("a stat cap belongs to a value that reads a stat")
+        return self
+
     def params_read(self) -> list[ParamRef]:
         """The extra parameters this value reads besides its own: pinned like it."""
-        return [p for p in (self.times_param, self.cap) if p is not None]
+        return [p for p in (self.times_param, self.cap, self.stat_cap) if p is not None]
 
 
 class SheetCondition(_Strict):
@@ -300,6 +405,10 @@ class SheetCondition(_Strict):
     #: Furina's C1 raises the Fanfare limit by its 100 (GO `sum(maxFanfare, cmpGE(constellation,
     #: 1, fanfareLimitInc))`). Pinned like any value.
     max_raise: ParamRef | None = None
+    #: The same raise by a number no seeded list carries, cited: Valeriy's C4 adds 30 to the
+    #: Impact Momentum limit (GO `momentumLimitInc: 30`, a literal; his C4 list holds only its
+    #: charging efficiency).
+    max_raise_cited: CountBonus | None = None
     go: str
 
     @model_validator(mode="after")
@@ -309,8 +418,11 @@ class SheetCondition(_Strict):
                              "only a situational one (none chosen) is derivable")
         if self.kind in ("stacks", "number") and self.max is None:
             raise ValueError(f"{self.key}: a {self.kind} names its max")
-        if self.max_raise is not None and self.kind not in ("stacks", "number"):
+        if ((self.max_raise is not None or self.max_raise_cited is not None)
+                and self.kind not in ("stacks", "number")):
             raise ValueError(f"{self.key}: only a stacks or number condition has a max to raise")
+        if self.max_raise is not None and self.max_raise_cited is not None:
+            raise ValueError(f"{self.key}: a maximum is raised by a parameter or a constant")
         return self
 
     def resolve(self, *, giver_is_subject: bool, raised: float = 0.0) -> Condition:
@@ -362,6 +474,16 @@ class SheetEffect(_Strict):
     #: Also needs this ascension phase (GO `cmpGE(ascension, 4, …)` inside a constellation's
     #: buff: Escoffier's C1 reads her A4's count).
     min_ascension: int | None = None
+    #: Holds only **below** this constellation, i.e. up to it: GO `cmpGE(constellation, 2,
+    #: <C2 value>, <C0 value>)` replaces Nefer's A1 EM at 3 Veils by her C2's at 5.
+    max_constellation: int | None = None
+    #: The giver's own talent rows it reaches (Nahida's burst bonus, Tri-Karma Purification
+    #: only: GO adds it inside that one formula). Only a `self` effect names rows.
+    rows: tuple[TalentRowScope, ...] | None = None
+    #: The value at 1, 2, … stacks of `per` is the list's entry `param`, `param + 1`, … up to
+    #: the condition's maximum (GO `subscript(stacks - 1, [p0, p1, …])`: Nahida's C4 by the
+    #: opponent count, Xianyun's A1 by the plunge-stack count). The value names the first entry.
+    by_stack: bool = False
     #: GO sheet file:lines (relative to the sheet's `go` roots).
     go: str
     #: gcsim file:lines at the pin, where gcsim implements the same buff.
@@ -375,8 +497,27 @@ class SheetEffect(_Strict):
         for reaction in self.reactions or ():
             if reaction not in AMPLIFYING_REACTIONS:
                 raise ValueError(f"{self.key}: {reaction!r} is not an amplifying reaction")
-        if self.receivers == "enemy" and self.stat != "enemy_res":
-            raise ValueError(f"{self.key}: an enemy debuff writes enemy_res")
+        if self.receivers == "enemy" and self.stat not in ENEMY_STATS:
+            raise ValueError(f"{self.key}: an enemy debuff writes one of {ENEMY_STATS}")
+        if self.stat in ENEMY_STATS and self.receivers != "enemy":
+            raise ValueError(f"{self.key}: {self.stat} is an enemy debuff")
+        return self
+
+    @model_validator(mode="after")
+    def _own_hits(self) -> SheetEffect:
+        if self.stat == "def_ignore" and self.receivers != "self":
+            raise ValueError(f"{self.key}: DEF ignore belongs to the giver's own hits")
+        if self.rows is not None and self.receivers != "self":
+            raise ValueError(f"{self.key}: only a self effect names its giver's own rows")
+        for row in self.rows or ():
+            if row.talent not in TALENTS:
+                raise ValueError(f"{self.key}: {row.talent!r} is not one of {TALENTS}")
+        if self.by_stack:
+            if self.per is None:
+                raise ValueError(f"{self.key}: a stack table needs the condition it reads (per)")
+            if self.value.param is None or self.value.times_stat is not None:
+                raise ValueError(f"{self.key}: a stack table reads a constellation or passive "
+                                 "list, with no stat")
         for element in (*(self.receiver_elements or ()), *(self.per_team_elements or ())):
             if element not in VISIONS:
                 raise ValueError(f"{self.key}: {element!r} is not one of {VISIONS}")
@@ -464,6 +605,19 @@ class Sheet(_Strict):
             for label in self.pins.talent_rows.get(ref.talent, ())
         ):
             raise ValueError(f"{self.slug}/{effect.key}: row {ref.row!r} is not pinned")
+        if ref.rows_by_team is not None:
+            for label in ref.rows_by_team.labels:
+                if (label not in self.pins.talent_rows.get(ref.talent or "", ())
+                        or label.split("|", 1)[0] != ref.row):
+                    raise ValueError(f"{self.slug}/{effect.key}: {label!r} is not a pinned "
+                                     f"{ref.row!r} row")
+        if effect.by_stack and not any(
+            c.key == effect.per and c.max is not None and c.max_raise is None
+            and c.max_raise_cited is None
+            for c in self.conditions
+        ):
+            raise ValueError(f"{self.slug}/{effect.key}: a stack table reads a condition with "
+                             "a fixed maximum")
         if ref.constellation is not None and ref.constellation not in self.pins.constellations:
             raise ValueError(f"{self.slug}/{effect.key}: C{ref.constellation} not pinned")
         if ref.passive is not None and ref.passive not in self.pins.passives:
@@ -475,6 +629,9 @@ class Sheet(_Strict):
     def _pinned(self, ref: ParamRef) -> bool:
         if ref.constellation is not None:
             return ref.constellation in self.pins.constellations
+        if ref.talent is not None:
+            return any(label.split("|", 1)[0] == ref.row
+                       for label in self.pins.talent_rows.get(ref.talent, ()))
         return ref.passive in self.pins.passives
 
 
@@ -585,29 +742,52 @@ def _number(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> flo
 def _extra(sheet: Sheet, giver: Giver, extra: ParamRef) -> float:
     return _parameter(sheet, giver, ValueRef(
         constellation=extra.constellation, passive=extra.passive, param=extra.param,
+        talent=extra.talent, row=extra.row,
     ))
+
+
+def _talent_parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int) -> float:
+    """A talent row's parameter at the giver's effective level: the row by its pinned label
+    (or the team-chosen one), the parameter its format string names (`part`)."""
+    talent = ref.talent or ""
+    level = effective_level(sheet, giver, talent)
+    row = giver.talent_rows.get((talent, level))
+    if row is None:
+        raise _Withheld(f"{talent} has no published row at level {level}")
+    if ref.rows_by_team is not None:
+        # The rows share their text before `|`, so the full label is the key; the pins hold
+        # each one, and a seeded row without that exact label is withheld.
+        want = ref.rows_by_team.labels[shift]
+        if want not in row.labels:
+            raise _Withheld(f"{talent} row {want!r} is not in the seeded row any more")
+        label = want
+    else:
+        pinned = {lab.split("|", 1)[0]: lab for lab in sheet.pins.talent_rows[talent]}
+        found_label = next((lab for lab in row.labels if lab.split("|", 1)[0] == ref.row),
+                           None)
+        if found_label is None or found_label != pinned[ref.row or ""]:
+            raise _Withheld(
+                f"{talent} row {ref.row!r} changed since curation: pinned "
+                f"{pinned[ref.row or '']!r}, seeded {found_label!r}",
+            )
+        label = found_label
+    found = _PARAM.findall(label.split("|", 1)[1])
+    # `nth` (the DPS batch) and `part` (the fourth batch) name the same thing, which parameter
+    # of the row; a sheet sets at most one.
+    which = ref.nth if ref.nth is not None else ref.part
+    if len(found) <= which:
+        raise _Withheld(f"{talent} row {label!r} names no parameter {which}")
+    index = int(found[which]) - 1
+    if index >= len(row.params):
+        raise _Withheld(f"{talent} row {label!r} has no param{index + 1} at this level")
+    return float(row.params[index])
 
 
 def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef, *, shift: int = 0) -> float:
     if ref.constant is not None:
         return ref.constant
     if ref.talent is not None:
-        level = effective_level(sheet, giver, ref.talent)
-        row = giver.talent_rows.get((ref.talent, level))
-        if row is None:
-            raise _Withheld(f"{ref.talent} has no published row at level {level}")
-        pinned = {label.split("|", 1)[0]: label for label in sheet.pins.talent_rows[ref.talent]}
-        label = next((lab for lab in row.labels if lab.split("|", 1)[0] == ref.row), None)
-        if label is None or label != pinned[ref.row or ""]:
-            raise _Withheld(
-                f"{ref.talent} row {ref.row!r} changed since curation: pinned "
-                f"{pinned[ref.row or '']!r}, seeded {label!r}",
-            )
-        named = _PARAM.findall(label.split("|", 1)[1])
-        nth = ref.nth or 0
-        if nth >= len(named):
-            raise _Withheld(f"{ref.talent} row {label!r} names no parameter {nth}")
-        return float(row.params[int(named[nth]) - 1])
+        return _talent_parameter(sheet, giver, ref, shift=shift)
     if ref.constellation is not None:
         live, pin, name = (giver.constellation_params.get(ref.constellation),
                            sheet.pins.constellations[ref.constellation], f"C{ref.constellation}")
@@ -643,17 +823,31 @@ def _reaches(receivers: str, *, giver_is_subject: bool) -> bool:
     }[receivers]
 
 
-def _value_node(sheet: Sheet, giver: Giver, effect: SheetEffect, *, shift: int = 0) -> AnyNode:
+def _value_node(
+    sheet: Sheet, giver: Giver, effect: SheetEffect, *, shift: int = 0,
+    team_max: Mapping[str, float] | None = None,
+) -> AnyNode:
     """The effect's value as a node: its parameter, times the giver's stat where it reads one
-    (per `stat_unit` points), capped where it has a cap."""
+    (per `stat_unit` points, the stat capped at `stat_cap`), or times the team's highest value
+    of a stat, capped where it has a cap."""
     ref = effect.value
     factor = const(_number(sheet, giver, ref, shift=shift))
-    if ref.times_stat is None:
+    if ref.times_team_max is not None:
+        highest = (team_max or {}).get(ref.times_team_max)
+        if highest is None:
+            raise _Withheld(f"it reads the team's highest {ref.times_team_max}, which was not "
+                            "given")
+        node = prod_(factor, const(highest))
+    elif ref.times_stat is not None:
+        unit = 1.0 if ref.stat_unit is None else 1.0 / ref.stat_unit.constant
+        stat = GIVER_STATS[ref.times_stat]
+        if ref.stat_cap is not None:
+            stat = min_(stat, const(_extra(sheet, giver, ref.stat_cap)))
+        node = prod_(factor, const(unit), stat)
+    else:
         if ref.stat_unit is not None:  # per `stat_unit` of the `per` condition
             return prod_(factor, const(1.0 / ref.stat_unit.constant))
         return factor
-    unit = 1.0 if ref.stat_unit is None else 1.0 / ref.stat_unit.constant
-    node = prod_(factor, const(unit), GIVER_STATS[ref.times_stat])
     if ref.cap is not None:
         node = min_(node, const(_extra(sheet, giver, ref.cap)))
     return node
@@ -661,20 +855,30 @@ def _value_node(sheet: Sheet, giver: Giver, effect: SheetEffect, *, shift: int =
 
 def _effect_node(
     sheet: Sheet, giver: Giver, effect: SheetEffect, *, giver_is_subject: bool, shift: int = 0,
+    team_max: Mapping[str, float] | None = None,
 ) -> tuple[EffectStat, AnyNode]:
     """The stat an effect writes and the node of its value, for this receiver.
 
     When the giver is the optimized character and the value reads one of their stats that
     artifacts move, the number would be frozen at the equipped build — wrong for every other
     candidate. So it becomes the per-candidate conversion the recipe can carry, valued at the
-    coefficient alone, or it is withheld by name.
+    coefficient alone, or it is withheld by name. The team's highest stat is withheld outright
+    for a giver who is the subject: their own value, which moves, may be the highest.
     """
+    if giver_is_subject and effect.value.times_team_max is not None:
+        msg = (
+            f"it reads the team's highest {effect.value.times_team_max}, which includes "
+            f"{sheet.character}'s own, and that moves with every candidate through a cap the "
+            "recipe cannot carry per candidate"
+        )
+        raise _Withheld(msg)
     reads = effect.value.times_stat
     if not (giver_is_subject and reads is not None and reads not in STATIC_STATS):
-        return effect.stat, _value_node(sheet, giver, effect, shift=shift)
+        return effect.stat, _value_node(sheet, giver, effect, shift=shift, team_max=team_max)
     converted = SELF_CONVERSIONS.get((effect.stat, reads))
     if converted is not None and (effect.value.cap is not None
-                                  or effect.value.stat_unit is not None):
+                                  or effect.value.stat_unit is not None
+                                  or effect.value.stat_cap is not None):
         msg = (
             f"it reads {sheet.character}'s own {reads}, which moves with every candidate, "
             "through a cap or a unit the recipe cannot carry per candidate"
@@ -689,21 +893,33 @@ def _effect_node(
     return converted, const(_number(sheet, giver, effect.value, shift=shift))
 
 
-def _team_shift(effect: SheetEffect, team_elements: Sequence[str | None] | None) -> int | None:
-    """For a team-indexed value: how far along its table this team reads (count − 1), or None
-    when the count is 0 and there is no buff."""
+def _team_shift(
+    effect: SheetEffect, team_elements: Sequence[str | None] | None, giver: Giver,
+) -> int | None:
+    """For a team-indexed value or a team-chosen row: how far along its table (or its rows)
+    this team reads (count − 1), or None when the count is 0 and there is no buff."""
     index = effect.value.index_by_team
-    if index is None:
+    rows = effect.value.rows_by_team
+    if index is None and rows is None:
         return 0
     if team_elements is None:
         raise _Withheld("it is read by the team's elements, which were not given")
     present = [e.lower() for e in team_elements if e is not None]
+    if rows is not None:
+        count = sum(1 for e in present if e in rows.elements)
+        bonus = rows.count_bonus
+        if bonus is not None and giver.constellation >= bonus.constellation:
+            count += int(bonus.add.constant)
+        return None if count == 0 else min(count, len(rows.labels)) - 1
+    assert index is not None
     if index.count == "distinct":
         count = len(set(present))
     else:
         count = sum(1 for e in present if e in (index.elements or ()))
     if count > index.size:
-        raise _Withheld(f"its table has {index.size} entries and the team counts {count}")
+        if not index.clamp:
+            raise _Withheld(f"its table has {index.size} entries and the team counts {count}")
+        count = index.size
     return None if count == 0 else count - 1
 
 
@@ -734,6 +950,9 @@ def _raised(sheet: Sheet, giver: Giver, condition: SheetCondition,
             unmodelled: list[Unmodelled]) -> float:
     """What an unlocked `max_raise` adds to a condition's maximum; a stale pin keeps the
     maximum unraised and says so."""
+    cited = condition.max_raise_cited
+    if cited is not None:
+        return cited.add.constant if giver.constellation >= cited.constellation else 0.0
     ref = condition.max_raise
     if ref is None:
         return 0.0
@@ -752,12 +971,15 @@ def _raised(sheet: Sheet, giver: Giver, condition: SheetCondition,
 def resolve(
     sheet: Sheet, giver: Giver, *, giver_is_subject: bool,
     receiver_element: str | None = None, team_elements: Sequence[str | None] | None = None,
+    team_max: Mapping[str, float] | None = None,
 ) -> ResolvedKit:
     """One giver's sheet as the optimized character receives it.
 
     `receiver_element` (the optimized character's element) and `team_elements` (every
     member's, the receiver's included) are read only by effects that depend on them
-    (`receiver_elements`, `per_team_elements`); one that does, without them, is withheld.
+    (`receiver_elements`, `per_team_elements`, `index_by_team`, `rows_by_team`, `team_gate`);
+    `team_max` (the highest pass-1 value of each stat among the subject's teammates) only by
+    `times_team_max`. One that needs them, without them, is withheld.
 
     An effect that is locked (constellation or ascension too low) is simply absent, as in GO.
     One that cannot be resolved honestly — a stale pin, a missing talent row, a self buff
@@ -782,17 +1004,21 @@ def resolve(
             continue
         if effect.min_ascension is not None and giver.ascension_phase < effect.min_ascension:
             continue
+        if (effect.max_constellation is not None
+                and giver.constellation > effect.max_constellation):
+            continue
         if not _reaches(effect.receivers, giver_is_subject=giver_is_subject):
             continue
         try:
             factor = _team_factor(effect, receiver_element=receiver_element,
                                   team_elements=team_elements)
-            shift = _team_shift(effect, team_elements)
+            shift = _team_shift(effect, team_elements, giver)
             if factor == 0 or shift is None:
                 # Like a locked constellation: this receiver is not one the effect reaches.
                 continue
+            by_stack = _stack_table(sheet, giver, effect) if effect.by_stack else None
             stat, node = _effect_node(sheet, giver, effect, giver_is_subject=giver_is_subject,
-                                      shift=shift)
+                                      shift=shift, team_max=team_max)
             # Registered under `{sheet, name}` and evaluated with both cleared, so the
             # formula's own stat reads gather the giver's stats — and not, through the subset
             # rule, the formula itself (a read under `{sheet, name, q}` would match it).
@@ -808,8 +1034,9 @@ def resolve(
             ))
             continue
         effects.append(Effect(
-            stat=stat, value=value, elements=effect.elements, moves=effect.moves,
-            reactions=effect.reactions, when=effect.when, per=effect.per,
+            stat=stat, value=by_stack[-1] if by_stack else value, elements=effect.elements,
+            moves=effect.moves, rows=effect.rows, reactions=effect.reactions, when=effect.when,
+            per=effect.per, by_stack=by_stack,
         ))
         used_conditions.update(w.condition for w in effect.when)
         if effect.per is not None:
@@ -841,12 +1068,32 @@ def resolve(
     )
 
 
-def stats_read(sheet: Sheet, giver: Giver) -> dict[str, float]:
+def _stack_table(sheet: Sheet, giver: Giver, effect: SheetEffect) -> tuple[float, ...]:
+    """A `by_stack` effect's values at 1, 2, … stacks up to its condition's maximum: the
+    list's consecutive entries from the value's own (`SheetEffect.by_stack`)."""
+    top = next(c.max for c in sheet.conditions if c.key == effect.per)
+    return tuple(_number(sheet, giver, effect.value, shift=i) for i in range(int(top or 0)))
+
+
+def team_stats_read(sheet: Sheet) -> tuple[str, ...]:
+    """The stats whose team-wide highest this sheet reads (`times_team_max`)."""
+    return tuple(sorted({e.value.times_team_max for e in sheet.effects
+                         if e.value.times_team_max}))
+
+
+def stats_read(
+    sheet: Sheet, giver: Giver, team_max: Mapping[str, float] | None = None,
+) -> dict[str, float]:
     """The giver's value of every stat this sheet's effects read — what a number came from.
 
     Reported beside the resolved kit so a reader can redo "Bennett's base ATK × 1.008" by
-    hand; evaluated by the same graph, over the same pass-1 registry, as the effects were.
+    hand; evaluated by the same graph, over the same pass-1 registry, as the effects were. A
+    team-wide highest a value read is reported as `team_max_<stat>`.
     """
     calculator = Calculator(giver.registry)
     read = sorted({e.value.times_stat for e in sheet.effects if e.value.times_stat})
-    return {stat: float(calculator.compute(GIVER_STATS[stat])) for stat in read}
+    out = {stat: float(calculator.compute(GIVER_STATS[stat])) for stat in read}
+    for stat in team_stats_read(sheet):
+        if team_max is not None and stat in team_max:
+            out[f"team_max_{stat}"] = float(team_max[stat])
+    return out

@@ -1,0 +1,322 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Xianyun",
+ "nanoka_id": "10000093",
+ "slug": "xianyun",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Xianyun.ts",
+  "wr": "libs/gi/sheets/src/Characters/Xianyun/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/xianyun/",
+ "verified_by": [
+  "xianyun_a1_a4_c2_on_a_plunging_teammate",
+  "xianyun_a1_c6_on_her_own_wave"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Xianyun.ts:166; wr:index.tsx:239,245"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Xianyun.ts:167; wr:index.tsx:240,244"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.2,
+    15.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.15,
+    0.35,
+    0.7,
+    8.0,
+    16.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    20.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    2.0,
+    4500.0,
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_stacks",
+   "label": "Opponents hit by Driftcloud Waves: Galefeather Pursuit stacks (A1)",
+   "kind": "number",
+   "default_by": "giver_is_subject",
+   "max": 4,
+   "step": 1,
+   "go": "pando:Xianyun.ts:110,113-121; wr:index.tsx:111-122"
+  },
+  {
+   "key": "a4_stacks",
+   "label": "Starwicker has stacks (A4 Consider, the Adeptus in Her Realm) — plunge impact only: turn it off on a Plunge DMG (collision) row",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xianyun.ts:109,122-134; wr:index.tsx:123-145,250"
+  },
+  {
+   "key": "c2_after_skill",
+   "label": "After White Clouds at Dawn (C2 Aloof From the World)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Xianyun.ts:109,135-137,169; wr:index.tsx:147-152,246"
+  },
+  {
+   "key": "c6_uses",
+   "label": "Skyladder uses before the Driftcloud Wave (C6 They Call Her Cloud Retainer)",
+   "kind": "number",
+   "default_by": "giver_is_subject",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Xianyun.ts:111,138-148,157; wr:index.tsx:154-168,180"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_plunge_crit",
+   "label": "A1 Galefeather Pursuit: party Plunging Attack CRIT Rate by stacks",
+   "source": "a1",
+   "receivers": "team",
+   "stat": "crit_rate",
+   "moves": [
+    "plunge"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "per": "a1_stacks",
+   "by_stack": true,
+   "go": "pando:Xianyun.ts:70-76,110,113-121,171; wr:index.tsx:77-83,111-122,251"
+  },
+  {
+   "key": "a1_wave_crit",
+   "label": "A1 Galefeather Pursuit: the same on her own Driftcloud Waves (GO counts them as plunging; while the row's move is Skill, so it is never counted twice)",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "skill"
+   ],
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Driftcloud Wave DMG"
+    }
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "per": "a1_stacks",
+   "by_stack": true,
+   "go": "pando:Xianyun.ts:70-76,110,113-121,171; wr:index.tsx:77-83,111-122,251; wr:index.tsx:171-183"
+  },
+  {
+   "key": "a4_plunge",
+   "label": "A4 Consider, the Adeptus in Her Realm: plunge DMG from Xianyun's ATK, the ATK capped",
+   "source": "a4",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "plunge"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "atk",
+    "stat_cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xianyun.ts:79-80,122-134; wr:index.tsx:86-87,123-145,250"
+  },
+  {
+   "key": "c2_plunge",
+   "label": "C2 Aloof From the World: the A4 plunge DMG increased",
+   "source": "c2",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "plunge"
+   ],
+   "min_ascension": 4,
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "atk",
+    "times_param": {
+     "constellation": 2,
+     "param": 2
+    },
+    "stat_cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_stacks",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xianyun.ts:86,122-134; wr:index.tsx:93,123-145,250"
+  },
+  {
+   "key": "c2_atk",
+   "label": "C2 Aloof From the World: Xianyun's ATK after her skill",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c2_after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xianyun.ts:84,135-137,169; wr:index.tsx:91,147-152,246"
+  },
+  {
+   "key": "c6_wave_crit_dmg",
+   "label": "C6 They Call Her Cloud Retainer: Driftcloud Wave CRIT DMG by Skyladder uses",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Driftcloud Wave DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "per": "c6_uses",
+   "by_stack": true,
+   "go": "pando:Xianyun.ts:95-99,138-148,157; wr:index.tsx:102-106,154-183"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Teammates' ATK buffs (and her own C2) in the ATK her A4 reads",
+   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `total.atk` would include them"
+  },
+  {
+   "source": "talent",
+   "what": "Stars Gather at Dusk: healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c4",
+   "what": "Mystery Millet Gourmet: healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "c1",
+   "what": "Purifying Wind: an extra skill charge",
+   "reason": "no damage effect: charges"
+  }
+ ]
+}

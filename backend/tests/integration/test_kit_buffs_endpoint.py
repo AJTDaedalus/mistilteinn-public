@@ -278,3 +278,56 @@ async def test_team_elements_reach_a_sheet_that_counts_them(
     effects = {e["stat"]: e["value"] for e in by_id["kit:vesna"]["bonus"]["effects"]}
     assert effects == {"atk_pct": pytest.approx(sheet.pins.passives[4][0] * 2),
                        "elemental_mastery": pytest.approx(sheet.pins.passives[4][1] * 2)}
+
+
+async def test_the_party_highest_em_is_read_from_the_teammates_pass_one(
+    authed_client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+    team: dict[str, str],
+):
+    """Task 11, fourth batch: Nahida's A1 is 25% of the party's **highest** EM (GO
+    `team.premod.eleMas.max`), capped. The highest is each teammate's pass-1 EM — Kazuha's 200
+    from his flower beats Nahida's bare build — and never the subject's: Hu Tao's 2,000-EM
+    sands must not enter it, since her EM moves with every candidate. As the subject, Nahida's
+    own A1 is withheld by name."""
+    user, _ = authed_user
+    owner = str(user.id)
+    nahida = await _character(
+        db_session, nanoka_id="10000073", name="Nahida", element=Element.DENDRO,
+        weapon_type=WeaponType.CATALYST, base_atk=23.3, burst=None,
+    )
+    sheet = next(s for s in sheets.all_sheets().values() if s.slug == "nahida")
+    db_session.add(AscensionPassive(
+        character_id=str(nahida.id), nanoka_id=731, unlock_ascension=1,
+        name="Compassion Illuminated", description="", param_list=list(sheet.pins.passives[1]),
+    ))
+    nahida_id = str((await _build(db_session, owner, nahida)).id)
+    artifact_set = ArtifactSet(nanoka_id=15099, name="A set", piece_thresholds=[2, 4],
+                               available_ranks=[4, 5])
+    db_session.add(artifact_set)
+    await db_session.flush()
+    db_session.add(Artifact(
+        owner_id=owner, artifact_set_id=str(artifact_set.id), build_id=team["hu_tao"],
+        slot=ArtifactSlot.SANDS, rarity=Rarity.FIVE_STAR, level=20,
+        main_stat_type=StatType.ELEMENTAL_MASTERY, main_stat_value=2000.0, substats=[],
+    ))
+    await db_session.flush()
+    db_session.expire_all()
+    members = [team["hu_tao"], team["bennett"], team["kazuha"], nahida_id]
+
+    response = await authed_client.get(KIT, params={
+        "subject_build_id": team["hu_tao"], "member_build_id": members})
+    assert response.status_code == 200, response.text
+    nahida_kit = {s["id"]: s for s in response.json()["sources"]}["kit:nahida"]
+    kazuha_em = (await _base(authed_client, team["kazuha"], "Slashing DMG")).get(
+        "elemental_mastery", 0.0) + 200
+    assert nahida_kit["giver_stats"] == {"team_max_elemental_mastery": pytest.approx(kazuha_em)}
+    [a1] = [e for e in nahida_kit["bonus"]["effects"] if e["stat"] == "elemental_mastery"]
+    assert a1["value"] == pytest.approx(min(0.25 * kazuha_em, 250.0))
+
+    response = await authed_client.get(KIT, params={
+        "subject_build_id": nahida_id, "member_build_id": members})
+    assert response.status_code == 200, response.text
+    own = {s["id"]: s for s in response.json()["sources"]}["kit:nahida"]
+    assert not [e for e in own["bonus"]["effects"] if e["stat"] == "elemental_mastery"]
+    assert any(u["reason"].startswith("withheld: it reads the team's highest")
+               for u in own["bonus"]["unmodelled"])

@@ -9,7 +9,8 @@
   "wr": "libs/gi/sheets/src/Characters/Nefer/index.tsx"
  },
  "verified_by": [
-  "nefer_veils_on_her_own_burst"
+  "nefer_veils_on_her_own_burst",
+  "nefer_c2_five_veils_on_her_own_burst"
  ],
  "talent_boosts": [
   {
@@ -30,6 +31,18 @@
    ]
   },
   "constellations": {
+   "2": [
+    2.0,
+    5.0,
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
    "4": [
     0.25,
     4.5,
@@ -88,19 +101,27 @@
   },
   {
    "key": "veils_consumed",
-   "label": "Veils of Falsehood consumed by Nefer's burst (3 below C2)",
+   "label": "Veils of Falsehood consumed by Nefer's burst (3, or 5 from C2)",
    "kind": "stacks",
    "default_by": "self",
    "max": 3,
-   "go": "pando:Nefer.ts:115-137; wr:index.tsx:115-130"
+   "go": "pando:Nefer.ts:92-93,115-137; wr:index.tsx:98-99,115-130",
+   "max_raise": {
+    "constellation": 2,
+    "param": 0
+   }
   },
   {
    "key": "veil_stacks",
-   "label": "Veil of Falsehood stacks (3 below C2)",
+   "label": "Veil of Falsehood stacks (3, or 5 from C2)",
    "kind": "stacks",
    "default_by": "self",
    "max": 3,
-   "go": "pando:Nefer.ts:115-121,153-166; wr:index.tsx:144-180"
+   "go": "pando:Nefer.ts:92-93,115-121,153-166; wr:index.tsx:98-99,144-180",
+   "max_raise": {
+    "constellation": 2,
+    "param": 0
+   }
   },
   {
    "key": "shadow_dance",
@@ -137,7 +158,7 @@
   },
   {
    "key": "a1_em",
-   "label": "A1 A Wager of Moonlight: Elemental Mastery at 3 Veil stacks",
+   "label": "A1 A Wager of Moonlight: Elemental Mastery at 3 Veil stacks (below C2)",
    "source": "a1",
    "receivers": "self",
    "stat": "elemental_mastery",
@@ -159,7 +180,35 @@
      ]
     }
    ],
-   "go": "pando:Nefer.ts:75-82,153-166,213; wr:index.tsx:169-185"
+   "go": "pando:Nefer.ts:75-82,153-166,213; wr:index.tsx:169-185",
+   "max_constellation": 1
+  },
+  {
+   "key": "c2_em",
+   "label": "C2 Observation Feeds Strategy: Elemental Mastery at 5 Veil stacks (replaces A1's)",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "min_ascension": 1,
+   "value": {
+    "constellation": 2,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "veil_stacks",
+     "values": [
+      5
+     ]
+    },
+    {
+     "condition": "moonsign_gleam",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nefer.ts:92-94,153-166,213; wr:index.tsx:98-101,169-185"
   },
   {
    "key": "c4_dendro_res",
@@ -211,11 +260,6 @@
    "source": "c1",
    "what": "Planning Breeds Success: Lunar-Bloom additional MV",
    "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
-  },
-  {
-   "source": "c2",
-   "what": "Observation Feeds Strategy: Veil cap 5 and 200 EM at 5 stacks",
-   "reason": "the format's stack conditions have a fixed maximum; the estimate keeps the C0 cap of 3 and 100 EM"
   },
   {
    "source": "c6",

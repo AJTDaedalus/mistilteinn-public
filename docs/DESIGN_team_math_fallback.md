@@ -240,17 +240,50 @@ Blade, Vodyanitsa's Song); and a buff scoped to one talent row rather than a mov
 **Constants no seeded list carries.** Xingqiu's A4 (Hydro DMG 20%) and C2 (Hydro RES -15%), and
 Zhongli's Jade Shield RES -20%, are all-zero or absent in the seeded lists. They are `constant`
 values, each citing GO's sheet line and gcsim's, which agree.
+Shenhe's C2 (Cryo CRIT DMG 15%) is the same case in the fourth batch: GO reads it from her A1's
+list, her C2 list carries only its duration, and gcsim writes 0.15 (`cons.go:35`).
 
-**Still not added, and named in the sheets:** a value from the team's **highest** stat (Nahida's
-A1, 25% of the party's highest EM), a talent row chosen by a team count (Nahida's burst, one or
-two Pyro members), a capped conversion of the subject's own stat (Furina's A4, Nahida's A4 — the
-owner's open question in `DECISIONS.md` §39), enemy DEF reduction (no `def_reduction` effect stat:
-Nahida's C2, Raiden's C2), and the Hexerei party mechanic (Sucrose's Witch's Eve Rite). No sheet was
-written for Nahida for that reason: every buff she gives a teammate needs one of these.
+**Still not added at the second batch, and added in the fourth:** a value from the team's
+**highest** stat (Nahida's A1), a talent row chosen by a team count (Nahida's burst), enemy DEF
+reduction (Nahida's C2) — see the table below. Still not added: a capped conversion of the
+subject's own stat (Furina's A4, Nahida's A4 — the owner's open question in `DECISIONS.md` §39)
+and the Hexerei party mechanic (Sucrose's Witch's Eve Rite, Mona's lock parts).
 
-`max_raise` now exists, so Nefer's C2 and Valeriy's C4 (named above as "fixed max") could use it;
-their sheets were not revisited in this batch. Vodyanitsa's A4 still needs a **threshold** (HP above
-40,000) and is a self conversion, so `cap` alone does not unlock it.
+**Added for the fourth batch (task 11: Nahida, Kujou Sara, Shenhe, Yun Jin, Gorou, Xilonen,
+Xianyun, Mona, Raiden Shogun; Nefer's and Valeriy's raised maxima), each small and tested:**
+
+| addition | where | why |
+|---|---|---|
+| `times_team_max` on a value | `ValueRef`, `kit_buffs._team_max` | a value times the party's **highest** pass-1 stat (GO `team.premod.eleMas.max`, Nahida's A1, capped by the existing `cap`). The max is over every member **but the subject** — their stat moves with every candidate — and a giver who is the subject is withheld by name. Pass 1 only, so rule 5 holds. `giver_stats` reports it as `team_max_<stat>` |
+| `rows_by_team` on a talent value | `ValueRef`, `TeamRows`, `CountBonus` | a talent **row** chosen by a team count (GO `cmpEq(level, 1, row_1, row_2)`): Nahida's one- or two-Pyro burst row, her C1 counting one more (a cited constant: her C1 list is all zeros). Count 0 is no buff; past the last row reads the last, as GO does. The rows share their text before `|`, so the labels are pinned in full |
+| `rows` on an effect | `SheetEffect`, `Effect.rows`, `FormulaRow.hit` | a **self** buff scoped to the giver's own talent rows (`/hits`' talent and label): Nahida's burst bonus reaches Tri-Karma Purification and not her press; Raiden's Resolve reaches her Musou rows, the initial slash apart; Xianyun's C6 her Driftcloud Wave. Only `self` effects may name rows: a teammate cannot know another character's labels. A row that does not name its talent row skips the buff and says so |
+| `def_reduction`, `def_ignore` effect stats | `formula_effects.EffectStat`, `formula-recipe.ts` | enemy DEF reduction (Nahida's C2, `enemy` receivers) and DEF ignore (Raiden's C2, `self` only). Both feed the DEF term the chain **already** carries — `damage.py:def_multiplier` and `damage.ts:defMultiplier`, reduction capped at 90% as GO's `enemy.def` and gcsim cap it, the two multiplied separately — so the term, the kernels and the crossval are unchanged; the recipe adds the kit's value to the target's own |
+| `flat_def` effect stat | `formula_effects`, `formula-recipe.ts` | flat DEF after the percentage (Gorou's banner), as `flat_atk` is for ATK |
+| `by_stack` on an effect | `SheetEffect` | a stack table read from a pinned list, entry `param + n - 1` at `n` stacks up to the condition's (fixed) maximum (GO `subscript(stacks - 1, [p0, p1, …])`): Nahida's C4 by opponents, Xianyun's A1 and C6 |
+| `counts` on a team gate | `TeamGate`, `TeamCount` | at least / at most N members of some elements (GO `cmpGE(count.geo, 3, …)`, `cmpLT(converted, 3, …)`): Gorou's banner at three Geo, Xilonen's Geo sample while fewer than three samplers are converted and her A1 at most one. `only` now defaults to every element |
+| `clamp` on a team table | `TeamIndex` | a count past the table reads its last entry, as GO writes it again (Gorou's C6 `[c6[0], c6[1], c6[2], c6[2]]`) |
+| `stat_cap` on a value | `ValueRef` | the giver's stat capped **before** it multiplies (GO `prod(ratio, min(total.atk, 4500))`, Xianyun's A4), a pinned parameter |
+| `part` on a talent value | `ValueRef` | which `{paramN}` of a row with several: Raiden's "Resolve Bonus\|{param2} Initial/{param3} … Per Stack" |
+| a talent row as a factor | `ParamRef.talent`/`row` | one talent row times another at the giver's effective level: Raiden's Eye on herself is the skill's per-Energy ratio times her burst's own "Energy Cost" row (GO `dm.burst.enerCost`) |
+| `max_constellation` on an effect | `SheetEffect` | an effect held only up to a constellation, where a higher one **replaces** it (GO `cmpGE(constellation, 2, c2, a1)`): Nefer's A1 EM at 3 Veils gives way to her C2's at 5 |
+| `max_raise_cited` on a condition | `SheetCondition` | a maximum raised by a cited constant no seeded list carries: Valeriy's C4, Impact Momentum +30 (GO `momentumLimitInc: 30`) |
+
+**OR of conditions, without a new mechanic.** Xilonen's Geo sample is GO's `cmpGE(sum(sourceActive,
+nsBlessing, C2), 1, …)` — an OR. It is written as three effects whose `when`s are disjoint
+(Source Samples on; Samples off and Nightsoul's Blessing on; both off, from C2), so under any
+state at most one applies; a test enumerates the states.
+
+**Not added, named in the sheets:** a second Energy Recharge conversion on one hit. Raiden's A4
+(Electro DMG from ER above 100%) and Mona's A4 (Hydro DMG, 20% of ER) are conversions of the
+subject's own ER; the recipe carries one per hit (`recipe.ts:bonusFromEnergyRecharge`), and
+Emblem of Severed Fate's — which Raiden most often wears — is it. Raiden's would also need its
+100% offset. A plunge-**impact** scope (Xianyun's A4 reaches low/high plunges, not the
+collision): the sheet scopes by move and its toggle's label tells the user to turn it off on a
+collision row, which per-row conditionals allow.
+
+`max_raise` and `max_raise_cited` now carry Nefer's C2 and Valeriy's C4 (the "fixed max" named
+above is gone). Vodyanitsa's A4 still needs a **threshold** (HP above 40,000) and is a self
+conversion, so `cap` alone does not unlock it.
 
 **Added for the DPS characters (task 11, third batch), each small and in the format's spirit:**
 

@@ -1,0 +1,294 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Raiden Shogun",
+ "nanoka_id": "10000052",
+ "slug": "raiden_shogun",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/RaidenShogun.ts",
+  "wr": "libs/gi/sheets/src/Characters/RaidenShogun/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/raiden/",
+ "verified_by": [
+  "raiden_shogun_eye_resolve_c2_on_her_own_burst",
+  "raiden_shogun_eye_c4_on_a_teammate"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:RaidenShogun.ts:187; wr:index.tsx:265,271"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:RaidenShogun.ts:188; wr:index.tsx:266,270"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Energy Cost|{param20:I}",
+    "Resolve Bonus|{param2:F2P} Initial/{param3:F2P} ATK DMG Per Stack"
+   ],
+   "elemental_skill": [
+    "Elemental Burst DMG Bonus|{param4:F2P} Per Energy"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.6,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.3,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "eye",
+   "label": "Eye of Stormy Judgment is active, on Raiden herself (Transcendence: Baleful Omen)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:RaidenShogun.ts:99,103,109-113,190; wr:index.tsx:101-112,272"
+  },
+  {
+   "key": "eye_energy",
+   "label": "Eye of Stormy Judgment: the active character's Elemental Burst Energy Cost",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 90,
+   "step": 10,
+   "go": "pando:RaidenShogun.ts:89,101,114-122,193; wr:index.tsx:125-147,279"
+  },
+  {
+   "key": "resolve",
+   "label": "Chakra Desiderata: Resolve stacks consumed (Secret Art: Musou Shinsetsu)",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 60,
+   "step": 10,
+   "go": "pando:RaidenShogun.ts:90,102,123-130; wr:index.tsx:149-158"
+  },
+  {
+   "key": "in_burst",
+   "label": "Musou Isshin is active (C2 Steelbreaker)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:RaidenShogun.ts:98,159-161,195; wr:index.tsx:113-118,274"
+  },
+  {
+   "key": "c4_after_burst",
+   "label": "After Musou Isshin ends (C4 Pledge of Propriety)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:RaidenShogun.ts:100,104,162-165,197; wr:index.tsx:210-219,278"
+  }
+ ],
+ "effects": [
+  {
+   "key": "eye_self",
+   "label": "Eye of Stormy Judgment: Raiden's Elemental Burst DMG, per Energy of her own burst's cost",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental Burst DMG Bonus",
+    "times_param": {
+     "talent": "elemental_burst",
+     "row": "Energy Cost"
+    }
+   },
+   "when": [
+    {
+     "condition": "eye",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:RaidenShogun.ts:50,73,103-113,190; wr:index.tsx:101-112,272"
+  },
+  {
+   "key": "eye_team",
+   "label": "Eye of Stormy Judgment: a teammate's Elemental Burst DMG, per Energy of their burst's cost",
+   "source": "talent",
+   "receivers": "others",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Elemental Burst DMG Bonus"
+   },
+   "per": "eye_energy",
+   "go": "pando:RaidenShogun.ts:50,105-108,114-122,193; wr:index.tsx:125-147,279"
+  },
+  {
+   "key": "resolve_initial",
+   "label": "Musou Shinsetsu: Resolve per stack on the initial slash, from Raiden's ATK",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "Musou no Hitotachi Base DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Resolve Bonus",
+    "part": 0,
+    "times_stat": "atk"
+   },
+   "per": "resolve",
+   "go": "pando:RaidenShogun.ts:55-56,102,123-138,167-182,209-220; wr:index.tsx:67,149-192,235-246"
+  },
+  {
+   "key": "resolve_infused",
+   "label": "Musou Isshin: Resolve per stack on its attacks, from Raiden's ATK",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "1-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "3-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "4-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "5-Hit DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "Charged Attack DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "Plunge DMG"
+    },
+    {
+     "talent": "elemental_burst",
+     "label": "Low/High Plunge DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Resolve Bonus",
+    "part": 1,
+    "times_stat": "atk"
+   },
+   "per": "resolve",
+   "go": "pando:RaidenShogun.ts:55-56,102,123-138,167-182,209-220; wr:index.tsx:68,149-192,235-246"
+  },
+  {
+   "key": "c2_def_ignore",
+   "label": "C2 Steelbreaker: Raiden's attacks ignore DEF during Musou Isshin",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "def_ignore",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "in_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:RaidenShogun.ts:81,159-161,195; wr:index.tsx:113-118,274"
+  },
+  {
+   "key": "c4_atk",
+   "label": "C4 Pledge of Propriety: teammates' ATK after Musou Isshin",
+   "source": "c4",
+   "receivers": "others",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4_after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:RaidenShogun.ts:84,162-165,197; wr:index.tsx:210-219,278"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a4",
+   "what": "Enlightened One: Electro DMG Bonus from her Energy Recharge above 100%",
+   "reason": "an Energy Recharge conversion of the optimized character's own stat: the recipe carries one per hit (Emblem of Severed Fate's, which she most often wears), so a second is not offered yet"
+  },
+  {
+   "source": "a4",
+   "what": "Enlightened One: Energy restored by Musou Isshin",
+   "reason": "no damage effect: energy"
+  },
+  {
+   "source": "a1",
+   "what": "Wishes Unnumbered: Resolve from Elemental Orbs",
+   "reason": "no damage effect: the Resolve count is the user's condition"
+  },
+  {
+   "source": "c1",
+   "what": "Ominous Inscription: Resolve gained faster",
+   "reason": "no damage effect: the Resolve count is the user's condition"
+  },
+  {
+   "source": "c6",
+   "what": "Wishbearer: teammates' burst cooldowns",
+   "reason": "no damage effect: cooldown"
+  },
+  {
+   "source": "talent",
+   "what": "Musou Isshin: the Electro infusion of her attacks",
+   "reason": "the hit's element is the row's channel, which the user chooses"
+  }
+ ]
+}
