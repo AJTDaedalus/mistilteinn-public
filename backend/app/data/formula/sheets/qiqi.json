@@ -1,0 +1,104 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Qiqi",
+ "nanoka_id": "10000035",
+ "slug": "qiqi",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Qiqi.ts",
+  "wr": "libs/gi/sheets/src/Characters/Qiqi/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/qiqi/",
+ "verified_by": [
+  "qiqi_c2_on_her_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Qiqi.ts:148-149",
+   "gcsim": "qiqi.go:31"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Qiqi.ts:148,150",
+   "gcsim": "qiqi.go:32"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "cryo",
+   "label": "Opponent affected by Cryo, which her own skill applies (C2)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Qiqi.ts:103-105,114"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c2_dmg",
+   "label": "C2 Frozen to the Bone: Normal and Charged Attack DMG against Cryo",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal",
+    "charged"
+   ],
+   "value": {
+    "constant": 0.15,
+    "cite": "GO pando:Qiqi.ts:114 `percent(0.15)`; gcsim qiqi/cons.go:78 `m[attributes.DmgP] = .15`; her seeded C2 list carries the Hexerei ATK"
+   },
+   "when": [
+    {
+     "condition": "cryo",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Qiqi.ts:114,154-155",
+   "gcsim": "cons.go:72-96"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Seven Sacred Treasures: the Hexerei skill, C2 ATK, C4 healing, C6 Stellarconduct DMG and the Superconduct/Swirl bonuses under Stellar Radiance",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "talent",
+   "what": "Adeptus Art: Herald of Frost and Preserver of Fortune: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Life-Prolonging Methods: Incoming Healing Bonus",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "A Glimpse Into Arcanum: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Ascetics of Frost: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Divine Suppression: opponents' ATK",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Rite of Resurrection: revival",
+   "reason": "no damage effect"
+  }
+ ]
+}

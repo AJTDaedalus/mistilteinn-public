@@ -1,0 +1,113 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Yaoyao",
+ "nanoka_id": "10000077",
+ "slug": "yaoyao",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Yaoyao.ts",
+  "wr": "libs/gi/sheets/src/Characters/Yaoyao/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/yaoyao/",
+ "verified_by": [
+  "yaoyao_c1_on_nahida"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Yaoyao.ts:123-124",
+   "gcsim": "yaoyao.go:28"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Yaoyao.ts:123,125",
+   "gcsim": "yaoyao.go:27"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    8.0,
+    0.15,
+    15.0,
+    5.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "c1_radish",
+   "label": "A White Jade Radish exploded on the active character (C1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Yaoyao.ts:98,106-108"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c1_dendro",
+   "label": "C1 Adeptus' Tutelage: the active character's Dendro DMG",
+   "source": "c1",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c1_radish",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Yaoyao.ts:71-76,106-108,130-132",
+   "gcsim": "cons.go:19-35"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c4",
+   "what": "Winsome: her own EM from her Max HP, capped",
+   "reason": "a capped conversion of her HP into EM, which the recipe does not carry; her EM reaches only reaction damage (P3)"
+  },
+  {
+   "source": "talent",
+   "what": "Raphanus Sky Cluster and Moonjade Descent: healing, her Dendro RES and Movement SPD",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Starscatter: a radish while sprinting",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "In Others' Shoes: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Innocent: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Beneficent: Mega Radishes",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

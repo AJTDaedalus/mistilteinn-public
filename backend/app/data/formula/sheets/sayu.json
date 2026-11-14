@@ -1,0 +1,134 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Sayu",
+ "nanoka_id": "10000053",
+ "slug": "sayu",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Sayu.ts",
+  "wr": "libs/gi/sheets/src/Characters/Sayu/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/sayu/",
+ "verified_by": [
+  "sayu_c2_on_her_own_hold_kick"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Sayu.ts:126-127",
+   "gcsim": "sayu.go:34"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Sayu.ts:126,128",
+   "gcsim": "sayu.go:35"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.033,
+    20.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "hold",
+   "label": "Half-seconds held in Fuufuu Windwheel before the kick (C2)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 20,
+   "step": 1,
+   "go": "pando:Sayu.ts:94,101-105"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c2_press",
+   "label": "C2 Egress Prep: a pressed Whirlwind Kick's DMG",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "#Fuufuu Whirlwind Kick {LAYOUT_MOBILE#Tap}{LAYOUT_PC#Press}{LAYOUT_PS#Press} DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "go": "pando:Sayu.ts:72-75,96-100,139-147",
+   "gcsim": "cons.go:14-31; skill.go:96-97"
+  },
+  {
+   "key": "c2_hold",
+   "label": "C2 Egress Prep: a held Whirlwind Kick's DMG per half-second",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Fuufuu Whirlwind Kick Hold DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Fuufuu Whirlwind Kick Elemental DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "hold",
+   "go": "pando:Sayu.ts:72-75,101-105,148-171",
+   "gcsim": "cons.go:14-31; skill.go:169-170,228-229"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c6",
+   "what": "Sleep O'Clock: Muji-Muji Daruma DMG from her ATK times her Elemental Mastery",
+   "reason": "a product of two of her stats, which no conversion carries"
+  },
+  {
+   "source": "talent",
+   "what": "Yoohoo Art: Fuuin Dash: the absorbed element",
+   "reason": "the Elemental DMG rows' channel is the user's to set to the absorbed element"
+  },
+  {
+   "source": "talent",
+   "what": "Yoohoo Art: Mujina Flurry: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a1",
+   "what": "Someone More Capable: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "No Work Today!: healing",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Skiving: New and Improved: Energy",
+   "reason": "no damage effect"
+  }
+ ]
+}

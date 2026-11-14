@@ -104,12 +104,15 @@ BATCH6 = {"chasca", "kinich", "wanderer", "keqing", "sangonomiya_kokomi", "yae_m
 BATCH7 = {"xiao", "venti", "nilou", "albedo", "chiori", "sigewinne", "sethos", "shikanoin_heizou",
           "freminet", "rosaria", "candace", "mika", "diluc", "klee", "lisa", "ningguang",
           "chongyun"}
+#: Task 11's eighth batch: the small sheets of ordinary buffs.
+BATCH8 = {"amber", "xinyan", "yanfei", "barbara", "razor", "kaeya", "qiqi", "sayu", "diona",
+          "collei", "yaoyao", "gaming"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
         "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED, *BATCH6,
-        *BATCH7}
+        *BATCH7, *BATCH8}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():
