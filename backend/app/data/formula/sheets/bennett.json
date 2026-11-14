@@ -1,0 +1,209 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Bennett",
+ "nanoka_id": "10000032",
+ "slug": "bennett",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Bennett.ts",
+  "wr": "libs/gi/sheets/src/Characters/Bennett/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/bennett/",
+ "verified_by": [
+  "bennett_c6_on_xiangling",
+  "bennett_burst_on_himself"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Bennett.ts:126-127",
+   "gcsim": "bennett.go:21"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Bennett.ts:126,128; wr:index.tsx:182-183,198-199",
+   "gcsim": "bennett.go:22"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "ATK Bonus Ratio|{param4:P}"
+   ]
+  },
+  "constellations": {
+   "1": [
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    0.7,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "in_field",
+   "kind": "toggle",
+   "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
+   "default_by": "giver_is_subject",
+   "go": "pando:Bennett.ts:90,93-94; wr:index.tsx:107-112"
+  },
+  {
+   "key": "below_70_hp",
+   "label": "Bennett below 70% HP",
+   "kind": "toggle",
+   "default_by": "situational",
+   "go": "pando:Bennett.ts:91,102-106; wr:index.tsx:144-149"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_atk",
+   "label": "Fantastic Voyage: ATK + ratio x Bennett's base ATK",
+   "source": "talent",
+   "receivers": "active",
+   "stat": "flat_atk",
+   "value": {
+    "talent": "elemental_burst",
+    "row": "ATK Bonus Ratio",
+    "times_stat": "base_atk"
+   },
+   "when": [
+    {
+     "condition": "in_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Bennett.ts:59,93-101,132; wr:index.tsx:98-114,189-192",
+   "gcsim": "burst.go:84-93"
+  },
+  {
+   "key": "c1_atk",
+   "label": "C1 Grand Expectation: ATK + 20% of Bennett's base ATK",
+   "source": "c1",
+   "receivers": "active",
+   "stat": "flat_atk",
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "times_stat": "base_atk"
+   },
+   "when": [
+    {
+     "condition": "in_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Bennett.ts:71,96-101; wr:index.tsx:101-106",
+   "gcsim": "burst.go:87-90"
+  },
+  {
+   "key": "c2_er",
+   "label": "C2 Impasse Conqueror: Energy Recharge below 70% HP",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "energy_recharge",
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "below_70_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Bennett.ts:73-76,102-106,130; wr:index.tsx:144-149,200"
+  },
+  {
+   "key": "c6_pyro",
+   "label": "C6 Fire Ventures with Me: Pyro DMG Bonus in the field",
+   "source": "c6",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "in_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Bennett.ts:80-82,107-110,133; wr:index.tsx:133-137,187",
+   "gcsim": "burst.go:94-96"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Fantastic Voyage healing",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "source": "a1",
+   "what": "Rekindle: Passion Overload CD -20%",
+   "reason": "no damage effect: cooldown"
+  },
+  {
+   "source": "a4",
+   "what": "Fearnaught: Passion Overload CD -50% in the field",
+   "reason": "no damage effect: cooldown"
+  },
+  {
+   "source": "c4",
+   "what": "Unexpected Odyssey: an extra hit at 135% of the hold's second hit",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "Pyro infusion for sword, claymore and polearm wielders in the field",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+  }
+ ]
+}

@@ -4821,6 +4821,67 @@
           }
         }
       }
+    },
+    "/api/v1/formula/kit-buffs": {
+      "get": {
+        "tags": [
+          "formula"
+        ],
+        "summary": "Kit Buffs Route",
+        "description": "Every member's kit buffs for the optimized build, from the two-pass evaluation.\n\n`member_build_id` is the team, the optimized build included; each of the caller's own. A\nmember with no sheet is listed as `no_sheet` rather than omitted, so the estimate can name\nwho contributes no kit buffs.",
+        "operationId": "kit_buffs_route_api_v1_formula_kit_buffs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subject_build_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Subject Build Id"
+            }
+          },
+          {
+            "name": "member_build_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Member Build Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormulaTeamKitRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8321,6 +8382,109 @@
         "title": "FormulaEffectRead",
         "description": "One buff, as a number and the scope it reaches. See `formula_effects.Effect`."
       },
+      "FormulaKitMemberRead": {
+        "properties": {
+          "build_id": {
+            "type": "string",
+            "title": "Build Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "modelled",
+              "partial",
+              "unmodelled",
+              "no_damage_effect",
+              "no_sheet"
+            ],
+            "title": "Status"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "is_subject": {
+            "type": "boolean",
+            "title": "Is Subject"
+          }
+        },
+        "type": "object",
+        "required": [
+          "build_id",
+          "name",
+          "status",
+          "verified",
+          "is_subject"
+        ],
+        "title": "FormulaKitMemberRead",
+        "description": "Whether one member's kit reaches the estimate."
+      },
+      "FormulaKitSourceRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "giver": {
+            "type": "string",
+            "title": "Giver"
+          },
+          "build_id": {
+            "type": "string",
+            "title": "Build Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "modelled",
+              "partial",
+              "unmodelled",
+              "no_damage_effect"
+            ],
+            "title": "Status"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "bonus": {
+            "$ref": "#/components/schemas/FormulaBonusRead"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          },
+          "giver_stats": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Giver Stats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "giver",
+          "build_id",
+          "status",
+          "verified",
+          "bonus",
+          "citation",
+          "giver_stats"
+        ],
+        "title": "FormulaKitSourceRead",
+        "description": "One team member's kit, resolved for the optimized character (math-fallback P2).\n\nSame `bonus` vocabulary as a set tier or a resonance, with every number already resolved\nin the **giver's** context (`app/formula/genshin/sheets.py`): Bennett's ATK bonus arrives\nas flat ATK computed from Bennett's own base ATK. The browser gates each effect by its\n`when`, exactly as it does a set bonus."
+      },
       "FormulaResonanceRead": {
         "properties": {
           "key": {
@@ -8450,6 +8614,31 @@
         ],
         "title": "FormulaSetTierRead",
         "description": "One conditional tier of one set."
+      },
+      "FormulaTeamKitRead": {
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaKitSourceRead"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaKitMemberRead"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sources",
+          "members"
+        ],
+        "title": "FormulaTeamKitRead",
+        "description": "Every member's kit buffs for one optimized character, from the two-pass evaluation."
       },
       "FormulaTeamResonanceRead": {
         "properties": {

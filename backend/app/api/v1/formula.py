@@ -2,7 +2,8 @@
 
 Math-fallback P1, tasks 6 and 7 (`docs/DESIGN_team_math_fallback.md` §2). Read-only, and
 catalogue-level like `/characters` — neither route knows whose team it is, so neither needs a
-caller. The browser's synthetic recipe (`frontend/src/app/sim/formula-recipe.ts`) applies
+caller. `/kit-buffs` (P2, task 9) is the exception: it reads the caller's own builds. The
+browser's synthetic recipe (`frontend/src/app/sim/formula-recipe.ts`) applies
 what these return; nothing here multiplies anything.
 """
 
@@ -12,18 +13,25 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.dependencies import get_artifact_set_repo, get_character_repo
+from app.dependencies import get_artifact_set_repo, get_character_repo, get_owned_build_repo
 from app.formula.genshin import resonance, set_effects
 from app.formula.genshin.formula_effects import status_of
 from app.repositories.artifact_set import ArtifactSetRepository
+from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
 from app.schemas.formula import (
     FormulaBonusRead,
+    FormulaKitMemberRead,
+    FormulaKitSourceRead,
     FormulaResonanceRead,
     FormulaSetEffectsRead,
     FormulaSetTierRead,
+    FormulaTeamKitRead,
     FormulaTeamResonanceRead,
 )
+from app.services import kit_buffs
+from app.services.build_assembler import BuildAssemblyError
+from app.services.stat_calculator import StatInputError
 
 router = APIRouter(prefix="/formula", tags=["formula"])
 
@@ -102,4 +110,50 @@ async def resonance_route(
             for r in active
         ],
         note=note,
+    )
+
+
+@router.get("/kit-buffs", response_model=FormulaTeamKitRead)
+async def kit_buffs_route(
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    subject_build_id: str,
+    member_build_id: Annotated[list[str], Query(max_length=_MAX_MEMBERS)],
+) -> FormulaTeamKitRead:
+    """Every member's kit buffs for the optimized build, from the two-pass evaluation.
+
+    `member_build_id` is the team, the optimized build included; each of the caller's own. A
+    member with no sheet is listed as `no_sheet` rather than omitted, so the estimate can name
+    who contributes no kit buffs.
+    """
+    if len(set(member_build_id)) != len(member_build_id):
+        raise HTTPException(status_code=422, detail="a build appears in a team once")
+    members = []
+    for build_id in member_build_id:
+        build = await builds.get_with_kit(build_id)
+        if build is None:
+            raise HTTPException(status_code=404, detail=f"No build {build_id!r}")
+        members.append(build)
+    try:
+        team = kit_buffs.team_kit(members, subject_build_id)
+    except (kit_buffs.KitBuffsError, BuildAssemblyError, StatInputError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return FormulaTeamKitRead(
+        sources=[
+            FormulaKitSourceRead(
+                id=s.source_id, label=s.label, giver=s.giver,
+                build_id=team.giver_builds[s.source_id],
+                status=s.status,  # type: ignore[arg-type]
+                verified=s.verified, bonus=FormulaBonusRead.of(s.bonus), citation=s.citation,
+                giver_stats=team.giver_stats[s.source_id],
+            )
+            for s in team.sources
+        ],
+        members=[
+            FormulaKitMemberRead(
+                build_id=m.build_id, name=m.name,
+                status=m.status,  # type: ignore[arg-type]
+                verified=m.verified, is_subject=m.is_subject,
+            )
+            for m in team.members
+        ],
     )

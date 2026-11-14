@@ -13,6 +13,7 @@ import {
   suggestMove,
   type ConditionState,
   type ConditionValue,
+  type FormulaKit,
   type FormulaResonance,
   type FormulaRow,
   type FormulaSetTier,
@@ -49,6 +50,12 @@ export interface FormulaRequest {
   enemyLevel: number;
   /** The 4-piece states to build, by catalogue (nanoka) id. */
   fourPieceSetIds: readonly number[];
+}
+
+/** Every member's kit for one optimized build, and the members with none. */
+export interface TeamKits {
+  sources: FormulaKit[];
+  missing: string[];
 }
 
 /** A calibration and the formula's own reporting, side by side. */
@@ -120,6 +127,8 @@ export class FormulaEstimateService {
   readonly conditionals = signal<Record<string, ConditionValue>>({});
 
   private tiers: Promise<FormulaSetTier[]> | null = null;
+  /** The last kit resolution, by subject and team: the panel and the estimate ask alike. */
+  private kitCache: { key: string; value: Promise<TeamKits> } | null = null;
 
   /** Start (or keep) a target for this build, seeded with one hit. */
   ensureTarget(buildId: string, hits: readonly AvailableHit[], seed = 0): void {
@@ -184,10 +193,49 @@ export class FormulaEstimateService {
     return data.active as FormulaResonance[];
   }
 
-  /** The conditions the assumptions panel draws, for this team and these sets. */
-  async groups(team: readonly BuildRead[], setIds: Iterable<number>): Promise<ConditionGroup[]> {
-    const [resonances, tiers] = await Promise.all([this.resonances(team), this.setTiers()]);
-    return conditionGroups(resonances, tiers, new Set(setIds));
+  /**
+   * Every member's kit, resolved by the server's two-pass evaluation for this optimized build
+   * (math-fallback P2): teammates' stats first, from their own builds, then each sheet in its
+   * giver's context. Members with no sheet come back named, for "no kit buffs modelled".
+   *
+   * Rebuilt per subject and team, never cached across them: Bennett's buff depends on Bennett's
+   * build, so a changed teammate is a changed number.
+   */
+  kits(team: readonly BuildRead[], subjectBuildId: string): Promise<TeamKits> {
+    // The optimized build is always a member: the server refuses a subject outside the team.
+    const ids = [...new Set([subjectBuildId, ...team.map((b) => b.id)])].slice(0, 4);
+    const key = `${subjectBuildId}|${ids.join(',')}`;
+    if (this.kitCache?.key === key) return this.kitCache.value;
+    const value = (async (): Promise<TeamKits> => {
+      const { data, error } = await this.api.GET('/api/v1/formula/kit-buffs', {
+        params: { query: { subject_build_id: subjectBuildId, member_build_id: ids } },
+      });
+      if (error) {
+        this.kitCache = null;
+        throw new Error('Could not load the team\'s kit buffs');
+      }
+      return {
+        sources: data.sources as FormulaKit[],
+        missing: data.members.filter((m) => m.status === 'no_sheet').map((m) => m.name),
+      };
+    })();
+    this.kitCache = { key, value };
+    return value;
+  }
+
+  /**
+   * The conditions the assumptions panel draws, for this team and these sets — and, given the
+   * optimized build, every member's kit (P2).
+   */
+  async groups(
+    team: readonly BuildRead[], setIds: Iterable<number>, subjectBuildId?: string,
+  ): Promise<ConditionGroup[]> {
+    const [resonances, tiers, kits] = await Promise.all([
+      this.resonances(team),
+      this.setTiers(),
+      subjectBuildId ? this.kits(team, subjectBuildId) : Promise.resolve(undefined),
+    ]);
+    return conditionGroups(resonances, tiers, new Set(setIds), kits);
   }
 
   /**
@@ -199,7 +247,7 @@ export class FormulaEstimateService {
     if (this.forBuild() !== request.buildId || !rows.length) {
       throw new Error('Choose at least one ability for the formula target.');
     }
-    const [contexts, resonances, tiers, statics] = await Promise.all([
+    const [contexts, resonances, tiers, statics, kits] = await Promise.all([
       // **The scope follows the row's move** where it is known: it decides which scoped stats
       // the server folds into the base (a normal-attack DMG bonus reaches a normal attack), so
       // one page-level scope would read a burst row as a normal attack.
@@ -209,6 +257,7 @@ export class FormulaEstimateService {
       this.resonances(request.team),
       this.setTiers(),
       this.optimize.setBonuses(),
+      this.kits(request.team, request.buildId),
     ]);
     const formulaRows: FormulaRow[] = rows.map((row, i) => ({
       id: row.id,
@@ -234,6 +283,7 @@ export class FormulaEstimateService {
       })),
       fourPieceSetIds: request.fourPieceSetIds,
       conditionals: this.conditionals() as ConditionState,
+      kits,
       characters: [character?.name ?? 'Build', ...request.team
         .filter((b) => b.id !== request.buildId)
         .map((b) => b.character?.name ?? '')

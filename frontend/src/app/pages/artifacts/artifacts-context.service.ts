@@ -227,7 +227,7 @@ export class ArtifactsContextService {
         if (nanoka !== undefined) counts.set(nanoka, (counts.get(nanoka) ?? 0) + 1);
       }
       const sets = [...counts].filter(([, n]) => n >= 2).map(([setId]) => setId);
-      const groups = await this.formula.groups(team, sets);
+      const groups = await this.formula.groups(team, sets, id);
       if (this.buildId() === id) this.formulaGroups.set(groups);
     } catch {
       // Best effort: an empty panel leaves the defaults in force, and the estimate's own

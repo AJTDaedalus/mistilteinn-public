@@ -193,6 +193,22 @@
   color: var(--warning);
 }
 
+// A kit sheet says whether a GO fixture checks it: data state, so the cool accent; an
+// unverified one in the warning colour, because it is a claim nobody has checked.
+.assumptions__badge {
+  margin-left: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--mint);
+}
+
+.assumptions__badge--unverified {
+  color: var(--warning);
+}
+
+.assumptions__group--nokit {
+  opacity: 0.8;
+}
+
 .assumptions__subtitle {
   margin: 0;
   font-size: var(--text-sm);

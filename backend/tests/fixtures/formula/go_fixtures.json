@@ -500,6 +500,810 @@
       "go_value": 83527.61752670546,
       "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
       "relative_divergence_from_go": 9.869460586410177e-05
+    },
+    {
+      "name": "bennett_c6_on_xiangling",
+      "covers": "a teammate's kit buff from the giver's base ATK, with C1, C5 and C6",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453",
+        "libs/gi/formula/src/data/char/Bennett.ts:59,71,80-82,93-101,107-110,128,132-133",
+        "libs/gi/sheets/src/Characters/Bennett/index.tsx:98-114,133-137,184-196"
+      ],
+      "givers": [
+        {
+          "name": "Bennett",
+          "constellation": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": {
+            "base_atk": 799.16,
+            "atk_pct": 0.466,
+            "flat_atk": 311.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:bennett",
+          "label": "Bennett (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Bennett.ts (pando), libs/gi/sheets/src/Characters/Bennett/index.tsx (wr) @ 2c13fc40 \u2014 burst_atk pando:Bennett.ts:59,93-101,132; wr:index.tsx:98-114,189-192; c1_atk pando:Bennett.ts:71,96-101; wr:index.tsx:101-106; c6_pyro pando:Bennett.ts:80-82,107-110,133; wr:index.tsx:133-137,187; gcsim internal/characters/bennett/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "in_field",
+                "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_atk",
+                "value": 951.0003999999999,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "in_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_atk",
+                "value": 159.832,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "in_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.15,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "in_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Fantastic Voyage healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A1: Rekindle: Passion Overload CD -20%",
+                "reason": "no damage effect: cooldown"
+              },
+              {
+                "what": "A4: Fearnaught: Passion Overload CD -50% in the field",
+                "reason": "no damage effect: cooldown"
+              },
+              {
+                "what": "C4: Unexpected Odyssey: an extra hit at 135% of the hold's second hit",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C6: Pyro infusion for sword, claymore and polearm wielders in the field",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:bennett/in_field": 1
+      },
+      "expected": 5120.333793805894,
+      "go_value": 5120.333793805894,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "bennett_burst_on_himself",
+      "covers": "a giver who is the optimized character: his own field, by default",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453",
+        "libs/gi/formula/src/data/char/Bennett.ts:59,93-101,132,165"
+      ],
+      "givers": [
+        {
+          "name": "Bennett",
+          "constellation": 0,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": {
+            "base_atk": 799.16
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "pyro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 799.16,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12397.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 771.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.267
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.1904
+            ]
+          },
+          "multiplier": 4.1904,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:bennett",
+          "label": "Bennett (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Bennett.ts (pando), libs/gi/sheets/src/Characters/Bennett/index.tsx (wr) @ 2c13fc40 \u2014 burst_atk pando:Bennett.ts:59,93-101,132; wr:index.tsx:98-114,189-192; gcsim internal/characters/bennett/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "in_field",
+                "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_atk",
+                "value": 805.55328,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "in_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Fantastic Voyage healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A1: Rekindle: Passion Overload CD -20%",
+                "reason": "no damage effect: cooldown"
+              },
+              {
+                "what": "A4: Fearnaught: Passion Overload CD -50% in the field",
+                "reason": "no damage effect: cooldown"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 8535.910928180238,
+      "go_value": 8535.910928180238,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "kazuha_a4_pyro_on_xiangling",
+      "covers": "a teammate's kit buff from the giver's EM (two-pass: his EM first)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453",
+        "libs/gi/formula/src/data/char/KaedeharaKazuha.ts:65-67,94-107,154-166",
+        "libs/gi/sheets/src/Characters/KaedeharaKazuha/index.tsx:107-124,234-238"
+      ],
+      "givers": [
+        {
+          "name": "Kaedehara Kazuha",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": {
+            "elemental_mastery": 960.2,
+            "base_atk": 905.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:kaedehara_kazuha",
+          "label": "Kaedehara Kazuha (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/KaedeharaKazuha.ts (pando), libs/gi/sheets/src/Characters/KaedeharaKazuha/index.tsx (wr) @ 2c13fc40 \u2014 a4_pyro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_hydro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_electro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_cryo pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; gcsim internal/characters/kazuha/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "swirl_pyro",
+                "label": "Kazuha swirled Pyro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_hydro",
+                "label": "Kazuha swirled Hydro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_electro",
+                "label": "Kazuha swirled Electro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_cryo",
+                "label": "Kazuha swirled Cryo",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.38408000000000003,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_pyro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.38408000000000003,
+                "elements": [
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_hydro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.38408000000000003,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_electro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.38408000000000003,
+                "elements": [
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_cryo",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Soumon Swordsmanship: 200% ATK of the absorbed element on the skill's plunge",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "KIT: A4 reads Kazuha's EM from his own build (pass 1)",
+                "reason": "teammates' kit buffs to Kazuha's EM are not fed back into it (DESIGN \u00a72.6); GO's premod EM would include them"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:kaedehara_kazuha/swirl_pyro": 1
+      },
+      "expected": 3282.4392465963324,
+      "go_value": 3282.4392465963324,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "kazuha_a4_on_his_own_burst",
+      "covers": "a self buff from a stat artifacts move: per-candidate EM conversion",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453",
+        "libs/gi/formula/src/data/char/KaedeharaKazuha.ts:57,65-67,154-166,214-219"
+      ],
+      "givers": [
+        {
+          "name": "Kaedehara Kazuha",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character: his EM is the candidate's"
+        }
+      ],
+      "team": {
+        "element": "anemo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "anemo",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 905.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13348.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 807.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 280.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 680.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.4
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "absorb",
+          "label": "Additional Elemental DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Additional Elemental DMG|{param3:P}",
+            "params": [
+              4.7232,
+              2.16,
+              0.648
+            ]
+          },
+          "multiplier": 0.648,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:kaedehara_kazuha",
+          "label": "Kaedehara Kazuha (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/KaedeharaKazuha.ts (pando), libs/gi/sheets/src/Characters/KaedeharaKazuha/index.tsx (wr) @ 2c13fc40 \u2014 a4_pyro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_hydro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_electro pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; a4_cryo pando:KaedeharaKazuha.ts:65-67,154-166; wr:index.tsx:107-124,234-238; gcsim internal/characters/kazuha/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "swirl_pyro",
+                "label": "Kazuha swirled Pyro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_hydro",
+                "label": "Kazuha swirled Hydro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_electro",
+                "label": "Kazuha swirled Electro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "swirl_cryo",
+                "label": "Kazuha swirled Cryo",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_pyro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "hydro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_hydro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_electro",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0004,
+                "elements": [
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "swirl_cryo",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Soumon Swordsmanship: 200% ATK of the absorbed element on the skill's plunge",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "KIT: A4 reads Kazuha's EM from his own build (pass 1)",
+                "reason": "teammates' kit buffs to Kazuha's EM are not fed back into it (DESIGN \u00a72.6); GO's premod EM would include them"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:kaedehara_kazuha/swirl_pyro": 1
+      },
+      "expected": 585.7838121511385,
+      "go_value": 585.7838121511385,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

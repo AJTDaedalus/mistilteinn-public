@@ -1520,7 +1520,7 @@ export class OptimizePage implements OnInit {
       this.formulaGroups.set([]);
       return;
     }
-    this.formulaService.groups(team, sets)
+    this.formulaService.groups(team, sets, this.buildId())
       .then((groups) => this.formulaGroups.set(groups))
       .catch(() => this.formulaGroups.set([]));
   });

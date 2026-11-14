@@ -28,7 +28,11 @@ None of the following is licensed by this repository, and none of it is HoYovers
 `backend/app/pando/` is a port of `libs/pando/engine` from
 <https://github.com/frzyc/genshin-optimizer>. The artifact draw weights in
 `backend/app/data/external/artifact_draw_model.json` are taken from its
-`libs/gi/upopt/src/consts.ts`.
+`libs/gi/upopt/src/consts.ts`. The formula estimate's set-effect and kit-sheet **structure**
+in `backend/app/data/formula/` (which number buffs what, for whom, under which condition) is
+transcribed from its artifact and character sheets (`libs/gi/sheets/src/`,
+`libs/gi/formula/src/data/char/`) and cited per entry; none of its data tables are copied,
+and every number comes from this repository's own seeded catalogue.
 
 ```
 MIT License

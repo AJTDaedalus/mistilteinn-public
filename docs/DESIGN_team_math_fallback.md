@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 complete (2026-11-13): tasks 3–7 merged (#368, #369), task 8 (routing, labels, assumptions panel) on `feat/math-fallback-p1-routing`. Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete and merged (#367–#371). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -166,6 +166,125 @@ constant.
   must be able to explain itself.
 - **Reasons, not dead ends.** When gcsim refuses, the 422 becomes a choice: "gcsim can't
   run Lohen. Use the formula estimate?" It no longer ends the flow (G14).
+
+### 2.6 Kit sheets and the two-pass team evaluation (P2, tasks 9–11; built 2026-11-13)
+
+**Where it lives.** `backend/app/formula/genshin/sheets.py` (schema, pins, giver-context
+resolution), `backend/app/data/formula/sheets/<slug>.json` (one per character),
+`backend/app/services/kit_buffs.py` (the two passes), `GET /api/v1/formula/kit-buffs`
+(the caller's own builds), and in the browser `formula-recipe.ts` (`flat_atk`,
+`dmg_bonus_from_em`), `formula-calibration.ts` (kits ride with resonance) and the shared
+`formula-panel`.
+
+#### The sheet format
+
+One JSON file per character, validated by `sheets.Sheet` on load. **No number is written in a
+sheet.** It carries structure, cited, and references into our seeded rows:
+
+| field | what it says |
+|---|---|
+| `nanoka_id`, `slug`, `character` | whose kit; `slug` names the file and the source id `kit:<slug>` |
+| `go_commit`, `go.{pando,wr}` | GO's sheet files at the pinned commit (the same commit `set_effects.json` uses) |
+| `gcsim_commit`, `gcsim` | gcsim's package at the pin, where it implements the same buffs |
+| `verified_by` | GO fixtures in `go_fixtures.json` that check this sheet. Empty = **unverified**; the API and the panel say which |
+| `talent_boosts` | which constellation raises which talent by 3 (GO `ownBuff.char.<t>.add(cmpGE(constellation, n, 3))`, gcsim `SkillCon`/`BurstCon`) |
+| `pins` | the talent-row labels, constellation `param_list`s and passive `param_list`s the sheet was curated against |
+| `conditions` | P1's condition vocabulary, but the default is **derived** (§39): `self` on at max, `situational` off, and `giver_is_subject` — `self` when the giver is the optimized character, `situational` when a teammate is (Bennett standing in his own field is his doing; a teammate standing in it depends on the fight) |
+| `effects` | each: `source` (`talent`, `a1`, `a4`, `c1`–`c6`; gated on ascension phase / constellation as GO's `input.asc` / `cmpGE`), `receivers` (`self` / `active` / `team` / `others` / `enemy`), `stat` (P1's `EffectStat`, plus `flat_atk` and `dmg_bonus_from_em`), scope (`elements`, `moves`, `reactions`), `when`, a `value` reference, and its `go` (and `gcsim`) file:lines |
+| `unmodelled` | each part of the kit not applied, with its reason (cooldowns and healing: "no damage effect"; infusions, extra hits, deferred parts named) |
+
+A `value` names exactly one of:
+
+- `{"talent": T, "row": "ATK Bonus Ratio"}` — the parameter the row's format string names
+  (`"ATK Bonus Ratio|{param4:P}"` → `params[3]`), at the giver's **effective** level (stored +
+  constellation boosts);
+- `{"constellation": n, "param": i}` or `{"passive": 1|4, "param": i}`;
+- `{"constant": x, "cite": "…"}` for something no seeded list carries;
+
+optionally `"times_stat"`: multiplied by one of the giver's stats (`base_atk`/`base_hp`/
+`base_def`, `atk`/`hp`/`def`, `elemental_mastery`, `energy_recharge`).
+
+**Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
+or a talent row whose label changed or which has no row at the effective level, **withholds
+that effect** and lists it as unmodelled with the reason. It is never read by a stale index.
+
+#### Pando: used for the giver context, and why conditions stay out of it
+
+Each effect value is a node (`const(param)`, times the stat graph's own node for `times_stat`)
+registered in the **giver's pass-1 registry** under `tags.formula_tag(sheet, effect)` — the
+`SHEET` and `NAME` axes, which gained their constructor here — and read back there by a
+`Calculator`. The formula is evaluated with both axes cleared (`tag_(node, {sheet: None, name:
+None})`), so its own stat reads gather the giver's stats and not, through the subset rule,
+itself; that recursion was the first thing the tests found. "Bennett's base ATK" is thus
+resolved by the same graph as every other stat in the repo. `SRC_TALENT`,
+`SRC_ASCENSION_PASSIVE` and `SRC_CONSTELLATION` label the source of each effect
+(`sheets.SOURCE_LABEL`) — attribution, not tag categories, for the reason `tags.py` gives.
+
+**`COND` is deliberately not used.** A condition can differ per row of the target (GO's
+"frames"), and the backend does not know the rows. So the DAG resolves a value as if its
+conditions held, and the effect travels to the browser with its `when`, where P1's
+`applySources` gates it per row, exactly as it gates a set bonus. One application path for
+resonance, sets and kits. This is reversible: if a kit ever needs a condition *inside* a value
+(a stack count multiplying a giver stat), the condition joins the DAG then.
+
+#### The two-pass rules
+
+1. **Pass 1, every member's own stats, from their build alone**: character, weapon, equipped
+   artifacts and the static bonuses of the sets they wear, through
+   `artifact_optimizer.build_combination_log` (the one definition of a build's stats). **No kit
+   buff from anyone — their own or a teammate's — enters pass 1.** Nor do resonance, weapon
+   passives or the giver's conditional set tiers.
+2. **Pass 2, every giver's sheet, in that giver's pass-1 context**, resolved for the optimized
+   character as the receiver.
+3. **Receivers.** The receiver is always the optimized character, who deals every hit of the
+   target: `team` and `enemy` always reach them, `active` reaches them (they are on the field
+   when they hit; the effect's own `when` says "in the field"), `self` only when they are the
+   giver, `others` only when they are not.
+4. **A giver who is the optimized character** resolves against their equipped build for
+   constants only. A value reading `base_*` is a constant (artifacts do not move it). A value
+   reading a stat artifacts move becomes a per-candidate term the recipe evaluates — today
+   only `dmg_bonus` from EM → `dmg_bonus_from_em`, `bonus += coefficient × (calibrated EM +
+   candidate EM)` in `recipe-eval.ts` — or it is withheld by name. The equipped artifacts
+   never reach the estimate as a number.
+5. **No cycles, by construction.** A giver stat never includes another kit's buff, so no buff
+   can feed itself or another. **The cost:** where a teammate's kit raises a stat another
+   giver's buff reads (a Sucrose EM share read by Kazuha's A4; Kazuha's own C2 EM read by his
+   A4), GO, which evaluates the whole team graph, gives more. Each sheet names its case in
+   `unmodelled`; Kazuha's C2 is deferred for exactly this reason. When the first such pair of
+   sheets exists, the fix is a third pass for the stats a buff reads, ordered by the
+   dependency (still acyclic as long as no stat-to-stat loop exists; one that does is refused).
+6. **Talent levels.** Builds store GOOD's levels, which exclude constellation boosts (the
+   importer copies GOOD's `talent` block); sheets add each `talent_boosts` entry, as GO and
+   gcsim both do.
+
+#### Where GO and gcsim differ, and what was followed
+
+- **Bennett's burst needs the active character above 70 % HP below C1** in gcsim
+  (`burst.go:120-126`); GO's sheets have no HP condition. Followed **GO**, the comparator
+  (D-F4), and the field toggle's own label says so ("above 70% HP below C1, assumed as GO
+  does"). It was first listed as "Not applied", which the drive showed reads as the opposite
+  of the truth: it *is* applied, on an assumption. Reversible: a situational toggle if the
+  owner wants the stricter reading.
+- **Kazuha's A4 EM.** GO reads `premod.eleMas` (which would include teammates' EM buffs);
+  gcsim `NonExtraStat(EM)` at swirl time; we read pass-1 EM (rule 5). Identical for every team
+  that has no EM-sharing kit sheet.
+
+#### Recorded constants
+
+None new. The four kit fixtures have no amplifying reaction, so they agree with GO exactly
+(`relative_divergence_from_go` 0); the 25/9 vs 2.78 divergence is unchanged in the P1 fixtures.
+
+#### Found while building it: the subject's own hits ignore constellation talent boosts
+
+Rule 6 is applied to **givers** only. The optimized character's own hits are resolved by
+`talent_hits._row_for` at the build's stored level, and builds store GOOD's levels, which
+exclude the +3 a C3/C5 grants. gcsim adds the boost itself (`SkillCon`/`BurstCon`, so the gcsim
+path is right), and GO adds it, so **single-hit Optimize, `/explain` and the formula estimate
+score a C3+/C5+ character's boosted talent three levels low** — on the drive team, a C6
+Xiangling's Pyronado at level 9 where GO and gcsim use 12. Not fixed here: it changes a live
+surface's numbers beyond the scope of P2, and the boost table it needs (which constellation
+boosts which talent) is per character data that sheets now carry for two characters only. It
+is the next task proposed in `TASKS_team_math_fallback.md` (9b).
 
 ## 3. Phases
 

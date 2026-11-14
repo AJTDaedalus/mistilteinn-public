@@ -172,7 +172,8 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
   const base = hit.talent * scaling + resolvedTerm(hit, 'flatDamage', hit.flatDamage, stats);
   const bonus = hit.bonusDmg + (stats.elementBonus[hit.element] ?? 0) + stats.allElementBonus
     + (hit.move === undefined ? 0 : (stats.moveBonus?.[hit.move] ?? 0))
-    + energyRechargeBonus(hit, stats);
+    + energyRechargeBonus(hit, stats)
+    + (hit.bonusFromEm ?? 0) * em;
   const preCrit = base * (1 + bonus) * hit.defMultiplier * hit.resMultiplier;
   const crit = 1 + effectiveCritRate(hit.critRate + stats.critRate) * (hit.critDmg + stats.critDmg);
   // The amplifying multiplier follows the candidate's EM, through the same function the

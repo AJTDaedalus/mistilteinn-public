@@ -55,11 +55,14 @@ NAME = "name"
 #: Condition name, for kit effects that are only active in some states.
 COND = "cond"
 
-# `SHEET`, `NAME` and `COND` are declared here — this module is the vocabulary, and an axis
-# that exists in the design should be named in one place — but they have **no constructor
-# yet**. F.4 adds `formula_tag(sheet, name)` alongside the first sheet that needs it, and
-# Chunk H adds the condition constructor. A6 is not a licence to build ahead of need: a
-# helper with no caller is untested code that reads as a supported interface.
+# `SHEET` and `NAME` gained their constructor, `formula_tag`, with the first kit sheets
+# (math-fallback P2, `formula/genshin/sheets.py`): each sheet formula is registered in its
+# **giver's** registry under `{sheet, name}` and read back there, so it is evaluated against
+# the giver's own stats. `COND` still has none, deliberately: a sheet's conditions are not
+# evaluated in the DAG at all. They travel to the browser as an effect's `when`, because a
+# condition can differ per row of the target (GO's "frames") and the backend does not know
+# the rows. A6 is not a licence to build ahead of need: a helper with no caller is untested
+# code that reads as a supported interface.
 
 
 # ---- Damage channels ------------------------------------------------------
@@ -277,3 +280,15 @@ def scoped_stat_tag(quantity: str, scope: str) -> Tag:
         raise ValueError(msg)
     return Tag.of(**{Q: quantity, SCOPE: scope})
 
+
+def formula_tag(sheet: str, name: str) -> Tag:
+    """Where one named formula of one kit sheet is registered: `{sheet: bennett, name: …}`.
+
+    Neither axis is a quantity, so no stat read (`stat_tag`, which names only `q`) can gather a
+    sheet formula by accident, and a sheet formula read names both axes, so two sheets'
+    `burst_atk` cannot collide.
+    """
+    if not sheet or not name:
+        msg = "a sheet formula is addressed by both its sheet and its name"
+        raise ValueError(msg)
+    return Tag.of(**{SHEET: sheet, NAME: name})

@@ -22,6 +22,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    case,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -29,6 +30,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import GUARDED_LAZY, Base, TimestampMixin, enum_column, uuid_pk
 from app.models.enums import Element, Rarity, StatType, TalentType, WeaponType
+
+#: The order the game lists a character's talents in: normal attack, skill, an alternate sprint
+#: where the kit has one, then burst.
+_TALENT_ORDER = {
+    TalentType.NORMAL_ATTACK: 0,
+    TalentType.ELEMENTAL_SKILL: 1,
+    TalentType.ALTERNATE_SPRINT: 2,
+    TalentType.ELEMENTAL_BURST: 3,
+}
 
 
 class Character(TimestampMixin, Base):
@@ -144,6 +154,15 @@ class Character(TimestampMixin, Base):
 
     talents: Mapped[list[Talent]] = relationship(
         lazy=GUARDED_LAZY,
+        # **Ordered, like every sibling relationship here.** It was the one that was not, so
+        # Postgres returned talents in whatever order it liked: the API, the rotation abilities
+        # and `test_children_land_with_their_parent` saw it change between runs. `nanoka_id`
+        # cannot be the key — Ayaka's ids put her sprint first — so the game's own order is
+        # spelled out, with `nanoka_id` breaking ties.
+        order_by=lambda: [
+            case(_TALENT_ORDER, value=Talent.talent_type, else_=len(_TALENT_ORDER)),
+            Talent.nanoka_id,
+        ],
         back_populates="character",
         cascade="all, delete-orphan",
         passive_deletes=True,

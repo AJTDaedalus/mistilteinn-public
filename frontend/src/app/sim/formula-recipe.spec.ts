@@ -371,6 +371,49 @@ describe('the recipe set the search runs on', () => {
   });
 });
 
+/**
+ * Math-fallback P2 — kit buffs. A teammate's buff arrives from the server as a number (flat ATK
+ * from Bennett's base ATK); a giver who is the subject arrives as a per-candidate coefficient
+ * (Kazuha's A4 off his own EM). Each is checked against the kernel fed the same stats.
+ */
+describe('kit buffs (P2)', () => {
+  const KIT = (stat: string, value: number, elements: string[] | null = null) => ({
+    id: 'kit:x', label: 'X (kit)', citation: 'GO',
+    bonus: { conditions: [], effects: [{ stat, value, elements, when: [] }], unmodelled: [] },
+  });
+
+  it('flat ATK from a kit is flat ATK the kernel would see', () => {
+    const recipe = synthesizeRecipe([row(context())], [KIT('flat_atk', 805.6)], TEAM);
+    const kernel = kernelScore(context({}, { flat_atk: 805.6 }));
+    const got = evaluateRecipe(recipe, candidateStatsFrom(PIECES.map((p) => p.stats)));
+    expect(Math.abs(got - kernel) / kernel).toBeLessThan(TOLERANCE);
+  });
+
+  it('an EM conversion follows the candidate\'s own EM, base included', () => {
+    const recipe = synthesizeRecipe([row(context())], [KIT('dmg_bonus_from_em', 0.0004, ['pyro'])],
+      TEAM);
+    const [hit] = recipe.hits;
+    expect(hit.bonusFromEm).toBeCloseTo(0.0004, 12);
+    // The pieces carry 40 EM; the base 100. So the bonus is 0.0004 x 140, as a stat.
+    const kernel = kernelScore(context({}, { pyro_dmg_bonus: 0.1 + 0.0004 * 140 }));
+    const got = evaluateRecipe(recipe, candidateStatsFrom(PIECES.map((p) => p.stats)));
+    expect(Math.abs(got - kernel) / kernel).toBeLessThan(TOLERANCE);
+    // More EM, more bonus: the search must not prune EM away.
+    expect(liveQuantitiesFor(recipe)).toContain('elemental_mastery');
+  });
+
+  it('an EM conversion that reaches only Cryo leaves a Pyro hit alone', () => {
+    const recipe = synthesizeRecipe([row(context())], [KIT('dmg_bonus_from_em', 0.0004, ['cryo'])],
+      TEAM);
+    expect(recipe.hits[0].bonusFromEm).toBeUndefined();
+  });
+
+  it('an EM conversion with no element is refused, not read as every channel', () => {
+    expect(() => synthesizeRecipe([row(context())], [KIT('dmg_bonus_from_em', 0.0004)], TEAM))
+      .toThrow(/names the element/);
+  });
+});
+
 describe('suggestMove', () => {
   it('names only what the label leaves no doubt about', () => {
     expect(suggestMove('elemental_skill', 'Skill DMG')).toBe('skill');

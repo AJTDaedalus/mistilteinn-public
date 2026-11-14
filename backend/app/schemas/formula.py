@@ -122,3 +122,50 @@ class FormulaTeamResonanceRead(BaseModel):
     active: list[FormulaResonanceRead]
     #: Why `active` is empty when it is, so an empty list is not mistaken for "none apply".
     note: str | None = None
+
+
+class FormulaKitSourceRead(BaseModel):
+    """One team member's kit, resolved for the optimized character (math-fallback P2).
+
+    Same `bonus` vocabulary as a set tier or a resonance, with every number already resolved
+    in the **giver's** context (`app/formula/genshin/sheets.py`): Bennett's ATK bonus arrives
+    as flat ATK computed from Bennett's own base ATK. The browser gates each effect by its
+    `when`, exactly as it does a set bonus.
+    """
+
+    #: `kit:<sheet slug>`. Condition keys are `<id>/<condition>`.
+    id: str
+    label: str
+    #: The giver's name, and the team member whose build it was resolved from.
+    giver: str
+    build_id: str
+    #: `modelled`, `partial`, `unmodelled` or `no_damage_effect`, computed from `bonus`.
+    status: Literal["modelled", "partial", "unmodelled", "no_damage_effect"]
+    #: True when a GO-cited fixture checks this sheet (`go_fixtures.json`); false is
+    #: **unverified**, and a surface showing it must say so.
+    verified: bool
+    bonus: FormulaBonusRead
+    #: GO sheet files at the pinned commit, each applied effect's lines, and gcsim's where it
+    #: implements the same buff.
+    citation: str
+    #: The giver's pass-1 value of every stat an effect read, so a number can be redone by hand.
+    giver_stats: dict[str, float]
+
+
+class FormulaKitMemberRead(BaseModel):
+    """Whether one member's kit reaches the estimate."""
+
+    build_id: str
+    name: str
+    #: A sheet's status, or `no_sheet`: base stats, sets and resonance still count, and the
+    #: estimate says "no kit buffs modelled" for this member.
+    status: Literal["modelled", "partial", "unmodelled", "no_damage_effect", "no_sheet"]
+    verified: bool
+    is_subject: bool
+
+
+class FormulaTeamKitRead(BaseModel):
+    """Every member's kit buffs for one optimized character, from the two-pass evaluation."""
+
+    sources: list[FormulaKitSourceRead]
+    members: list[FormulaKitMemberRead]

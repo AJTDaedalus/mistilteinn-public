@@ -139,6 +139,24 @@ class BuildRepository(BaseRepository[Build]):
         """
         return (await self.with_catalogue([build_id])).get(build_id)
 
+    async def get_with_kit(self, build_id: str) -> Build | None:
+        """One build with everything an evaluation reads **and** its character's kit rows.
+
+        Math-fallback P2: a kit sheet reads the giver's constellation and ascension-passive
+        `param_list`s besides the talent rows `get_full` already loads. A separate loader
+        rather than two more eager loads on every evaluation, which never read them.
+        """
+        stmt = select(Build).where(Build.id == build_id)
+        if self.owner_id is not None:
+            stmt = stmt.where(Build.owner_id == self.owner_id)
+        stmt = stmt.options(
+            *_full_build(),
+            selectinload(Build.character).selectinload(Character.constellations),
+            selectinload(Build.character).selectinload(Character.ascension_passives),
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_full(self, build_id: str) -> Build | None:
         """One build with everything an evaluation reads."""
         stmt = select(Build).where(Build.id == build_id)

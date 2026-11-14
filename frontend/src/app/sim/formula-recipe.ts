@@ -101,9 +101,12 @@ export interface FormulaBonus {
   unmodelled: { what: string; reason: string }[];
 }
 
-/** One bonus the estimate applies: a resonance, or one tier of one set. */
+/** One bonus the estimate applies: a resonance, one tier of one set, or a member's kit. */
 export interface FormulaSource {
-  /** `resonance:<key>` or `set:<set id>:<pieces>`. Condition keys are `<id>/<condition>`. */
+  /**
+   * `resonance:<key>`, `set:<set id>:<pieces>` or `kit:<sheet slug>`. Condition keys are
+   * `<id>/<condition>`.
+   */
   id: string;
   label: string;
   bonus: FormulaBonus;
@@ -128,6 +131,35 @@ export interface FormulaResonance {
   element: string | null;
   bonus: FormulaBonus;
   citation: string;
+}
+
+/**
+ * One team member's kit as `/formula/kit-buffs` returns it (math-fallback P2): the same
+ * `bonus` vocabulary, every number already resolved in the **giver's** context by the
+ * server's two-pass evaluation — Bennett's ATK bonus arrives as flat ATK from Bennett's own
+ * base ATK. Only a giver who is also the optimized character can carry a per-candidate term
+ * (`dmg_bonus_from_em`).
+ */
+export interface FormulaKit {
+  id: string;
+  label: string;
+  giver: string;
+  build_id: string;
+  status: 'modelled' | 'partial' | 'unmodelled' | 'no_damage_effect';
+  /** A GO-cited fixture checks this sheet. False is **unverified**, and is said. */
+  verified: boolean;
+  bonus: FormulaBonus;
+  citation: string;
+  /** The giver's pass-1 value of each stat an effect read. */
+  giver_stats: Record<string, number>;
+}
+
+/** Whose kits the estimate models, for its assumptions. */
+export interface KitCoverage {
+  /** Givers whose sheet is applied, with whether it is verified. */
+  modelled: { name: string; verified: boolean }[];
+  /** Members with no sheet: base stats, sets and resonance only. */
+  missing: string[];
 }
 
 /** `{ "<source id>/<condition key>": value }`. */
@@ -276,12 +308,17 @@ interface Buffs {
   flatDamage: number;
   flatFromAtk: number;
   erConversion: { perUnit: number; cap: number } | null;
+  /** Flat ATK, after the percentage — a kit buff resolved from its giver's stats. */
+  flatAtk: number;
+  /** DMG% per point of the hit owner's own total EM (a giver who is the subject). */
+  bonusFromEm: number;
 }
 
 function noBuffs(): Buffs {
   return {
     percent: { atk: 0, hp: 0, def: 0 }, em: 0, er: 0, critRate: 0, critDmg: 0, dmgBonus: 0,
     reactionBonus: 0, resistance: 0, flatDamage: 0, flatFromAtk: 0, erConversion: null,
+    flatAtk: 0, bonusFromEm: 0,
   };
 }
 
@@ -345,6 +382,11 @@ export function applySources(
         amount *= Math.min(teamCount(effect.per_team, team), effect.per_team_max ?? Infinity);
       }
       if (amount === 0 && effect.stat !== 'dmg_bonus_from_energy_recharge') continue;
+      if (effect.stat === 'dmg_bonus_from_em' && elements === null) {
+        // Not reachable from a sheet (Kazuha's A4 names its element); refused rather than read
+        // as "every channel", which would be the confident wrong number.
+        throw new Error(`${source.id}: an EM conversion names the element it reaches`);
+      }
 
       switch (effect.stat) {
         case 'atk_pct': buffs.percent.atk += amount; break;
@@ -359,6 +401,8 @@ export function applySources(
         case 'enemy_res': buffs.resistance += amount; break;
         case 'flat_damage': buffs.flatDamage += amount; break;
         case 'flat_damage_from_atk': buffs.flatFromAtk += amount; break;
+        case 'flat_atk': buffs.flatAtk += amount; break;
+        case 'dmg_bonus_from_em': buffs.bonusFromEm += amount; break;
         case 'dmg_bonus_from_energy_recharge':
           if (buffs.erConversion) throw new Error('two Energy Recharge conversions on one hit');
           buffs.erConversion = { perUnit: amount, cap: effect.cap ?? 0 };
@@ -406,7 +450,9 @@ export function rowHits(
     hp: b('hp_pct') + buffs.percent.hp,
     def: b('def_pct') + buffs.percent.def,
   };
-  const calibratedFlat = { atk: b('flat_atk'), hp: b('flat_hp'), def: b('flat_def') };
+  const calibratedFlat = {
+    atk: b('flat_atk') + buffs.flatAtk, hp: b('flat_hp'), def: b('flat_def'),
+  };
   const calibratedEm = b('elemental_mastery') + buffs.em;
   const reactionBonus = hit.reactionBonus + buffs.reactionBonus;
 
@@ -452,6 +498,7 @@ export function rowHits(
     };
     if (hit.amplifying !== null) out.amplifying = { reaction: hit.amplifying, reactionBonus };
     if (row.move !== null) out.move = row.move;
+    if (buffs.bonusFromEm !== 0) out.bonusFromEm = buffs.bonusFromEm;
     if (buffs.erConversion) {
       out.bonusFromEnergyRecharge = {
         ...buffs.erConversion, calibratedEnergyRecharge: b('energy_recharge') + buffs.er,
@@ -480,6 +527,24 @@ function describe(
   return `${source.label}: ${condition.label} = ${shown} (${why})`;
 }
 
+/**
+ * The assumption sentences about kits. Without coverage (P1 callers) the estimate models none;
+ * with it, it names whose sheet is applied, whether each is verified, and who has none.
+ */
+export function kitAssumptions(coverage: KitCoverage | undefined): string[] {
+  if (coverage === undefined) {
+    return ['No kit buffs modelled: talents, passives, constellations and teammates\' buffs '
+      + 'are absent.'];
+  }
+  const out: string[] = [];
+  for (const giver of coverage.modelled) {
+    out.push(`Kit buffs from ${giver.name}: ${giver.verified
+      ? 'verified against Genshin Optimizer' : 'unverified (cited to Genshin Optimizer)'}.`);
+  }
+  for (const name of coverage.missing) out.push(`No kit buffs modelled for ${name}.`);
+  return out;
+}
+
 /** One recipe for one 4-piece state (or none), over every row. */
 export function synthesizeRecipe(
   rows: readonly FormulaRow[],
@@ -487,6 +552,7 @@ export function synthesizeRecipe(
   team: FormulaTeam,
   teamState: ConditionState = {},
   characters: string[] = [],
+  kits?: KitCoverage,
 ): Recipe {
   if (rows.length === 0) throw new Error('a formula target needs at least one row');
   const ids = new Set(rows.map((r) => r.id));
@@ -495,7 +561,7 @@ export function synthesizeRecipe(
   const hits: RecipeHit[] = [];
   const assumptions = new Set<string>([
     'Formula estimate: no simulation. Not calibrated by gcsim.',
-    'No kit buffs modelled: talents, passives, constellations and teammates\' buffs are absent.',
+    ...kitAssumptions(kits),
     'No weapon passives modelled.',
     'Transformative, additive and Lunar reactions are not modelled.',
   ]);
@@ -549,6 +615,14 @@ const setSource = (tier: FormulaSetTier): FormulaSource => ({
   label: `${tier.set_name} ${tier.pieces}pc`,
   bonus: tier.bonus,
   citation: tier.citation,
+});
+
+/** `kit:<slug>`, in the shape `synthesizeRecipe` takes. */
+export const kitSource = (k: FormulaKit): FormulaSource => ({
+  id: k.id,
+  label: k.label,
+  bonus: k.bonus,
+  citation: k.citation,
 });
 
 /** `resonance:<key>`, in the shape `synthesizeRecipe` takes. */

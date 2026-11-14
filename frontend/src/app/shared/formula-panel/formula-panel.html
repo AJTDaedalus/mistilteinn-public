@@ -109,13 +109,20 @@
 
     @if (!groups().length) {
       <p class="hint">
-        No conditional set bonus or resonance applies to this team and these sets.
+        No conditional set bonus, resonance or kit buff applies to this team and these sets.
       </p>
     }
 
     @for (group of groups(); track group.sourceId) {
-      <fieldset class="assumptions__group">
-        <legend>{{ group.label }}</legend>
+      <fieldset class="assumptions__group" [class.assumptions__group--nokit]="group.kind === 'no-kit'">
+        <legend>
+          {{ group.label }}
+          @if (group.kind === 'kit') {
+            <span class="assumptions__badge" [class.assumptions__badge--unverified]="!group.verified">
+              {{ group.verified ? 'Verified against GO' : 'Unverified' }}
+            </span>
+          }
+        </legend>
         @for (condition of group.conditions; track condition.key) {
           <div class="assumptions__condition">
             @switch (condition.kind) {
@@ -165,17 +172,19 @@
               }
             }
             <span class="assumptions__default" [class.assumptions__default--changed]="!isDefault(group, condition)">
-              {{ isDefault(group, condition) ? defaultText(condition) : 'Changed · ' + defaultText(condition) }}
+              {{ isDefault(group, condition) ? defaultText(condition, group) : 'Changed · ' + defaultText(condition, group) }}
             </span>
           </div>
         }
-        @if (!group.conditions.length) {
+        @if (!group.conditions.length && group.kind !== 'no-kit') {
           <p class="assumptions__static">Applied whenever it is active; nothing to set.</p>
         }
         @for (part of group.unmodelled; track part.what) {
           <p class="assumptions__unmodelled">Not applied: {{ part.what }} ({{ part.reason }})</p>
         }
-        <p class="assumptions__cite">Source: {{ group.citation }}</p>
+        @if (group.citation) {
+          <p class="assumptions__cite">Source: {{ group.citation }}</p>
+        }
       </fieldset>
     }
 
@@ -192,7 +201,11 @@
       </ul>
     } @else {
       <ul class="assumptions__list">
-        <li>No kit buffs: talents, passives, constellations and teammates' buffs are absent.</li>
+        @if (hasKits()) {
+          <li>Kit buffs: each member's sheet as listed above, or none where it says so.</li>
+        } @else {
+          <li>No kit buffs: talents, passives, constellations and teammates' buffs are absent.</li>
+        }
         <li>No weapon passives.</li>
         <li>Transformative, additive and Lunar reactions are not modelled.</li>
       </ul>
