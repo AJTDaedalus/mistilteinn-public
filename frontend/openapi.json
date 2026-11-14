@@ -5455,6 +5455,24 @@
             },
             "type": "array",
             "title": "Extra Terms"
+          },
+          "move": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "charged",
+                  "plunge",
+                  "skill",
+                  "burst"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move"
           }
         },
         "type": "object",

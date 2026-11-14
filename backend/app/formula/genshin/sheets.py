@@ -676,6 +676,36 @@ class TalentBoost(_Strict):
     gcsim: str | None = None
 
 
+class RowMove(_Strict):
+    """The move (attack type) GO gives some of a character's talent rows, where it is not the
+    talent's own: Skirk's Seven-Phase Flash attacks are rows of her **skill** talent that GO
+    deals as Normal, Charged and Plunging Attacks (`customDmg(name, 'cryo', 'normal', …)`).
+
+    Owner ruling 2026-11-14 (`DECISIONS.md` §40 (iv)) asked for each row's attack type from the
+    imported per-hit data (`character_attacks`). That data cannot give it: its `attack_type` is
+    the strike geometry (`Melee`, `Range`, `Default`), not the move, and nothing links an entry
+    to a talent row (its `damage_param` is an internal name, `SkirkNew_NormalAttack_
+    ElementalArt_01_Damage`, which no row label carries). So the move is transcribed, cited,
+    from the comparator's own per-row declaration, and `/hits` reports it; a row a sheet does
+    not name keeps the label-based guess (`suggestMove` in the browser)."""
+
+    talent: str
+    #: Row labels before their `|`, as `/hits` names them.
+    labels: tuple[str, ...]
+    move: str
+    go: str
+
+    @model_validator(mode="after")
+    def _known(self) -> RowMove:
+        if self.talent not in TALENTS:
+            raise ValueError(f"{self.talent!r} is not one of {TALENTS}")
+        if self.move not in MOVES:
+            raise ValueError(f"{self.move!r} is not one of {MOVES}")
+        if not self.labels:
+            raise ValueError("a row move names its rows")
+        return self
+
+
 class Pins(_Strict):
     """The seeded rows a sheet was curated against."""
 
@@ -704,6 +734,8 @@ class Sheet(_Strict):
     conditions: tuple[SheetCondition, ...] = ()
     effects: tuple[SheetEffect, ...] = ()
     unmodelled: tuple[SheetUnmodelled, ...] = ()
+    #: The rows whose move is not their talent's (`RowMove`), from GO's per-row declarations.
+    row_moves: tuple[RowMove, ...] = ()
 
     @model_validator(mode="after")
     def _references_resolve(self) -> Sheet:
@@ -718,7 +750,15 @@ class Sheet(_Strict):
         for condition in self.conditions:
             if condition.max_raise is not None and not self._pinned(condition.max_raise):
                 raise ValueError(f"{self.slug}/{condition.key}: max_raise is not pinned")
+        named = [(m.talent, label) for m in self.row_moves for label in m.labels]
+        if len(set(named)) != len(named):
+            raise ValueError(f"{self.slug}: a row is given two moves")
         return self
+
+    def move_of(self, talent: str, label: str) -> str | None:
+        """The move GO gives this talent row, where the sheet names one."""
+        return next((m.move for m in self.row_moves
+                     if m.talent == talent and label in m.labels), None)
 
     def _check_effect(self, effect: SheetEffect, keys: list[str]) -> None:
         for when in effect.when:
@@ -783,6 +823,14 @@ def all_sheets() -> dict[str, Sheet]:
 def sheet_for(nanoka_id: str) -> Sheet | None:
     """This character's sheet, or None when nobody has written one yet."""
     return all_sheets().get(str(nanoka_id))
+
+
+def row_move(nanoka_id: str, talent: str, label: str) -> str | None:
+    """The move of one of this character's talent rows, from their sheet's `row_moves` (GO's
+    per-row declaration), or None where no sheet names it — the caller then guesses from the
+    label, as before."""
+    sheet = sheet_for(nanoka_id)
+    return None if sheet is None else sheet.move_of(talent, label.split("|", 1)[0])
 
 
 # ---- The giver ------------------------------------------------------------------------------

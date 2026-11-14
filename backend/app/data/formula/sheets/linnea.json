@@ -9,7 +9,8 @@
   "wr": "libs/gi/sheets/src/Characters/Linnea/index.tsx"
  },
  "verified_by": [
-  "linnea_c4_on_her_own_pummeler"
+  "linnea_c4_on_her_own_pummeler",
+  "linnea_c2_on_lumis_million_ton_crush"
  ],
  "talent_boosts": [
   {
@@ -269,6 +270,32 @@
    "go": "pando:Linnea.ts:84-88,199-208,252"
   },
   {
+   "key": "c2_lumi_crit",
+   "label": "C2 Tidings of Joy and Sorrow: Lumi's Million Ton Crush CRIT DMG +",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Lumi Million Ton Crush DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "c2_moondrift",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Linnea.ts:84-88,209-211,280-290"
+  },
+  {
    "key": "c4_self_def",
    "label": "C4 Expert Instinct: Linnea's DEF +",
    "source": "c4",
@@ -321,11 +348,6 @@
    "source": "c1",
    "what": "Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
    "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
-  },
-  {
-   "source": "c2",
-   "what": "Tidings of Joy and Sorrow: Million Ton Crush CRIT DMG",
-   "reason": "scoped to one talent row: the format scopes by element and move, not by row"
   },
   {
    "source": "c6",

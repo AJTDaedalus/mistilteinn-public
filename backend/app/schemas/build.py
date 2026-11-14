@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from app.formula.genshin import tags
@@ -414,6 +416,11 @@ class AvailableHitRead(BaseModel):
     #: The further terms of a mixed-stat hit — `{a} ATK+{b} Elemental Mastery` is one hit
     #: with `multiplier` on ATK and one term here on EM. Empty for every single-stat hit.
     extra_terms: list[ScalingTermRead]
+    #: The move (attack type) this row is dealt as, where the character's kit sheet names it
+    #: from GO's own per-row declaration (`sheets.RowMove`): Skirk's Seven-Phase Flash rows are
+    #: skill-talent rows dealt as Normal Attacks. Null where no sheet names it; the client then
+    #: guesses from the label.
+    move: Literal["normal", "charged", "plunge", "skill", "burst"] | None = None
 
 
 class RefusedHitRead(BaseModel):

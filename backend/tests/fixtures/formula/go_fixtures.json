@@ -1932,7 +1932,7 @@
         {
           "id": "kit:linnea",
           "label": "Linnea (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Linnea.ts (pando), libs/gi/sheets/src/Characters/Linnea/index.tsx (wr) @ 2c13fc40 \u2014 a1_geo_res pando:Linnea.ts:62-65,121-132,254-255; a1_geo_res_gleam pando:Linnea.ts:62-65,121-132,254-255; c2_crit_dmg pando:Linnea.ts:84-88,199-208,252; c4_self_def pando:Linnea.ts:89-93,219-223,243; c4_active_def pando:Linnea.ts:89-93,213-218,253",
+          "citation": "GO libs/gi/formula/src/data/char/Linnea.ts (pando), libs/gi/sheets/src/Characters/Linnea/index.tsx (wr) @ 2c13fc40 \u2014 a1_geo_res pando:Linnea.ts:62-65,121-132,254-255; a1_geo_res_gleam pando:Linnea.ts:62-65,121-132,254-255; c2_crit_dmg pando:Linnea.ts:84-88,199-208,252; c2_lumi_crit pando:Linnea.ts:84-88,209-211,280-290; c4_self_def pando:Linnea.ts:89-93,219-223,243; c4_active_def pando:Linnea.ts:89-93,213-218,253",
           "bonus": {
             "conditions": [
               {
@@ -2070,6 +2070,35 @@
                 "weapon_types": null
               },
               {
+                "stat": "crit_dmg",
+                "value": 1.5,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Lumi Million Ton Crush DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_moondrift",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
                 "stat": "def_pct",
                 "value": 0.25,
                 "elements": null,
@@ -2127,10 +2156,6 @@
               {
                 "what": "C1: Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
                 "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
-              },
-              {
-                "what": "C2: Tidings of Joy and Sorrow: Million Ton Crush CRIT DMG",
-                "reason": "scoped to one talent row: the format scopes by element and move, not by row"
               },
               {
                 "what": "TALENT: Burst healing",
@@ -2594,7 +2619,7 @@
         {
           "id": "kit:vodyanitsa",
           "label": "Vodyanitsa (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Vodyanitsa.ts (pando), libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx (wr) @ 2c13fc40 \u2014 skill_res pando:Vodyanitsa.ts:59,121-124,296-297; a1_anemo_res pando:Vodyanitsa.ts:69-72,130-132,298",
+          "citation": "GO libs/gi/formula/src/data/char/Vodyanitsa.ts (pando), libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx (wr) @ 2c13fc40 \u2014 skill_res pando:Vodyanitsa.ts:59,121-124,296-297; a1_anemo_res pando:Vodyanitsa.ts:69-72,130-132,298; a4_lead_vocal pando:Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-286",
           "bonus": {
             "conditions": [
               {
@@ -2611,6 +2636,17 @@
               {
                 "key": "a1_vortex",
                 "label": "After generating or detonating a Wandering Vortex",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_lead_vocal",
+                "label": "Dirge of the Fandyr: Lead Vocal, the active character's Hydro and Cryo DMG from Vodyanitsa's Max HP above 40,000 (A4)",
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
@@ -2673,12 +2709,39 @@
                 "cap": null,
                 "threshold": null,
                 "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.14,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_lead_vocal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 3500.0,
+                "threshold": 40000.0,
+                "weapon_types": null
               }
             ],
             "unmodelled": [
               {
-                "what": "A4: Dirge of the Fandyr: Hydro/Cryo/Stellar Swirl DMG + from Max HP above a threshold, capped",
-                "reason": "a thresholded, capped conversion of Vodyanitsa's HP: the format has no threshold or cap on a value yet"
+                "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
               },
               {
                 "what": "TALENT: Song of Ages Past: burst DMG multiplier",
@@ -2694,7 +2757,8 @@
       ],
       "conditionals": {
         "kit:vodyanitsa/skill_hit": 1,
-        "kit:vodyanitsa/a1_vortex": 1
+        "kit:vodyanitsa/a1_vortex": 1,
+        "kit:vodyanitsa/a4_lead_vocal": 0
       },
       "expected": 2808.1833279803664,
       "go_value": 2808.1833279803664,
@@ -3496,10 +3560,6 @@
               {
                 "what": "C4: Slowbake: Pyronado duration +40%",
                 "reason": "no damage effect: duration (a row's count is the user's)"
-              },
-              {
-                "what": "C6: C6 on Pyronado's own 3-hit swing",
-                "reason": "GO excludes Pyronado's 1-hit, 2-hit and spin rows only (`antiC6`); the 3-hit swing is the same move, and the format scopes by move, not by row"
               }
             ]
           }
@@ -5592,7 +5652,11 @@
           "multiplier": 0.14467,
           "scaling_stat": "hp",
           "amplifying": null,
-          "conditionals": {}
+          "conditionals": {},
+          "hit": {
+            "talent": "normal_attack",
+            "label": "Charged Attack: Equitable Judgment"
+          }
         }
       ],
       "sources": [
@@ -5631,10 +5695,13 @@
                 "value": 0.1,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "charged"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "normal_attack",
+                    "label": "Charged Attack: Equitable Judgment"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -5657,10 +5724,13 @@
                 "value": 0.25,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "charged"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "normal_attack",
+                    "label": "Charged Attack: Equitable Judgment"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -5683,10 +5753,13 @@
                 "value": 0.6,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "charged"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "normal_attack",
+                    "label": "Charged Attack: Equitable Judgment"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -5725,10 +5798,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "A1: Keeping Heir to the Ancient Sea's Authority and C2 off the ordinary Charged Attack",
-                "reason": "GO and gcsim give them to Equitable Judgment only; the estimate scopes a buff by move, so an ordinary Charged Attack row receives them too"
-              },
               {
                 "what": "TALENT: As Water Seeks Equilibrium: Equitable Judgment's HP drain and droplet healing",
                 "reason": "no damage effect: HP and healing"
@@ -5820,7 +5889,7 @@
         {
           "id": "kit:mavuika",
           "label": "Mavuika (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Mavuika.ts (pando), libs/gi/sheets/src/Characters/Mavuika/index.tsx (wr) @ 2c13fc40 \u2014 burst_sunfell pando:Mavuika.ts:66,125-136,234; wr:index.tsx:123-136; a1_atk pando:Mavuika.ts:74-77,148-150,231; wr:index.tsx:159-166; a4_dmg pando:Mavuika.ts:78-83,151-164,236-242; wr:index.tsx:167-199; c1_atk pando:Mavuika.ts:84-89,165-167,231; wr:index.tsx:201-208; c2_base_atk pando:Mavuika.ts:90-96,168-176,232; wr:index.tsx:209-219; c2_burst pando:Mavuika.ts:90-96,199-205,234; wr:index.tsx:249-257; gcsim internal/characters/mavuika/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Mavuika.ts (pando), libs/gi/sheets/src/Characters/Mavuika/index.tsx (wr) @ 2c13fc40 \u2014 burst_sunfell pando:Mavuika.ts:66,125-136,234; wr:index.tsx:123-136; burst_flame_normal pando:Mavuika.ts:67,125-127,137-141,217-219,258-268; wr:index.tsx:123-136; burst_flame_charged pando:Mavuika.ts:68,125-127,142-146,220-222,277-294; wr:index.tsx:123-136; a1_atk pando:Mavuika.ts:74-77,148-150,231; wr:index.tsx:159-166; a4_dmg pando:Mavuika.ts:78-83,151-164,236-242; wr:index.tsx:167-199; c1_atk pando:Mavuika.ts:84-89,165-167,231; wr:index.tsx:201-208; c2_base_atk pando:Mavuika.ts:90-96,168-176,232; wr:index.tsx:209-219; c2_burst pando:Mavuika.ts:90-96,199-205,234; wr:index.tsx:249-257; c2_flame_normal pando:Mavuika.ts:93,185-191,217-219; wr:index.tsx:249-257; c2_flame_charged pando:Mavuika.ts:94,192-198,220-222; wr:index.tsx:249-257; gcsim internal/characters/mavuika/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -5900,6 +5969,70 @@
                   "burst"
                 ],
                 "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "fighting_spirit",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.0051,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "fighting_spirit",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.0102,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Cyclic DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Final DMG"
+                  }
+                ],
                 "reactions": null,
                 "when": [],
                 "per": "fighting_spirit",
@@ -6031,13 +6164,87 @@
                 "cap": null,
                 "threshold": null,
                 "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_flamestrider",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.9,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Cyclic DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Final DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_flamestrider",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
               }
             ],
             "unmodelled": [
-              {
-                "what": "TALENT: Hour of Burning Skies: Flamestrider Normal and Charged Attack DMG + ATK per Fighting Spirit",
-                "reason": "the Flamestrider attacks are rows of her skill talent, so a buff limited to them cannot be scoped by move without also reaching her ordinary attacks"
-              },
               {
                 "what": "A4: \"Kiongozi\" decaying over 20s after the burst",
                 "reason": "a time-varying buff: the toggle applies its peak, the moment after the burst"
@@ -6049,10 +6256,6 @@
               {
                 "what": "C2: The Ashen Price: opponents' DEF reduced near the Ring of Searing Radiance",
                 "reason": "enemy DEF reduction: the format has no `def_reduction` effect stat yet"
-              },
-              {
-                "what": "C2: The Ashen Price: Flamestrider Normal and Charged Attack DMG + a share of ATK",
-                "reason": "the Flamestrider attacks are rows of her skill talent, so a buff limited to them cannot be scoped by move without also reaching her ordinary attacks"
               }
             ]
           }
@@ -6144,7 +6347,7 @@
         {
           "id": "kit:skirk",
           "label": "Skirk (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Skirk.ts (pando), libs/gi/sheets/src/Characters/Skirk/index.tsx (wr) @ 2c13fc40 \u2014 burst_serpent pando:Skirk.ts:72-76,159-171,276; wr:index.tsx:194-201,230; void_0 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_1 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_2 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_3 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; a4_normal_1 pando:Skirk.ts:90-96,146-151,247-262,300-302; a4_normal_2 pando:Skirk.ts:90-96,146-151,247-262,300-302; a4_normal_3 pando:Skirk.ts:90-96,146-151,247-262,300-302; a4_burst_1 pando:Skirk.ts:97-101,152-157,265-277,307-308; a4_burst_2 pando:Skirk.ts:97-101,152-157,265-277,307-308; a4_burst_3 pando:Skirk.ts:97-101,152-157,265-277,307-308; gcsim internal/characters/skirk/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Skirk.ts (pando), libs/gi/sheets/src/Characters/Skirk/index.tsx (wr) @ 2c13fc40 \u2014 burst_serpent pando:Skirk.ts:72-76,159-171,276; wr:index.tsx:194-201,230; void_0 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_1 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_2 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_3 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; a4_normal_1 pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only); a4_normal_2 pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only); a4_normal_3 pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only); a4_burst_1 pando:Skirk.ts:97-101,152-157,265-277,307-308; a4_burst_2 pando:Skirk.ts:97-101,152-157,265-277,307-308; a4_burst_3 pando:Skirk.ts:97-101,152-157,265-277,307-308; gcsim internal/characters/skirk/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -6315,10 +6518,29 @@
                 "value": 0.1,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "normal"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -6341,10 +6563,29 @@
                 "value": 0.2,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "normal"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -6367,10 +6608,29 @@
                 "value": 0.7,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "normal"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -6469,16 +6729,8 @@
             ],
             "unmodelled": [
               {
-                "what": "KIT: Seven-Phase Flash attacks offered as skill rows",
-                "reason": "the catalogue lists them under her skill talent, so a row starts with move `skill`; GO counts them as normal, charged and plunging attacks, and this sheet's Normal Attack buffs reach them only once the row's move says so"
-              },
-              {
                 "what": "KIT: Mutual Weapons Mentorship: the party's Elemental Skill level +1 in a Hydro and Cryo party",
                 "reason": "a talent-level boost a passive gives the team, which the estimate does not model"
-              },
-              {
-                "what": "A4: Keeping Return to Oblivion, C2 and the Void Rift bonus off her ordinary attacks",
-                "reason": "GO gives them to the Seven-Phase Flash attacks only; the estimate scopes a buff by move, so an ordinary Normal, Charged or Plunging Attack row receives them too"
               },
               {
                 "what": "A4: Return to Oblivion's burst multiplier on the Serpent's Subtlety part of Havoc: Ruin",
@@ -10565,10 +10817,6 @@
             ],
             "unmodelled": [
               {
-                "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
-                "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
-              },
-              {
                 "what": "TALENT: Hunter's Vigil: healing and Bond of Life",
                 "reason": "no damage effect: healing"
               },
@@ -11685,7 +11933,11 @@
           "multiplier": 3.9168,
           "scaling_stat": "atk",
           "amplifying": null,
-          "conditionals": {}
+          "conditionals": {},
+          "hit": {
+            "talent": "normal_attack",
+            "label": "Frostflake Arrow Bloom DMG"
+          }
         }
       ],
       "sources": [
@@ -11724,10 +11976,17 @@
                 "value": 0.2,
                 "elements": null,
                 "element_from": null,
-                "moves": [
-                  "charged"
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "normal_attack",
+                    "label": "Frostflake Arrow DMG"
+                  },
+                  {
+                    "talent": "normal_attack",
+                    "label": "Frostflake Arrow Bloom DMG"
+                  }
                 ],
-                "rows": null,
                 "reactions": null,
                 "when": [
                   {
@@ -11773,10 +12032,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "A1: Undivided Heart: keeping its CRIT Rate to Frostflake Arrows",
-                "reason": "GO gives it to the Frostflake Arrow and its bloom only; the estimate scopes by move, so an aimed shot row receives it too while the toggle is on"
-              },
               {
                 "what": "TALENT: Trail of the Qilin: the Ice Lotus's HP",
                 "reason": "no damage effect: HP"
@@ -12393,10 +12648,6 @@
             ],
             "unmodelled": [
               {
-                "what": "TALENT: Sacred Rite: Wolf's Swiftness: his Pactsworn Normal Attacks are burst-talent rows",
-                "reason": "GO counts them as Normal Attacks; a teammate's Normal Attack buff reaches them only once the row's move is set to normal (as Skirk's); their Electro infusion is the row's element (G4). A4 names the rows, so it reaches them either way"
-              },
-              {
                 "what": "A1: Featherfall Judgment: Duststalker Bolts",
                 "reason": "a damage instance, not a talent row: not offered as a target row yet (A4's share of EM on them with it)"
               },
@@ -12932,10 +13183,6 @@
             ],
             "unmodelled": [
               {
-                "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
-                "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
-              },
-              {
                 "what": "TALENT: Hunter's Vigil: healing and Bond of Life",
                 "reason": "no damage effect: healing"
               }
@@ -13116,10 +13363,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
-                "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
-              },
               {
                 "what": "TALENT: Hunter's Vigil: healing and Bond of Life",
                 "reason": "no damage effect: healing"
@@ -15040,6 +15283,2702 @@
       "go_value": 5792.947890074439,
       "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
       "relative_divergence_from_go": 0.0002612072008471042
+    },
+    {
+      "name": "skirk_a4_c2_void_on_her_own_seven_phase_flash",
+      "covers": "a skill-talent row dealt as a Normal Attack (its move from the sheet); A4's base multiplier and C2's ATK scoped to the Seven-Phase Flash rows, the Void Rift bonus by move",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Skirk.ts:146-151,173-195,223-262,287-302"
+      ],
+      "givers": [
+        {
+          "name": "Skirk",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro",
+          "hydro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 1015.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12417.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 806.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.932,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "flash_1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              2.625599
+            ]
+          },
+          "multiplier": 2.625599,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "1-Hit DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:skirk",
+          "label": "Skirk (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Skirk.ts (pando), libs/gi/sheets/src/Characters/Skirk/index.tsx (wr) @ 2c13fc40 \u2014 burst_serpent pando:Skirk.ts:72-76,159-171,276; wr:index.tsx:194-201,230; void_0 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_1 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_2 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; void_3 pando:Skirk.ts:76-82,173-190,289; wr:index.tsx:159-166,390; a4_normal_1 pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only); a4_normal_2 pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only); a4_normal_3 pando:Skirk.ts:90-96,146-151,247-262,300-302; pando:Skirk.ts:298-302 (the Seven-Phase Flash attacks only); a4_burst_1 pando:Skirk.ts:97-101,152-157,265-277,307-308; a4_burst_2 pando:Skirk.ts:97-101,152-157,265-277,307-308; a4_burst_3 pando:Skirk.ts:97-101,152-157,265-277,307-308; c2_atk pando:Skirk.ts:106-110,192-195,236-262,287; wr:index.tsx:218-229,391; pando:Skirk.ts:192-195,236-241,264-274 (inverted on her ordinary attacks and her burst); gcsim internal/characters/skirk/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "serpent_over",
+                "label": "Serpent's Subtlety above 50 when Havoc: Ruin is used",
+                "kind": "number",
+                "default": 22.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 22.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "void_rifts",
+                "label": "Void Rifts absorbed after her burst",
+                "kind": "choice",
+                "default": "3",
+                "default_reason": "usual",
+                "default_note": "three: no usual count is documented, so the most her burst can absorb",
+                "max": null,
+                "step": null,
+                "options": [
+                  "0",
+                  "1",
+                  "2",
+                  "3"
+                ]
+              },
+              {
+                "key": "a4_stacks",
+                "label": "A4 stacks: Hydro or Cryo teammates' skills and bursts hit opponents",
+                "kind": "number",
+                "default": 3.0,
+                "default_reason": "usual",
+                "default_note": "each Hydro or Cryo teammate grants one, and she is played with three of them",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "c2_after_burst",
+                "label": "After her burst (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.34782,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "serpent_over",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.08,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "void_rifts",
+                    "values": [
+                      "0"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "void_rifts",
+                    "values": [
+                      "1"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "void_rifts",
+                    "values": [
+                      "2"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "void_rifts",
+                    "values": [
+                      "3"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      2.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.7,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.05,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      2.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_dmg_bonus",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_stacks",
+                    "values": [
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.7,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "5-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Charged Attack DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Plunge DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Low/High Plunge DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_after_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Mutual Weapons Mentorship: the party's Elemental Skill level +1 in a Hydro and Cryo party",
+                "reason": "a talent-level boost a passive gives the team, which the estimate does not model"
+              },
+              {
+                "what": "A4: Return to Oblivion's burst multiplier on the Serpent's Subtlety part of Havoc: Ruin",
+                "reason": "GO multiplies both parts; the base-damage multiplier here reaches the talent term only"
+              },
+              {
+                "what": "C2: Into the Abyss: its ATK in the Serpent's Subtlety part of Havoc: Ruin",
+                "reason": "GO reads her total ATK, C2 included, for that part; here C2 reaches the scoped attacks only"
+              },
+              {
+                "what": "A1: Reason Beyond Reason: Void Rifts and Serpent's Subtlety",
+                "reason": "no damage effect: resources"
+              },
+              {
+                "what": "C1: Far to Fall: a crystal blade's extra hit",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:skirk/serpent_over": 12,
+        "kit:skirk/void_rifts": "3",
+        "kit:skirk/a4_stacks": 3,
+        "kit:skirk/c2_after_burst": 1
+      },
+      "expected": 14775.203876498976,
+      "go_value": 14775.203876498976,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "mavuika_flamestrider_on_her_own_normal",
+      "covers": "flat damage from her own ATK per Fighting Spirit (a burst row) and from C2, scoped to the Flamestrider Normal Attack rows of her skill talent",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Mavuika.ts:67,78-96,125-176,185-191,217-219,231-242,258-268"
+      ],
+      "givers": [
+        {
+          "name": "Mavuika",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "pyro",
+          "pyro",
+          "cryo",
+          "anemo"
+        ]
+      },
+      "base": {
+        "base_atk": 1013.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12552.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 792.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "flame_1",
+          "label": "Flamestrider Normal Attack 1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "Flamestrider Normal Attack 1-Hit DMG|{param4:F1P}",
+            "params": [
+              1.3392,
+              2.304,
+              2.0,
+              1.131979
+            ]
+          },
+          "multiplier": 1.131979,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Flamestrider Normal Attack 1-Hit DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:mavuika",
+          "label": "Mavuika (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Mavuika.ts (pando), libs/gi/sheets/src/Characters/Mavuika/index.tsx (wr) @ 2c13fc40 \u2014 burst_sunfell pando:Mavuika.ts:66,125-136,234; wr:index.tsx:123-136; burst_flame_normal pando:Mavuika.ts:67,125-127,137-141,217-219,258-268; wr:index.tsx:123-136; burst_flame_charged pando:Mavuika.ts:68,125-127,142-146,220-222,277-294; wr:index.tsx:123-136; a1_atk pando:Mavuika.ts:74-77,148-150,231; wr:index.tsx:159-166; a4_dmg pando:Mavuika.ts:78-83,151-164,236-242; wr:index.tsx:167-199; c1_atk pando:Mavuika.ts:84-89,165-167,231; wr:index.tsx:201-208; c2_base_atk pando:Mavuika.ts:90-96,168-176,232; wr:index.tsx:209-219; c2_burst pando:Mavuika.ts:90-96,199-205,234; wr:index.tsx:249-257; c2_flame_normal pando:Mavuika.ts:93,185-191,217-219; wr:index.tsx:249-257; c2_flame_charged pando:Mavuika.ts:94,192-198,220-222; wr:index.tsx:249-257; gcsim internal/characters/mavuika/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "fighting_spirit",
+                "label": "Fighting Spirit consumed by Hour of Burning Skies",
+                "kind": "number",
+                "default": 200.0,
+                "default_reason": "usual",
+                "default_note": "200, the most her burst can consume, which her teams reach in a rotation",
+                "max": 200.0,
+                "step": 10.0,
+                "options": null
+              },
+              {
+                "key": "a1_nightsoul_burst",
+                "label": "A party member triggered Nightsoul Burst (Mavuika's own Natlan hits can) (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_after_burst",
+                "label": "Just after Hour of Burning Skies (A4 at its peak; below C4 it decays over 20s)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c1_gain_spirit",
+                "label": "After gaining Fighting Spirit (C1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_form",
+                "label": "In either form of her Elemental Skill (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_flamestrider",
+                "label": "In Flamestrider form (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.0288,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "fighting_spirit",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.0051,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "fighting_spirit",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.0102,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Cyclic DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Final DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "fighting_spirit",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_nightsoul_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.002,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_after_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": "fighting_spirit",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c1_gain_spirit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "base_atk",
+                "value": 200.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_form",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 1.2,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_flamestrider",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 1-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 2-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 3-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 4-Hit DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Normal Attack 5-Hit DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_flamestrider",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.9,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Cyclic DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Flamestrider Charged Attack Final DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_flamestrider",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A4: \"Kiongozi\" decaying over 20s after the burst",
+                "reason": "a time-varying buff: the toggle applies its peak, the moment after the burst"
+              },
+              {
+                "what": "C1: The Night-Lord's Explication: Nightsoul points and Fighting Spirit gain",
+                "reason": "no damage effect: resources"
+              },
+              {
+                "what": "C2: The Ashen Price: opponents' DEF reduced near the Ring of Searing Radiance",
+                "reason": "enemy DEF reduction: the format has no `def_reduction` effect stat yet"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:mavuika/fighting_spirit": 200,
+        "kit:mavuika/a1_nightsoul_burst": 1,
+        "kit:mavuika/a4_after_burst": 1,
+        "kit:mavuika/c1_gain_spirit": 1,
+        "kit:mavuika/c2_form": 1,
+        "kit:mavuika/c2_flamestrider": 1
+      },
+      "expected": 10052.291827526054,
+      "go_value": 10052.291827526054,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "linnea_c2_on_lumis_million_ton_crush",
+      "covers": "a CRIT DMG buff scoped to one talent row (C2 on Million Ton Crush), beside the same constellation's party buff",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Linnea.ts:84-88,121-132,199-211,252,255,280-290"
+      ],
+      "givers": [
+        {
+          "name": "Linnea",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "geo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 640.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10540.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 896.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "def_pct": 1.166,
+        "flat_def": 39.0,
+        "geo_dmg_bonus": 0.466,
+        "crit_rate": 0.25,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "crush",
+          "label": "Lumi Million Ton Crush DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Lumi Million Ton Crush DMG|{param3:F1P} DEF",
+            "params": [
+              1.728,
+              1.8,
+              7.2
+            ]
+          },
+          "multiplier": 7.2,
+          "scaling_stat": "def",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Lumi Million Ton Crush DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:linnea",
+          "label": "Linnea (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Linnea.ts (pando), libs/gi/sheets/src/Characters/Linnea/index.tsx (wr) @ 2c13fc40 \u2014 a1_geo_res pando:Linnea.ts:62-65,121-132,254-255; a1_geo_res_gleam pando:Linnea.ts:62-65,121-132,254-255; c2_crit_dmg pando:Linnea.ts:84-88,199-208,252; c2_lumi_crit pando:Linnea.ts:84-88,209-211,280-290",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "lumi_present",
+                "label": "Lumi is present on the field",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "moonsign_gleam",
+                "label": "Ascendant Gleam: two or more Moonsign characters in the party",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c2_moondrift",
+                "label": "Moondrift (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.15,
+                "elements": [
+                  "geo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "lumi_present",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "moonsign_gleam",
+                    "values": [
+                      0.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.3,
+                "elements": [
+                  "geo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "lumi_present",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "moonsign_gleam",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_moondrift",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 1.5,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Lumi Million Ton Crush DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_moondrift",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Moonsign Benediction: Lunar-Crystallize base DMG from Linnea's DEF",
+                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+              },
+              {
+                "what": "KIT: Ascendant Gleam, derived from the team",
+                "reason": "two or more Moonsign characters in the party (Ascendant Gleam) \u2014 a team-composition condition the user sets; not derived from the team yet"
+              },
+              {
+                "what": "KIT: Master Adventurer: an extra fully-charged shot at 20%",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C1: Provisional Classification: Lunar-Crystallize DMG from DEF on Lumi's hits",
+                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+              },
+              {
+                "what": "TALENT: Burst healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "A4: A4 Universal Naturalist Archive: the active Moonsign character's EM + 5% of Linnea's DEF",
+                "reason": "withheld: it reads Linnea's own def, which moves with every candidate, and the recipe cannot carry elemental_mastery from def per candidate yet"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:linnea/lumi_present": 1,
+        "kit:linnea/moonsign_gleam": 0,
+        "kit:linnea/subject_moonsign": 0,
+        "kit:linnea/c2_moondrift": 1
+      },
+      "expected": 27376.897424207877,
+      "go_value": 27376.897424207877,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "valeriy_c6_on_his_own_shell",
+      "covers": "a DMG buff scoped to one burst row (C6 on the Thunderburst Shell)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Characters/Valeriy/index.tsx:101-105,233,271-273"
+      ],
+      "givers": [
+        {
+          "name": "Valeriy",
+          "constellation": 6,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 860.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 12000.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 845.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.932,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "shell",
+          "label": "Thunderburst Shell DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Thunderburst Shell DMG|{param2:F1P}",
+            "params": [
+              2.43216,
+              0.56736
+            ]
+          },
+          "multiplier": 0.56736,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_burst",
+            "label": "Thunderburst Shell DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:valeriy",
+          "label": "Valeriy (kit)",
+          "citation": "GO libs/gi/sheets/src/Characters/Valeriy/index.tsx (wr) @ 2c13fc40 \u2014 a4_electro wr:index.tsx:80-84,163-224; c2_em wr:index.tsx:90-95,226-231,295; c6_crit wr:index.tsx:101-106,235-240,296; c6_shell wr:index.tsx:101-105,233,271-273",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "charged_offensive",
+                "label": "Consuming a stack of Offensive Directive",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "stellar_radiance",
+                "label": "Stellar Radiance: Stellar-Conduct (replaces the Electro bonus)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "momentum",
+                "label": "Stacks of Impact Momentum consumed (100, or 130 from C4)",
+                "kind": "number",
+                "default": 130.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 130.0,
+                "step": 5.0,
+                "options": null
+              },
+              {
+                "key": "c2_skill",
+                "label": "After Valeriy's Elemental Skill (C2)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c6_hit",
+                "label": "Opponents hit by special Charged Attack or Thunderburst Shells",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.003,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "charged_offensive",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "stellar_radiance",
+                    "values": [
+                      0.0
+                    ]
+                  }
+                ],
+                "per": "momentum",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 100.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c2_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.1,
+                "elements": [
+                  "electro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c6_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 1.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_burst",
+                    "label": "Thunderburst Shell DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "KIT: Stellar Radiance branch: Stellar-Conduct DMG from ATK, and Electro/Stellar-Conduct CRIT DMG at C6",
+                "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
+              },
+              {
+                "what": "C1: The Cadence of Suppressive Fire: Energy",
+                "reason": "no damage effect: energy"
+              },
+              {
+                "what": "TALENT: Elemental Skill shield",
+                "reason": "no damage effect: shield"
+              },
+              {
+                "what": "KIT: Teammates' ATK buffs to Valeriy, in the ATK his Offensive Directive and A4 read when he is a teammate",
+                "reason": "a giver's stats are his own build's (pass 1, DESIGN \u00a72.6); GO's premod ATK would include them"
+              },
+              {
+                "what": "TALENT: Offensive Directive: the active character's Electro DMG + ratio x Valeriy's ATK",
+                "reason": "withheld: the build has no normal_attack level"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:valeriy/charged_offensive": 0,
+        "kit:valeriy/stellar_radiance": 0,
+        "kit:valeriy/momentum": 0,
+        "kit:valeriy/c2_skill": 0,
+        "kit:valeriy/c6_hit": 0
+      },
+      "expected": 1898.0730338823046,
+      "go_value": 1898.0730338823046,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "xiangling_c6_on_her_own_third_swing",
+      "covers": "a constellation's self buff on the one burst row GO does not take it back from",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Xiangling.ts:73-74,94-98,109,113-150"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "constellation": 6,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "swing_3",
+          "label": "3-Hit Swing DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "3-Hit Swing DMG|{param3:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728
+            ]
+          },
+          "multiplier": 1.9728,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_burst",
+            "label": "3-Hit Swing DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:xiangling",
+          "label": "Xiangling (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Xiangling.ts (pando), libs/gi/sheets/src/Characters/Xiangling/index.tsx (wr) @ 2c13fc40 \u2014 a4_atk pando:Xiangling.ts:57-58,88-90,108; wr:index.tsx:87-95,164; c1_res pando:Xiangling.ts:61-62,91-93,110; wr:index.tsx:99-104,166; c6_pyro_self pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165; c6_pyro_swing pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165; gcsim internal/characters/xiangling/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_chili",
+                "label": "Picked up Xiangling's chili pepper (A4), as the active character",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: the active character has to pick the chili up, which a rotation does not reliably do",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "after_guoba_hit",
+                "label": "Opponent hit by Guoba's flame (C1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "pyronado",
+                "label": "During Pyronado (C6)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_chili",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.15,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_guoba_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.15,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged",
+                  "plunge",
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyronado",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.15,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_burst",
+                    "label": "3-Hit Swing DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyronado",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Crossfire: Guoba's attack range +20%",
+                "reason": "no damage effect: range"
+              },
+              {
+                "what": "C2: Oil Meets Fire: an explosion after the 4th normal hit",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C4: Slowbake: Pyronado duration +40%",
+                "reason": "no damage effect: duration (a row's count is the user's)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:xiangling/after_chili": 0,
+        "kit:xiangling/after_guoba_hit": 0,
+        "kit:xiangling/pyronado": 1
+      },
+      "expected": 2805.692532533169,
+      "go_value": 2805.692532533169,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "lohen_c6_on_his_own_etch",
+      "covers": "a CRIT DMG buff scoped to one skill row (C6 on the Etched hit), beside skill-talent rows dealt as Normal Attacks",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Lohen.ts:112-115,146-149,168-172,218-231"
+      ],
+      "givers": [
+        {
+          "name": "Lohen",
+          "constellation": 6,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 900.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12500.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 800.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "etch",
+          "label": "Etched Into Bone and Soul DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Etched Into Bone and Soul DMG|{param17:F1P}\u00d74",
+            "params": [
+              1.600915,
+              1.67359,
+              0.753729,
+              2.230536,
+              1.092879,
+              1.639319,
+              1.9533,
+              10.0,
+              1.26378,
+              2.527025,
+              3.15639,
+              13.0,
+              17.0,
+              17.0,
+              10.0,
+              20.0,
+              1.08
+            ]
+          },
+          "multiplier": 1.08,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Etched Into Bone and Soul DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:lohen",
+          "label": "Lohen (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Lohen.ts (pando), libs/gi/sheets/src/Characters/Lohen/index.tsx (wr) @ 2c13fc40 \u2014 a4_self_atk pando:Lohen.ts:83-87,156-158,202; wr:index.tsx:170-174,286; c6_etch_crit pando:Lohen.ts:112-115,168-172,223-231; wr:index.tsx:199-203,249; pando:Lohen.ts:223-231 (the Etched hit alone); c6_burst_crit pando:Lohen.ts:112-115,173-175,205; wr:index.tsx:204-208,289",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a4_master_cryo",
+                "label": "After a nearby party member triggers a Cryo reaction while in Masterstroke mode",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "off: it needs a party member's Cryo reaction while he is in Masterstroke mode, which depends on the party",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "c6_burst_master",
+                "label": "Masterstroke mode active while unleashing the burst",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_master_cryo",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 1.75,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Etched Into Bone and Soul DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 1.75,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c6_burst_master",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Will to Win consumed: the Etched and burst DMG multipliers",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "KIT: High Spirits: skill talent +1 while active",
+                "reason": "a conditional talent-level boost: the format's talent boosts are constellation-gated only"
+              },
+              {
+                "what": "KIT: Witch's Eve Rite: Normal/Charged DMG + at 50% Will (Hexerei)",
+                "reason": "needs a Hexerei team count and is an unlock-free passive, which the format cannot reference (it reads A1/A4 lists)"
+              },
+              {
+                "what": "A1: Moratorium on Questioning: Will to Win gain",
+                "reason": "no damage effect directly: it feeds the Will multipliers above"
+              },
+              {
+                "what": "C1: O Breezes, That So Oft Bear Sorrowful Lament: Will to Win limit",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "C2: In Flight, I Strike Whatever Flies: an extra Cryo hit of 500% ATK",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              },
+              {
+                "what": "C4: Radiant Love, Laughing Death: Energy",
+                "reason": "no damage effect: energy"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:lohen/a4_master_cryo": 0,
+        "kit:lohen/c2_blade": 0,
+        "kit:lohen/c6_burst_master": 0
+      },
+      "expected": 2412.9605712056123,
+      "go_value": 2412.9605712056123,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "vodyanitsa_a4_below_cap_on_her_own_skill",
+      "covers": "flat damage from her own Max HP above a threshold, capped, per candidate (below its cap)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-283,307"
+      ],
+      "givers": [
+        {
+          "name": "Vodyanitsa",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 520.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15000.0,
+        "hp_pct": 0.24,
+        "flat_hp": 0.0,
+        "base_def": 455.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 2.0,
+        "flat_hp": 4780.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "skill",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F2P} Max HP",
+            "params": [
+              0.058896
+            ]
+          },
+          "multiplier": 0.058896,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:vodyanitsa",
+          "label": "Vodyanitsa (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Vodyanitsa.ts (pando), libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx (wr) @ 2c13fc40 \u2014 skill_res pando:Vodyanitsa.ts:59,121-124,296-297; a1_anemo_res pando:Vodyanitsa.ts:69-72,130-132,298; a4_lead_vocal pando:Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-286",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "skill_hit",
+                "label": "Opponent hit by Vodyanitsa's Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a1_vortex",
+                "label": "After generating or detonating a Wandering Vortex",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_lead_vocal",
+                "label": "Dirge of the Fandyr: Lead Vocal, the active character's Hydro and Cryo DMG from Vodyanitsa's Max HP above 40,000 (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.3,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "skill_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.35,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_vortex",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.14,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_lead_vocal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 3500.0,
+                "threshold": 40000.0,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+              },
+              {
+                "what": "TALENT: Song of Ages Past: burst DMG multiplier",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "TALENT: Song of Ages Past healing",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:vodyanitsa/skill_hit": 0,
+        "kit:vodyanitsa/a1_vortex": 0,
+        "kit:vodyanitsa/a4_lead_vocal": 1
+      },
+      "expected": 4692.2214004152365,
+      "go_value": 4692.2214004152365,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "vodyanitsa_a4_past_cap_on_her_own_skill",
+      "covers": "flat damage from her own Max HP above a threshold, capped, per candidate (past its cap)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-283,307"
+      ],
+      "givers": [
+        {
+          "name": "Vodyanitsa",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 520.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15000.0,
+        "hp_pct": 0.24,
+        "flat_hp": 0.0,
+        "base_def": 455.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 3.2,
+        "flat_hp": 4780.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "skill",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F2P} Max HP",
+            "params": [
+              0.058896
+            ]
+          },
+          "multiplier": 0.058896,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:vodyanitsa",
+          "label": "Vodyanitsa (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Vodyanitsa.ts (pando), libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx (wr) @ 2c13fc40 \u2014 skill_res pando:Vodyanitsa.ts:59,121-124,296-297; a1_anemo_res pando:Vodyanitsa.ts:69-72,130-132,298; a4_lead_vocal pando:Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-286",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "skill_hit",
+                "label": "Opponent hit by Vodyanitsa's Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a1_vortex",
+                "label": "After generating or detonating a Wandering Vortex",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_lead_vocal",
+                "label": "Dirge of the Fandyr: Lead Vocal, the active character's Hydro and Cryo DMG from Vodyanitsa's Max HP above 40,000 (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.3,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "skill_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "enemy_res",
+                "value": -0.35,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_vortex",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_hp",
+                "value": 0.14,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_lead_vocal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 3500.0,
+                "threshold": 40000.0,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+              },
+              {
+                "what": "TALENT: Song of Ages Past: burst DMG multiplier",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "TALENT: Song of Ages Past healing",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:vodyanitsa/skill_hit": 0,
+        "kit:vodyanitsa/a1_vortex": 0,
+        "kit:vodyanitsa/a4_lead_vocal": 1
+      },
+      "expected": 7205.175152837392,
+      "go_value": 7205.175152837392,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "vodyanitsa_a4_on_skirks_final_slash",
+      "covers": "a teammate's flat damage from her own Max HP above a threshold, capped: a number from her pass-1 HP",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-286",
+        "libs/gi/formula/src/data/char/Skirk.ts:265-278,308"
+      ],
+      "givers": [
+        {
+          "name": "Vodyanitsa",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": {
+            "base_atk": 520.0,
+            "atk_pct": 0.0,
+            "flat_atk": 0.0,
+            "base_hp": 15000.0,
+            "hp_pct": 2.84,
+            "flat_hp": 4780.0,
+            "base_def": 455.0,
+            "def_pct": 0.0,
+            "flat_def": 0.0,
+            "elemental_mastery": 0.0,
+            "crit_rate": 0.05,
+            "crit_dmg": 0.5,
+            "energy_recharge": 1.0
+          }
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1015.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12417.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 806.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.932,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "final",
+          "label": "Final Slash DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Final Slash DMG|{param2:F1P}",
+            "params": [
+              2.20968,
+              3.6828
+            ]
+          },
+          "multiplier": 3.6828,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:vodyanitsa",
+          "label": "Vodyanitsa (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Vodyanitsa.ts (pando), libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx (wr) @ 2c13fc40 \u2014 a1_anemo_res pando:Vodyanitsa.ts:69-72,130-132,298; a4_lead_vocal pando:Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-286",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_vortex",
+                "label": "After generating or detonating a Wandering Vortex",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "a4_lead_vocal",
+                "label": "Dirge of the Fandyr: Lead Vocal, the active character's Hydro and Cryo DMG from Vodyanitsa's Max HP above 40,000 (A4)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "enemy_res",
+                "value": -0.35,
+                "elements": [
+                  "anemo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a1_vortex",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage",
+                "value": 3133.2000000000003,
+                "elements": [
+                  "hydro",
+                  "cryo"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "a4_lead_vocal",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A4: Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
+                "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
+              },
+              {
+                "what": "TALENT: Song of Ages Past: burst DMG multiplier",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "TALENT: Song of Ages Past healing",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "TALENT: Elemental Skill: opponents' Hydro and Cryo RES -",
+                "reason": "withheld: the build has no elemental_skill level"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:vodyanitsa/a1_vortex": 0,
+        "kit:vodyanitsa/a4_lead_vocal": 1
+      },
+      "expected": 11231.877346215882,
+      "go_value": 11231.877346215882,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }

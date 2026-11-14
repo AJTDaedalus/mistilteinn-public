@@ -9,7 +9,10 @@
   "wr": "libs/gi/sheets/src/Characters/Vodyanitsa/index.tsx"
  },
  "verified_by": [
-  "vodyanitsa_res_on_her_own_skill"
+  "vodyanitsa_res_on_her_own_skill",
+  "vodyanitsa_a4_below_cap_on_her_own_skill",
+  "vodyanitsa_a4_past_cap_on_her_own_skill",
+  "vodyanitsa_a4_on_skirks_final_slash"
  ],
  "talent_boosts": [
   {
@@ -111,6 +114,38 @@
     0.0,
     0.0,
     0.0
+   ],
+   "4": [
+    25.0,
+    10.0,
+    40000.0,
+    260.0,
+    140.0,
+    6500.0,
+    3500.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
    ]
   }
  },
@@ -135,6 +170,13 @@
    "kind": "toggle",
    "default_by": "giver_is_subject",
    "go": "pando:Vodyanitsa.ts:110-112,130-132"
+  },
+  {
+   "key": "a4_lead_vocal",
+   "label": "Dirge of the Fandyr: Lead Vocal, the active character's Hydro and Cryo DMG from Vodyanitsa's Max HP above 40,000 (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Vodyanitsa.ts:110-111,161-163,178-182"
   },
   {
    "key": "c1_heal",
@@ -222,6 +264,43 @@
    "go": "pando:Vodyanitsa.ts:69-72,130-132,298"
   },
   {
+   "key": "a4_lead_vocal",
+   "label": "A4 Dirge of the Fandyr: Hydro and Cryo DMG + per 1,000 of Vodyanitsa's Max HP above 40,000, capped",
+   "source": "a4",
+   "receivers": "active",
+   "stat": "flat_damage",
+   "elements": [
+    "hydro",
+    "cryo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 4,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Vodyanitsa.ts:134-145 `prod(sum(final.hp, -hpThresh), 1 / 1000, percent(hydrocryo_dmgInc))`; no seeded list carries the 1,000"
+    },
+    "threshold": {
+     "passive": 4,
+     "param": 2
+    },
+    "cap": {
+     "passive": 4,
+     "param": 6
+    }
+   },
+   "when": [
+    {
+     "condition": "a4_lead_vocal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Vodyanitsa.ts:73-80,134-145,161-163,178-182,281-286"
+  },
+  {
    "key": "c1_atk",
    "label": "C1 Waters in Full Splendor: party ATK + 0.8% of Vodyanitsa's Max HP",
    "source": "c1",
@@ -307,8 +386,8 @@
  "unmodelled": [
   {
    "source": "a4",
-   "what": "Dirge of the Fandyr: Hydro/Cryo/Stellar Swirl DMG + from Max HP above a threshold, capped",
-   "reason": "a thresholded, capped conversion of Vodyanitsa's HP: the format has no threshold or cap on a value yet"
+   "what": "Dirge of the Fandyr: Chorus (off-field members) and the Stellar Swirl part",
+   "reason": "Chorus reaches party members off the field, and the optimized character is on it for every hit; Stellar Swirl is P3 (TASKS task 13)"
   },
   {
    "source": "talent",

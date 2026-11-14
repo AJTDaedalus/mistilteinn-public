@@ -8,7 +8,8 @@
   "wr": "libs/gi/sheets/src/Characters/Valeriy/index.tsx"
  },
  "verified_by": [
-  "valeriy_offensive_on_his_own_burst"
+  "valeriy_offensive_on_his_own_burst",
+  "valeriy_c6_on_his_own_shell"
  ],
  "talent_boosts": [
   {
@@ -243,6 +244,24 @@
     }
    ],
    "go": "wr:index.tsx:101-106,235-240,296"
+  },
+  {
+   "key": "c6_shell",
+   "label": "C6 The Strength to Breach Enemy Lines: Thunderburst Shell DMG +",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "Thunderburst Shell DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "go": "wr:index.tsx:101-105,233,271-273"
   }
  ],
  "unmodelled": [
@@ -250,11 +269,6 @@
    "source": "kit",
    "what": "Stellar Radiance branch: Stellar-Conduct DMG from ATK, and Electro/Stellar-Conduct CRIT DMG at C6",
    "reason": "P3: Lunar and Stellar reaction damage are not in the estimate yet (TASKS task 13)"
-  },
-  {
-   "source": "c6",
-   "what": "The Strength to Breach Enemy Lines: Thunderburst Shell DMG +100%",
-   "reason": "scoped to one talent row: the format scopes by element and move, not by row"
   },
   {
    "source": "c1",

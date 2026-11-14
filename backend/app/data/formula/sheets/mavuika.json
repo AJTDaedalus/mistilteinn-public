@@ -11,7 +11,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/mavuika/",
  "verified_by": [
-  "mavuika_c2_on_her_own_burst"
+  "mavuika_c2_on_her_own_burst",
+  "mavuika_flamestrider_on_her_own_normal"
  ],
  "talent_boosts": [
   {
@@ -30,7 +31,9 @@
  "pins": {
   "talent_rows": {
    "elemental_burst": [
-    "Sunfell Slice DMG Bonus|{param3:F1P} ATK per Fighting Spirit"
+    "Sunfell Slice DMG Bonus|{param3:F1P} ATK per Fighting Spirit",
+    "Flamestrider Normal Attack DMG Bonus|{param4:F2P} ATK per Fighting Spirit",
+    "Flamestrider Charged Attack DMG Bonus|{param5:F2P} ATK per Fighting Spirit"
    ]
   },
   "passives": {
@@ -209,6 +212,66 @@
    "gcsim": "burst.go:42-69,104-109"
   },
   {
+   "key": "burst_flame_normal",
+   "label": "Hour of Burning Skies: Flamestrider Normal Attack DMG + ATK per Fighting Spirit",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 3-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 4-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 5-Hit DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Flamestrider Normal Attack DMG Bonus",
+    "times_stat": "atk"
+   },
+   "per": "fighting_spirit",
+   "go": "pando:Mavuika.ts:67,125-127,137-141,217-219,258-268; wr:index.tsx:123-136"
+  },
+  {
+   "key": "burst_flame_charged",
+   "label": "Hour of Burning Skies: Flamestrider Charged Attack DMG + ATK per Fighting Spirit",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Charged Attack Cyclic DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Charged Attack Final DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Flamestrider Charged Attack DMG Bonus",
+    "times_stat": "atk"
+   },
+   "per": "fighting_spirit",
+   "go": "pando:Mavuika.ts:68,125-127,142-146,220-222,277-294; wr:index.tsx:123-136"
+  },
+  {
    "key": "a1_atk",
    "label": "A1 Gift of Flaming Flowers: ATK",
    "source": "a1",
@@ -319,6 +382,80 @@
    "gcsim": "cons.go:104-112"
   },
   {
+   "key": "c2_flame_normal",
+   "label": "C2 The Ashen Price: Flamestrider Normal Attack DMG + a share of ATK in Flamestrider form",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 3-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 4-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Normal Attack 5-Hit DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 2,
+    "times_stat": "atk"
+   },
+   "when": [
+    {
+     "condition": "c2_flamestrider",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:93,185-191,217-219; wr:index.tsx:249-257"
+  },
+  {
+   "key": "c2_flame_charged",
+   "label": "C2 The Ashen Price: Flamestrider Charged Attack DMG + a share of ATK in Flamestrider form",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Charged Attack Cyclic DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Flamestrider Charged Attack Final DMG"
+    }
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 3,
+    "times_stat": "atk"
+   },
+   "when": [
+    {
+     "condition": "c2_flamestrider",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Mavuika.ts:94,192-198,220-222; wr:index.tsx:249-257"
+  },
+  {
    "key": "c4_dmg",
    "label": "C4 The Leader's Resolve: A4's DMG Bonus raised, and it no longer decays",
    "source": "c4",
@@ -343,11 +480,6 @@
  ],
  "unmodelled": [
   {
-   "source": "talent",
-   "what": "Hour of Burning Skies: Flamestrider Normal and Charged Attack DMG + ATK per Fighting Spirit",
-   "reason": "the Flamestrider attacks are rows of her skill talent, so a buff limited to them cannot be scoped by move without also reaching her ordinary attacks"
-  },
-  {
    "source": "a4",
    "what": "\"Kiongozi\" decaying over 20s after the burst",
    "reason": "a time-varying buff: the toggle applies its peak, the moment after the burst"
@@ -363,14 +495,40 @@
    "reason": "enemy DEF reduction: the format has no `def_reduction` effect stat yet"
   },
   {
-   "source": "c2",
-   "what": "The Ashen Price: Flamestrider Normal and Charged Attack DMG + a share of ATK",
-   "reason": "the Flamestrider attacks are rows of her skill talent, so a buff limited to them cannot be scoped by move without also reaching her ordinary attacks"
-  },
-  {
    "source": "c6",
    "what": "\"Humanity's Name\" Unfettered: extra hits from the Ring and from Flamestrider",
    "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Flamestrider Normal Attack 1-Hit DMG",
+    "Flamestrider Normal Attack 2-Hit DMG",
+    "Flamestrider Normal Attack 3-Hit DMG",
+    "Flamestrider Normal Attack 4-Hit DMG",
+    "Flamestrider Normal Attack 5-Hit DMG"
+   ],
+   "move": "normal",
+   "go": "pando:Mavuika.ts:257-268"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Flamestrider Charged Attack Cyclic DMG",
+    "Flamestrider Charged Attack Final DMG"
+   ],
+   "move": "charged",
+   "go": "pando:Mavuika.ts:277-294"
+  },
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Flamestrider Plunge DMG"
+   ],
+   "move": "plunge",
+   "go": "pando:Mavuika.ts:295-302"
   }
  ]
 }

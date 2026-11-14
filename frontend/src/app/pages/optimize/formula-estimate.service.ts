@@ -10,7 +10,7 @@ import {
   type FormulaCalibration,
 } from '../../sim/formula-calibration';
 import {
-  suggestMove,
+  hitMove,
   type ConditionState,
   type ConditionValue,
   type FormulaKit,
@@ -90,7 +90,7 @@ export function kernelContext(context: SearchContext): KernelContext {
 
 let nextRow = 0;
 
-/** A fresh row for a hit, with the move `suggestMove` is sure of and a count of one. */
+/** A fresh row for a hit: its move (the sheet's, else the label's guess) and a count of one. */
 export function rowFor(hit: AvailableHit): TargetRow {
   nextRow += 1;
   return {
@@ -98,7 +98,7 @@ export function rowFor(hit: AvailableHit): TargetRow {
     hit: { talent: hit.talent, label: hit.label, index: hit.index },
     label: hit.label,
     count: 1,
-    move: suggestMove(hit.talent, hit.label),
+    move: hitMove(hit),
     overrides: {},
   };
 }

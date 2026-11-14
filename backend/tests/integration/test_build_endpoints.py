@@ -490,6 +490,40 @@ async def test_the_hits_a_build_offers_are_the_ones_it_accepts(
 
 
 @pytest.mark.asyncio
+async def test_a_hit_carries_the_move_its_characters_sheet_names(
+    client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
+) -> None:
+    """DECISIONS §40 (iv): Skirk's Seven-Phase Flash rows are skill-talent rows GO deals as
+    Normal Attacks, and her sheet says so (`sheets.RowMove`); a row no sheet names has none,
+    and the client guesses from its label as before."""
+    user, _ = authed_user
+    character, weapon, sets = await _catalogue(db_session)
+    character.nanoka_id = "10000114"
+    db_session.add(Talent(
+        character_id=str(character.id), nanoka_id=11142,
+        talent_type=TalentType.ELEMENTAL_SKILL, name="Havoc: Warp", description="",
+    ))
+    await db_session.flush()
+    talent = (await db_session.execute(
+        select(Talent).where(Talent.character_id == str(character.id)),
+    )).scalars().one()
+    db_session.add(TalentScaling(
+        talent_id=str(talent.id), level=10,
+        labels=["1-Hit DMG|{param1:F1P}", "Charged Attack DMG|{param2:F1P}\u00d73",
+                "Ice Shard DMG|{param3:F1P}"],
+        params=[2.625599, 0.8806, 1.0],
+    ))
+    build = await _build_with_five(db_session, user, character, weapon, sets)
+    build.talent_levels = {"elemental_skill": 10}
+    await db_session.flush()
+
+    offered = await client.get(f"/api/v1/builds/{build.id}/hits", headers=_auth(authed_user))
+    assert offered.status_code == 200, offered.text
+    assert {h["label"]: h["move"] for h in offered.json()} == {
+        "1-Hit DMG": "normal", "Charged Attack DMG": "charged", "Ice Shard DMG": None}
+
+
+@pytest.mark.asyncio
 async def test_a_talent_with_no_level_set_is_not_offered(
     client: AsyncClient, db_session: AsyncSession, authed_user: tuple[User, str],
 ) -> None:

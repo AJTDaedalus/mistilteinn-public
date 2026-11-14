@@ -39,7 +39,7 @@ from app.dependencies import (
     get_owned_sim_run_repo,
     get_weapon_repo,
 )
-from app.formula.genshin import tags
+from app.formula.genshin import sheets, tags
 from app.formula.genshin.damage import Hit, ScalingStat, ScalingTerm
 from app.middleware.rate_limit import WRITE_LIMIT, limiter
 from app.models.enums import LEVELLED_TALENTS, MAX_STORED_TALENT_LEVEL
@@ -366,6 +366,7 @@ async def build_hits(
                 ScalingTermRead(stat=term.stat, multiplier=term.multiplier)
                 for term in hit.extra_terms
             ],
+            move=sheets.row_move(str(build.character.nanoka_id), str(hit.talent), hit.label),
         )
         for hit in available_hits(build.character, _hit_levels(build))
     ]

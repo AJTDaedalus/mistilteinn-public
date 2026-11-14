@@ -872,7 +872,9 @@ def ungated_fixtures() -> list[dict[str, Any]]:
             talent_rows={("elemental_skill", 10): sheets.TalentRow(VODYANITSA_SKILL_LABELS,
                                                                    VODYANITSA_SKILL_10)},
             cons=cons, passives=pas, stats=VODYANITSA_BASE), subject=True)],
-        "conditionals": {}, "expected": _vodyanitsa(OUR_EM_COEFFICIENT),
+        # Worked without her A4, added since (DECISIONS §40 (vi)), so it is stated off here.
+        "conditionals": {"kit:vodyanitsa/a4_lead_vocal": 0},
+        "expected": _vodyanitsa(OUR_EM_COEFFICIENT),
         "go_value": _vodyanitsa(GO_EM_COEFFICIENT), "divergence": none,
     })
 
@@ -1555,8 +1557,10 @@ def dps_fixtures() -> list[dict[str, Any]]:
         {"element": "hydro", "weapon_type": "WEAPON_CATALYST",
          "member_elements": ["hydro", "hydro"]},
         NEUVILLETTE_BASE, NEUVILLETTE_ARTIFACTS, "hydro",
-        _row("judgment", "Charged Attack: Equitable Judgment", "charged", 1,
-             NEUVILLETTE_JUDGMENT, None),
+        # Named, for his row-scoped A1 and C2 (DECISIONS §40 (iv)).
+        {**_row("judgment", "Charged Attack: Equitable Judgment", "charged", 1,
+                NEUVILLETTE_JUDGMENT, None),
+         "hit": {"talent": "normal_attack", "label": "Charged Attack: Equitable Judgment"}},
         _kit_source("10000087", _ungated_giver(
             "Neuvillette", "10000087", cons=cons, passives=pas, stats=NEUVILLETTE_BASE),
             subject=True),
@@ -1685,6 +1689,11 @@ def build() -> dict[str, Any]:
     # The capped self-conversions (DECISIONS §40), and the Alhaitham and Tighnari sheets.
     from tests.unit.go_fixtures_capped import capped_fixtures
     fixtures.extend(capped_fixtures())
+    # Row-scoped buffs and per-row moves (DECISIONS §40 (iv)).
+    from tests.unit.go_fixtures_rowscope import rowscope_fixtures, vodyanitsa_fixtures
+    fixtures.extend(rowscope_fixtures())
+    # Vodyanitsa's thresholded, capped A4 (DECISIONS §40 (vi)).
+    fixtures.extend(vodyanitsa_fixtures())
     # No fixture relies on a default (DECISIONS §40 (ii) changed them): every condition each
     # one reads is stated, the older ones' through `STATED`.
     from tests.unit.go_fixtures_stated import STATED

@@ -287,6 +287,17 @@ export function suggestMove(talent: string, label: string): FormulaMove | null {
   return null;
 }
 
+/**
+ * A hit's move: the one its character's kit sheet names (`/hits`' `move`, GO's own per-row
+ * declaration: Skirk's Seven-Phase Flash rows are skill-talent rows dealt as Normal Attacks),
+ * else `suggestMove`'s guess from the label (owner ruling 2026-11-14, `DECISIONS.md` §40 (iv)).
+ */
+export function hitMove(
+  hit: { talent: string; label: string; move?: FormulaMove | null },
+): FormulaMove | null {
+  return hit.move ?? suggestMove(hit.talent, hit.label);
+}
+
 /** A condition's value for one row: the row's override, the team's, or the default. */
 function valueOf(
   key: string, condition: FormulaCondition, row: ConditionState, team: ConditionState,

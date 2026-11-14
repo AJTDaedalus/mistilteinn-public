@@ -11,7 +11,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/xiangling/",
  "verified_by": [
-  "xiangling_c1_c6_on_bennett"
+  "xiangling_c1_c6_on_bennett",
+  "xiangling_c6_on_her_own_third_swing"
  ],
  "talent_boosts": [
   {
@@ -215,6 +216,36 @@
    ],
    "go": "pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165",
    "gcsim": "cons.go:67-81"
+  },
+  {
+   "key": "c6_pyro_swing",
+   "label": "C6 Condensed Pyronado: Pyro DMG Bonus to Pyronado's 3-hit swing (GO exempts only the 1-hit and 2-hit swings and the spin)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "3-Hit Swing DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "pyronado",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiangling.ts:73-74,94-98,109,113-150; wr:index.tsx:107-117,128-140,165",
+   "gcsim": "cons.go:67-81"
   }
  ],
  "unmodelled": [
@@ -232,11 +263,6 @@
    "source": "c4",
    "what": "Slowbake: Pyronado duration +40%",
    "reason": "no damage effect: duration (a row's count is the user's)"
-  },
-  {
-   "source": "c6",
-   "what": "C6 on Pyronado's own 3-hit swing",
-   "reason": "GO excludes Pyronado's 1-hit, 2-hit and spin rows only (`antiC6`); the 3-hit swing is the same move, and the format scopes by move, not by row"
   }
  ]
 }
