@@ -101,6 +101,9 @@ MAX_CONSTELLATION = 6
 
 Receivers = Literal["self", "active", "team", "others", "enemy"]
 
+#: A character's element, lower case, as `receiver_elements`/`per_team_elements` name it.
+VISIONS: tuple[str, ...] = ("pyro", "hydro", "electro", "cryo", "anemo", "geo", "dendro")
+
 #: Giver stats a value may be multiplied by, and the stat graph's node for each.
 GIVER_STATS: dict[str, AnyNode] = {
     tags.Q_BASE_ATK: read_(tags.stat_tag(tags.Q_BASE_ATK), "sum"),
@@ -122,6 +125,11 @@ STATIC_STATS: frozenset[str] = frozenset({tags.Q_BASE_ATK, tags.Q_BASE_HP, tags.
 #: candidate, and the effect stat each becomes. Anything else is withheld, by name.
 SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     ("dmg_bonus", tags.Q_ELEMENTAL_MASTERY): "dmg_bonus_from_em",
+    # Flat damage from the hit owner's own total ATK (Valeriy's Offensive Directive on
+    # Valeriy) or DEF (Kachina's A4 on her own skill): GO `prod(percent(x), own.premod.<s>)`
+    # into `formula.base` — the recipe's resolved flat-term conversion (`recipe-eval.ts`).
+    ("flat_damage", tags.Q_ATK): "flat_damage_from_atk",
+    ("flat_damage", tags.Q_DEF): "flat_damage_from_def",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -129,6 +137,20 @@ DefaultBy = Literal["self", "situational", "giver_is_subject"]
 
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class ParamRef(_Strict):
+    """A second parameter a value is multiplied by (Vesna's C4 multiplying her A4)."""
+
+    constellation: int | None = None
+    passive: int | None = None
+    param: int
+
+    @model_validator(mode="after")
+    def _one_list(self) -> ParamRef:
+        if (self.constellation is None) == (self.passive is None):
+            raise ValueError("a parameter reference names a constellation or a passive")
+        return self
 
 
 class ValueRef(_Strict):
@@ -143,6 +165,11 @@ class ValueRef(_Strict):
     constant: float | None = None
     cite: str | None = None
     times_stat: str | None = None
+    #: The seeded list publishes a reduction as a positive number (Vodyanitsa's "Hydro/Cryo
+    #: RES Reduction" 0.3); GO writes it negated into `enemyRes_` (`.map((v) => -v)`).
+    negate: bool = False
+    #: Multiplied by a second seeded parameter: GO `prod(percent(a4), c4)`.
+    times_param: ParamRef | None = None
 
     @model_validator(mode="after")
     def _one_source(self) -> ValueRef:
@@ -225,6 +252,16 @@ class SheetEffect(_Strict):
     moves: tuple[str, ...] | None = None
     reactions: tuple[str, ...] | None = None
     when: tuple[When, ...] = ()
+    #: Multiply by this stacks/number condition's value (GO's `prod(stacks, x)`), as in P1.
+    per: str | None = None
+    #: Reaches the receiver only when **their** element is one of these (GO `target.char.ele`,
+    #: Linnea's C2) — not the hit's channel, which `elements` scopes. Decided in `resolve`
+    #: from the receiver's element, which the caller names.
+    receiver_elements: tuple[str, ...] | None = None
+    #: Multiply by how many team members (the receiver included) have one of these elements
+    #: (GO `sum(team.common.count.<ele>, …)`, Vesna's A4). Decided in `resolve` from the
+    #: team's elements, which the caller names.
+    per_team_elements: tuple[str, ...] | None = None
     #: GO sheet file:lines (relative to the sheet's `go` roots).
     go: str
     #: gcsim file:lines at the pin, where gcsim implements the same buff.
@@ -240,6 +277,9 @@ class SheetEffect(_Strict):
                 raise ValueError(f"{self.key}: {reaction!r} is not an amplifying reaction")
         if self.receivers == "enemy" and self.stat != "enemy_res":
             raise ValueError(f"{self.key}: an enemy debuff writes enemy_res")
+        for element in (*(self.receiver_elements or ()), *(self.per_team_elements or ())):
+            if element not in VISIONS:
+                raise ValueError(f"{self.key}: {element!r} is not one of {VISIONS}")
         return self
 
 
@@ -302,6 +342,11 @@ class Sheet(_Strict):
                 if when.condition not in keys:
                     raise ValueError(f"{self.slug}/{effect.key}: unknown condition "
                                      f"{when.condition!r}")
+            if effect.per is not None and not any(
+                c.key == effect.per and c.kind in ("stacks", "number") for c in self.conditions
+            ):
+                raise ValueError(f"{self.slug}/{effect.key}: `per` names a stacks or number "
+                                 f"condition, not {effect.per!r}")
             ref = effect.value
             if ref.talent is not None and not any(
                 label.split("|", 1)[0] == ref.row
@@ -312,6 +357,13 @@ class Sheet(_Strict):
                 raise ValueError(f"{self.slug}/{effect.key}: C{ref.constellation} not pinned")
             if ref.passive is not None and ref.passive not in self.pins.passives:
                 raise ValueError(f"{self.slug}/{effect.key}: A{ref.passive} not pinned")
+            extra = ref.times_param
+            if extra is not None and (
+                (extra.constellation is not None
+                 and extra.constellation not in self.pins.constellations)
+                or (extra.passive is not None and extra.passive not in self.pins.passives)
+            ):
+                raise ValueError(f"{self.slug}/{effect.key}: times_param is not pinned")
         return self
 
 
@@ -410,7 +462,18 @@ def effective_level(sheet: Sheet, giver: Giver, talent: str) -> int:
 
 
 def _number(sheet: Sheet, giver: Giver, ref: ValueRef) -> float:
-    """The constant part of a value: one parameter, from our own seeded rows."""
+    """The constant part of a value: one parameter (or two multiplied), from our own seeded
+    rows, negated where the list publishes a reduction as a positive number."""
+    number = _parameter(sheet, giver, ref)
+    if ref.times_param is not None:
+        extra = ref.times_param
+        number *= _parameter(sheet, giver, ValueRef(
+            constellation=extra.constellation, passive=extra.passive, param=extra.param,
+        ))
+    return -number if ref.negate else number
+
+
+def _parameter(sheet: Sheet, giver: Giver, ref: ValueRef) -> float:
     if ref.constant is not None:
         return ref.constant
     if ref.talent is not None:
@@ -491,8 +554,33 @@ def _effect_node(
     return converted, const(_number(sheet, giver, effect.value))
 
 
-def resolve(sheet: Sheet, giver: Giver, *, giver_is_subject: bool) -> ResolvedKit:
+def _team_factor(
+    effect: SheetEffect, *, receiver_element: str | None,
+    team_elements: Sequence[str | None] | None,
+) -> float:
+    """The receiver- and team-dependent part of an effect: 1, 0, or a member count."""
+    if effect.receiver_elements is not None:
+        if receiver_element is None:
+            raise _Withheld("it depends on the receiver's element, which was not given")
+        if receiver_element.lower() not in effect.receiver_elements:
+            return 0.0
+    if effect.per_team_elements is not None:
+        if team_elements is None:
+            raise _Withheld("it counts the team's elements, which were not given")
+        return float(sum(1 for e in team_elements
+                         if e is not None and e.lower() in effect.per_team_elements))
+    return 1.0
+
+
+def resolve(
+    sheet: Sheet, giver: Giver, *, giver_is_subject: bool,
+    receiver_element: str | None = None, team_elements: Sequence[str | None] | None = None,
+) -> ResolvedKit:
     """One giver's sheet as the optimized character receives it.
+
+    `receiver_element` (the optimized character's element) and `team_elements` (every
+    member's, the receiver's included) are read only by effects that depend on them
+    (`receiver_elements`, `per_team_elements`); one that does, without them, is withheld.
 
     An effect that is locked (constellation or ascension too low) is simply absent, as in GO.
     One that cannot be resolved honestly — a stale pin, a missing talent row, a self buff
@@ -514,6 +602,11 @@ def resolve(sheet: Sheet, giver: Giver, *, giver_is_subject: bool) -> ResolvedKi
         if not _reaches(effect.receivers, giver_is_subject=giver_is_subject):
             continue
         try:
+            factor = _team_factor(effect, receiver_element=receiver_element,
+                                  team_elements=team_elements)
+            if factor == 0:
+                # Like a locked constellation: this receiver is not one the effect reaches.
+                continue
             stat, node = _effect_node(sheet, giver, effect, giver_is_subject=giver_is_subject)
             # Registered under `{sheet, name}` and evaluated with both cleared, so the
             # formula's own stat reads gather the giver's stats — and not, through the subset
@@ -521,7 +614,7 @@ def resolve(sheet: Sheet, giver: Giver, *, giver_is_subject: bool) -> ResolvedKi
             giver.registry.register(
                 tags.formula_tag(sheet.slug, effect.key), tag_(node, _CLEAR_FORMULA),
             )
-            value = float(calculator.compute(
+            value = factor * float(calculator.compute(
                 read_(tags.formula_tag(sheet.slug, effect.key), "unique"),
             ))
         except _Withheld as why:
@@ -531,9 +624,11 @@ def resolve(sheet: Sheet, giver: Giver, *, giver_is_subject: bool) -> ResolvedKi
             continue
         effects.append(Effect(
             stat=stat, value=value, elements=effect.elements, moves=effect.moves,
-            reactions=effect.reactions, when=effect.when,
+            reactions=effect.reactions, when=effect.when, per=effect.per,
         ))
         used_conditions.update(w.condition for w in effect.when)
+        if effect.per is not None:
+            used_conditions.add(effect.per)
         applied.append(effect.key)
     bonus = Bonus(
         # Only the conditions something applied still reads: a toggle for a locked

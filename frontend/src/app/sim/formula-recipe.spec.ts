@@ -412,6 +412,25 @@ describe('kit buffs (P2)', () => {
     expect(() => synthesizeRecipe([row(context())], [KIT('dmg_bonus_from_em', 0.0004)], TEAM))
       .toThrow(/names the element/);
   });
+
+  it("flat damage from the subject's own DEF follows the candidate's DEF (Kachina's A4)", () => {
+    const ctx = context({ multiplier: 1 });
+    const [hit] = rowHits(row(ctx), [KIT('flat_damage_from_def', 0.2)], TEAM, {}).hits;
+    expect(hit.conversions.flatDamage).toEqual({ from: 'def', perUnit: 0.2 });
+    const low = candidateStatsFrom([{ def_pct: 0.2 }]);
+    const high = candidateStatsFrom([{ def_pct: 1.2 }]);
+    const flat = (stats: ReturnType<typeof candidateStatsFrom>) =>
+      evaluateHit(hit, stats) - evaluateHit({ ...hit, conversions: {} }, stats);
+    // The flat term is 0.2 × total DEF, so more DEF % means more of it.
+    expect(flat(high)).toBeGreaterThan(flat(low));
+    expect(liveQuantitiesFor(synthesizeRecipe([row(ctx)], [KIT('flat_damage_from_def', 0.2)],
+      TEAM))).toContain('def_pct');
+  });
+
+  it('refuses flat damage converted from ATK and DEF on one hit', () => {
+    expect(() => rowHits(row(context()), [KIT('flat_damage_from_atk', 0.4),
+      KIT('flat_damage_from_def', 0.2)], TEAM, {})).toThrow(/both ATK and DEF/);
+  });
 });
 
 describe('suggestMove', () => {

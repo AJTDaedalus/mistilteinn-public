@@ -307,6 +307,8 @@ interface Buffs {
   resistance: number;
   flatDamage: number;
   flatFromAtk: number;
+  /** Flat damage per point of total DEF (a giver who is the subject: Kachina's A4). */
+  flatFromDef: number;
   erConversion: { perUnit: number; cap: number } | null;
   /** Flat ATK, after the percentage — a kit buff resolved from its giver's stats. */
   flatAtk: number;
@@ -317,7 +319,8 @@ interface Buffs {
 function noBuffs(): Buffs {
   return {
     percent: { atk: 0, hp: 0, def: 0 }, em: 0, er: 0, critRate: 0, critDmg: 0, dmgBonus: 0,
-    reactionBonus: 0, resistance: 0, flatDamage: 0, flatFromAtk: 0, erConversion: null,
+    reactionBonus: 0, resistance: 0, flatDamage: 0, flatFromAtk: 0, flatFromDef: 0,
+    erConversion: null,
     flatAtk: 0, bonusFromEm: 0,
   };
 }
@@ -401,6 +404,7 @@ export function applySources(
         case 'enemy_res': buffs.resistance += amount; break;
         case 'flat_damage': buffs.flatDamage += amount; break;
         case 'flat_damage_from_atk': buffs.flatFromAtk += amount; break;
+        case 'flat_damage_from_def': buffs.flatFromDef += amount; break;
         case 'flat_atk': buffs.flatAtk += amount; break;
         case 'dmg_bonus_from_em': buffs.bonusFromEm += amount; break;
         case 'dmg_bonus_from_energy_recharge':
@@ -439,7 +443,12 @@ export function rowHits(
     sources, { element, move: row.move, amplifying: hit.amplifying }, team,
     row.conditionals ?? {}, teamState,
   );
-  if (buffs.flatFromAtk !== 0 && (hit.flatDamage !== 0 || buffs.flatDamage !== 0)) {
+  const converted = buffs.flatFromAtk !== 0 || buffs.flatFromDef !== 0;
+  if (buffs.flatFromAtk !== 0 && buffs.flatFromDef !== 0) {
+    // One resolved conversion per flat term (`recipe.ts:ResolvedConversion`).
+    throw new Error(`row ${row.id}: flat damage converted from both ATK and DEF on one hit`);
+  }
+  if (converted && (hit.flatDamage !== 0 || buffs.flatDamage !== 0)) {
     // `resolvedTerm` replaces a converted flat term wholesale, so both cannot ride on one.
     throw new Error(`row ${row.id}: a constant flat term and an ATK conversion on one hit`);
   }
@@ -475,8 +484,12 @@ export function rowHits(
       talent: term.multiplier * row.count,
       scaling,
       flatDamage,
-      conversions: i === 0 && buffs.flatFromAtk !== 0
-        ? { flatDamage: { from: 'atk', perUnit: buffs.flatFromAtk * row.count } }
+      conversions: i === 0 && converted
+        ? {
+          flatDamage: buffs.flatFromAtk !== 0
+            ? { from: 'atk', perUnit: buffs.flatFromAtk * row.count }
+            : { from: 'def', perUnit: buffs.flatFromDef * row.count },
+        }
         : {},
       constantTerms: [],
       calibratedScaling: total,

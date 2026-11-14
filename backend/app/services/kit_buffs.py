@@ -110,6 +110,14 @@ def giver_of(build: Build, registry: NodeRegistry) -> sheets.Giver:
     )
 
 
+def _element(build: Build) -> str | None:
+    """A member's element, lower case, or None (a Traveler body with none)."""
+    character = build.character
+    if character is None or character.element is None:
+        return None
+    return str(character.element).lower()
+
+
 def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
     """Pass 1 for every member with a sheet, then pass 2 for the subject as receiver."""
     if not any(str(b.id) == subject_build_id for b in members):
@@ -119,6 +127,10 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
     coverage: list[MemberKit] = []
     giver_stats: dict[str, dict[str, float]] = {}
     giver_builds: dict[str, str] = {}
+    # Every member's element, the subject's included, for the few effects that read them
+    # (Linnea's C2 reaches Hydro and Geo receivers; Vesna's A4 counts Anemo and Cryo members).
+    elements = [_element(b) for b in members]
+    subject_element = next(_element(b) for b in members if str(b.id) == subject_build_id)
     for build in members:
         character = build.character
         name = character.name if character is not None else "Build"
@@ -131,7 +143,10 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
             ))
             continue
         giver = giver_of(build, pass_one(build))
-        resolved = sheets.resolve(sheet, giver, giver_is_subject=is_subject)
+        resolved = sheets.resolve(
+            sheet, giver, giver_is_subject=is_subject, receiver_element=subject_element,
+            team_elements=elements,
+        )
         sources.append(resolved)
         giver_stats[resolved.source_id] = sheets.stats_read(sheet, giver)
         giver_builds[resolved.source_id] = str(build.id)
