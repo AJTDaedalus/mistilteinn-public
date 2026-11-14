@@ -1,0 +1,303 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Nilou",
+ "nanoka_id": "10000070",
+ "slug": "nilou",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Nilou.ts",
+  "wr": "libs/gi/sheets/src/Characters/Nilou/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/nilou/",
+ "verified_by": [
+  "nilou_a1_c2_on_nahida"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "wr:index.tsx:217,230",
+   "gcsim": "nilou.go:27"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "wr:index.tsx:218,229",
+   "gcsim": "nilou.go:28"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    0.35,
+    0.35,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    15.0,
+    0.5,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    30.0,
+    100.0,
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "bounty",
+   "label": "Court of Dancing Petals: Golden Chalice's Bounty, after her third dance step in a Hydro and Dendro party (A1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Nilou.ts:104-117"
+  },
+  {
+   "key": "a1_core",
+   "label": "After a Bountiful Core hits the character (A1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Nilou.ts:104,119-121"
+  },
+  {
+   "key": "c2_hydro",
+   "label": "Opponents took Hydro DMG (C2)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Nilou.ts:107,144-152"
+  },
+  {
+   "key": "c2_dendro",
+   "label": "Opponents took Dendro DMG from a Bountiful Core (C2)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Nilou.ts:107,153-161"
+  },
+  {
+   "key": "c4_hit",
+   "label": "After her Pirouette hits (C4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Nilou.ts:104,162-166"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_em",
+   "label": "A1 Court of Dancing Petals: party EM after a Bountiful Core hits",
+   "source": "a1",
+   "receivers": "team",
+   "stat": "elemental_mastery",
+   "value": {
+    "passive": 1,
+    "param": 1
+   },
+   "team_gate": {
+    "only": [
+     "hydro",
+     "dendro"
+    ],
+    "includes": [
+     "hydro",
+     "dendro"
+    ]
+   },
+   "when": [
+    {
+     "condition": "bounty",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "a1_core",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nilou.ts:67-71,109-121,194",
+   "gcsim": "asc.go:70-72"
+  },
+  {
+   "key": "c2_hydro_res",
+   "label": "C2 The Starry Skies Their Flowers Rain: opponent Hydro RES",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0,
+    "negate": true
+   },
+   "team_gate": {
+    "only": [
+     "hydro",
+     "dendro"
+    ],
+    "includes": [
+     "hydro",
+     "dendro"
+    ]
+   },
+   "min_ascension": 1,
+   "when": [
+    {
+     "condition": "bounty",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c2_hydro",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nilou.ts:81-85,109-117,144-152,197",
+   "gcsim": "cons.go:52"
+  },
+  {
+   "key": "c2_dendro_res",
+   "label": "C2 The Starry Skies Their Flowers Rain: opponent Dendro RES",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 1,
+    "negate": true
+   },
+   "team_gate": {
+    "only": [
+     "hydro",
+     "dendro"
+    ],
+    "includes": [
+     "hydro",
+     "dendro"
+    ]
+   },
+   "min_ascension": 1,
+   "when": [
+    {
+     "condition": "bounty",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c2_dendro",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nilou.ts:81-85,109-117,153-161,198",
+   "gcsim": "cons.go:58"
+  },
+  {
+   "key": "c4_burst",
+   "label": "C4 Fricative Pulse: burst DMG",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c4_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Nilou.ts:86-90,162-166,190",
+   "gcsim": "cons.go:73-74"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Dance of Haftkarsvar: Bountiful Cores in place of Dendro Cores",
+   "reason": "transformative, additive and Lunar reaction damage is not priced by the estimate yet (P3, task 13)"
+  },
+  {
+   "source": "a4",
+   "what": "Dreamy Dance of Aeons: Bountiful Core DMG from her Max HP",
+   "reason": "transformative, additive and Lunar reaction damage is not priced by the estimate yet (P3, task 13)"
+  },
+  {
+   "source": "c1",
+   "what": "Dance of the Waning Moon: Luminous Illusion DMG",
+   "reason": "it reaches one part of a row that names two hits (Luminous Illusion/Water Wheel), which a row scope cannot separate"
+  },
+  {
+   "source": "c4",
+   "what": "Fricative Pulse: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Frostbreaker's Melody: CRIT Rate and CRIT DMG from her Max HP",
+   "reason": "a capped conversion of her own Max HP into CRIT Rate and CRIT DMG, which the recipe does not carry (it carries CRIT Rate from EM only)"
+  }
+ ]
+}

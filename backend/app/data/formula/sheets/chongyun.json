@@ -1,0 +1,181 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Chongyun",
+ "nanoka_id": "10000036",
+ "slug": "chongyun",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Chongyun.ts",
+  "wr": "libs/gi/sheets/src/Characters/Chongyun/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/chongyun/",
+ "verified_by": [
+  "chongyun_a4_on_ayaka"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Chongyun.ts:110-111",
+   "gcsim": "chongyun.go:23"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Chongyun.ts:110,112",
+   "gcsim": "chongyun.go:24"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "6": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    1.0,
+    -0.1,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a4_hit",
+   "label": "Opponents hit by the blade summoned as his field ends (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Chongyun.ts:88,102"
+  },
+  {
+   "key": "c6_lower",
+   "label": "Opponents whose HP share is below his (C6)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "holds only against opponents whose HP share is below his own"
+   },
+   "go": "pando:Chongyun.ts:86,103-105"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_res",
+   "label": "A4 Rimechaser Blade: opponent Cryo RES",
+   "source": "a4",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "a4_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Chongyun.ts:61-65,88,102,117",
+   "gcsim": "asc.go:61-64"
+  },
+  {
+   "key": "c6_burst",
+   "label": "C6 Rally of Four Blades: burst DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c6_lower",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Chongyun.ts:76-78,103-105,114"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Spirit Blade: Chonghua's Layered Frost: Cryo infusion for sword, claymore and polearm users in his field",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Cryo"
+  },
+  {
+   "source": "a1",
+   "what": "Steady Breathing: ATK SPD",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Rimechaser Blade: the summoned blade's hit",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c1",
+   "what": "Ice Unleashed: ice blades",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c2",
+   "what": "Atmospheric Revolution: cooldowns",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Frozen Skies: Energy",
+   "reason": "no damage effect"
+  }
+ ]
+}

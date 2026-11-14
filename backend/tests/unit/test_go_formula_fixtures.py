@@ -1697,6 +1697,9 @@ def build() -> dict[str, Any]:
     # Task 11, sixth batch (the fifth's leftovers, then supports and buffers by use).
     from tests.unit.go_fixtures_batch6 import batch6_fixtures
     fixtures.extend(batch6_fixtures())
+    # Task 11, seventh batch (commonly played characters next on the list).
+    from tests.unit.go_fixtures_batch7 import batch7_fixtures
+    fixtures.extend(batch7_fixtures())
     # No fixture relies on a default (DECISIONS §40 (ii) changed them): every condition each
     # one reads is stated, the older ones' through `STATED`.
     from tests.unit.go_fixtures_stated import STATED

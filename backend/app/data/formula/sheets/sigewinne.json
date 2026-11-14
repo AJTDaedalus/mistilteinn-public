@@ -1,0 +1,294 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Sigewinne",
+ "nanoka_id": "10000095",
+ "slug": "sigewinne",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Sigewinne.ts",
+  "wr": "libs/gi/sheets/src/Characters/Sigewinne/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/sigewinne/",
+ "verified_by": [
+  "sigewinne_a1_c1_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Sigewinne.ts:202-203",
+   "gcsim": "sigewinne.go:44"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Sigewinne.ts:202,204",
+   "gcsim": "sigewinne.go:43"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    20.0,
+    700.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    0.3,
+    0.35,
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    80.0,
+    2800.0,
+    18.0,
+    0.08,
+    10.0,
+    30000.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "bed_rest",
+   "label": "Requires Appropriate Rest: after her skill (A1)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Sigewinne.ts:119,146-148"
+  },
+  {
+   "key": "conva",
+   "label": "Convalescence stacks on party members' skills (A1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Sigewinne.ts:119,150-169"
+  },
+  {
+   "key": "bubble_tier",
+   "label": "Her Bolstering Bubblebalm's tier (skill)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 2,
+   "step": 1,
+   "go": "pando:Sigewinne.ts:125,129,143"
+  },
+  {
+   "key": "c2_hit",
+   "label": "Opponents hit by her Super Saturated Syringing (C2)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Sigewinne.ts:119,178-180"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_hydro",
+   "label": "A1 Requires Appropriate Rest: Hydro DMG after her skill",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "bed_rest",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Sigewinne.ts:64-71,146-148,206",
+   "gcsim": "asc.go:72-73"
+  },
+  {
+   "key": "a1_skill",
+   "label": "A1 Requires Appropriate Rest: party skill DMG + a share of her Max HP above a threshold, capped",
+   "source": "a1",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 1,
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Sigewinne.ts:150-169 `convaDmgInc = dmgInc / 1000` (per 1,000 Max HP above the threshold); gcsim sigewinne/asc.go:14-17"
+    },
+    "threshold": {
+     "passive": 1,
+     "param": 5
+    },
+    "cap": {
+     "passive": 1,
+     "param": 1
+    }
+   },
+   "when": [
+    {
+     "condition": "conva",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Sigewinne.ts:64-71,150-169,212",
+   "gcsim": "asc.go:14-17,50-63"
+  },
+  {
+   "key": "c1_skill",
+   "label": "C1 \"Can the Happiest of Spirits Understand Anxiety?\": the A1 share and cap raised",
+   "source": "c1",
+   "receivers": "others",
+   "stat": "flat_damage",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000,
+     "cite": "GO pando:Sigewinne.ts:150-169 `convaDmgInc = dmgInc / 1000` (per 1,000 Max HP above the threshold); gcsim sigewinne/asc.go:14-17"
+    },
+    "threshold": {
+     "passive": 1,
+     "param": 5
+    },
+    "cap": {
+     "constellation": 1,
+     "param": 1
+    }
+   },
+   "min_ascension": 1,
+   "when": [
+    {
+     "condition": "conva",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Sigewinne.ts:77-80,155-169,212"
+  },
+  {
+   "key": "tier_skill",
+   "label": "Rebound Hydrotherapy: skill DMG per Bubblebalm tier",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constant": 0.05,
+    "cite": "GO pando:Sigewinne.ts:55 `tier_dmg: 0.05`; gcsim sigewinne/skill.go:253 `float64(c.currentBubbleTier) * bubbleTierBuff`; no seeded row names it"
+   },
+   "per": "bubble_tier",
+   "go": "pando:Sigewinne.ts:55,129,143,207",
+   "gcsim": "skill.go:238-253"
+  },
+  {
+   "key": "c2_res",
+   "label": "C2 \"Can the Most Merciful of Spirits Defeat Its Foes?\": opponent Hydro RES",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 1,
+    "negate": true
+   },
+   "when": [
+    {
+     "condition": "c2_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Sigewinne.ts:81-85,178-180,214",
+   "gcsim": "cons.go:34"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c1",
+   "receiver": "subject",
+   "what": "\"Can the Happiest of Spirits Understand Anxiety?\": the raise of her A1 on her own skill",
+   "reason": "two capped conversions of her own Max HP on one hit are not carried; her A1 part is applied"
+  },
+  {
+   "source": "a4",
+   "what": "Detailed Diagnosis, Thorough Treatment: Healing Bonus",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "\"Can the Most Merciful of Spirits Defeat Its Foes?\": a shield",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "\"Can the Loveliest of Spirits Keep Decay at Bay?\": burst duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "\"Can the Most Radiant of Spirits Pray For Me?\": burst CRIT Rate and CRIT DMG from her Max HP",
+   "reason": "a capped conversion of her own Max HP into CRIT Rate and CRIT DMG, which the recipe does not carry (it carries CRIT Rate from EM only)"
+  }
+ ]
+}

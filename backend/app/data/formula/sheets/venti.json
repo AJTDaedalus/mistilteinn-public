@@ -1,0 +1,370 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Venti",
+ "nanoka_id": "10000022",
+ "slug": "venti",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Venti.ts",
+  "wr": "libs/gi/sheets/src/Characters/Venti/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/venti/",
+ "verified_by": [
+  "venti_c2_c6_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Venti.ts:157-158",
+   "gcsim": "venti.go:27"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Venti.ts:157,159",
+   "gcsim": "venti.go:28"
+  }
+ ],
+ "pins": {},
+ "conditions": [
+  {
+   "key": "c2_state",
+   "label": "Opponents hit by his skill (C2): hit, or launched",
+   "kind": "choice",
+   "default_by": "situational",
+   "options": [
+    "hit",
+    "launched"
+   ],
+   "usual": {
+    "value": "hit",
+    "reason": "an opponent his skill hits; heavier opponents are not launched"
+   },
+   "go": "pando:Venti.ts:107,114-126"
+  },
+  {
+   "key": "c4_pickup",
+   "label": "After he picks up an Elemental Orb or Particle (C4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Venti.ts:108,127-133"
+  },
+  {
+   "key": "c6_hit",
+   "label": "Opponents hit by his burst (C6)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Venti.ts:109,134-135"
+  },
+  {
+   "key": "c6_absorbed",
+   "label": "The element his burst absorbed (C6)",
+   "kind": "choice",
+   "default_by": "situational",
+   "options": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo"
+   ],
+   "usual": {
+    "value": "receiver_element",
+    "reason": "his burst absorbs the element of the carry he groups opponents for"
+   },
+   "go": "pando:Venti.ts:106,165-178"
+  }
+ ],
+ "effects": [
+  {
+   "key": "c2_hit_anemo",
+   "label": "C2 Breeze of Reminiscence: opponent Anemo RES",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "constant": -0.12,
+    "cite": "GO pando:Venti.ts:80-86 `res_: -0.12`, doubled on a launched opponent (`dm.constellation2.res_ * 2`, :116-126); gcsim venti/cons.go:47-56 `Value: -0.12`; his seeded C2 list carries other numbers"
+   },
+   "when": [
+    {
+     "condition": "c2_state",
+     "values": [
+      "hit"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:80-86,107,114-126,163-164",
+   "gcsim": "cons.go:47-56"
+  },
+  {
+   "key": "c2_hit_physical",
+   "label": "C2 Breeze of Reminiscence: opponent Physical RES",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "constant": -0.12,
+    "cite": "GO pando:Venti.ts:80-86 `res_: -0.12`, doubled on a launched opponent (`dm.constellation2.res_ * 2`, :116-126); gcsim venti/cons.go:47-56 `Value: -0.12`; his seeded C2 list carries other numbers"
+   },
+   "when": [
+    {
+     "condition": "c2_state",
+     "values": [
+      "hit"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:80-86,107,114-126,163-164",
+   "gcsim": "cons.go:47-56"
+  },
+  {
+   "key": "c2_launched_anemo",
+   "label": "C2 Breeze of Reminiscence: opponent Anemo RES (launched)",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "constant": -0.24,
+    "cite": "GO pando:Venti.ts:80-86 `res_: -0.12`, doubled on a launched opponent (`dm.constellation2.res_ * 2`, :116-126); gcsim venti/cons.go:47-56 `Value: -0.12`; his seeded C2 list carries other numbers"
+   },
+   "when": [
+    {
+     "condition": "c2_state",
+     "values": [
+      "launched"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:80-86,107,114-126,163-164"
+  },
+  {
+   "key": "c2_launched_physical",
+   "label": "C2 Breeze of Reminiscence: opponent Physical RES (launched)",
+   "source": "c2",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "physical"
+   ],
+   "value": {
+    "constant": -0.24,
+    "cite": "GO pando:Venti.ts:80-86 `res_: -0.12`, doubled on a launched opponent (`dm.constellation2.res_ * 2`, :116-126); gcsim venti/cons.go:47-56 `Value: -0.12`; his seeded C2 list carries other numbers"
+   },
+   "when": [
+    {
+     "condition": "c2_state",
+     "values": [
+      "launched"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:80-86,107,114-126,163-164"
+  },
+  {
+   "key": "c4_anemo",
+   "label": "C4 Hurricane of Freedom: Anemo DMG",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "constant": 0.25,
+    "cite": "GO pando:Venti.ts:87-90 `anemo_dmg_: 0.25`; gcsim venti/cons.go:63 `c.c4bonus[attributes.AnemoP] = 0.25`; his seeded C4 list is empty"
+   },
+   "when": [
+    {
+     "condition": "c4_pickup",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:87-90,127-133,161",
+   "gcsim": "cons.go:63-70"
+  },
+  {
+   "key": "c6_anemo",
+   "label": "C6 Storm of Defiance: opponent Anemo RES",
+   "source": "c6",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "constant": -0.2,
+    "cite": "GO pando:Venti.ts:91-95 `res_: -0.2`; gcsim venti/cons.go:80-95 `Value: -0.20`; his seeded C6 list carries only the Hexerei CRIT DMG"
+   },
+   "when": [
+    {
+     "condition": "c6_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:91-95,134-135,163",
+   "gcsim": "cons.go:80-95"
+  },
+  {
+   "key": "c6_pyro",
+   "label": "C6 Storm of Defiance: opponent Pyro RES, after his burst absorbed Pyro",
+   "source": "c6",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "constant": -0.2,
+    "cite": "GO pando:Venti.ts:91-95 `res_: -0.2`; gcsim venti/cons.go:80-95 `Value: -0.20`; his seeded C6 list carries only the Hexerei CRIT DMG"
+   },
+   "when": [
+    {
+     "condition": "c6_hit",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c6_absorbed",
+     "values": [
+      "pyro"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:91-95,134,165-178",
+   "gcsim": "cons.go:80-95"
+  },
+  {
+   "key": "c6_hydro",
+   "label": "C6 Storm of Defiance: opponent Hydro RES, after his burst absorbed Hydro",
+   "source": "c6",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "hydro"
+   ],
+   "value": {
+    "constant": -0.2,
+    "cite": "GO pando:Venti.ts:91-95 `res_: -0.2`; gcsim venti/cons.go:80-95 `Value: -0.20`; his seeded C6 list carries only the Hexerei CRIT DMG"
+   },
+   "when": [
+    {
+     "condition": "c6_hit",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c6_absorbed",
+     "values": [
+      "hydro"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:91-95,134,165-178",
+   "gcsim": "cons.go:80-95"
+  },
+  {
+   "key": "c6_electro",
+   "label": "C6 Storm of Defiance: opponent Electro RES, after his burst absorbed Electro",
+   "source": "c6",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "electro"
+   ],
+   "value": {
+    "constant": -0.2,
+    "cite": "GO pando:Venti.ts:91-95 `res_: -0.2`; gcsim venti/cons.go:80-95 `Value: -0.20`; his seeded C6 list carries only the Hexerei CRIT DMG"
+   },
+   "when": [
+    {
+     "condition": "c6_hit",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c6_absorbed",
+     "values": [
+      "electro"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:91-95,134,165-178",
+   "gcsim": "cons.go:80-95"
+  },
+  {
+   "key": "c6_cryo",
+   "label": "C6 Storm of Defiance: opponent Cryo RES, after his burst absorbed Cryo",
+   "source": "c6",
+   "receivers": "enemy",
+   "stat": "enemy_res",
+   "elements": [
+    "cryo"
+   ],
+   "value": {
+    "constant": -0.2,
+    "cite": "GO pando:Venti.ts:91-95 `res_: -0.2`; gcsim venti/cons.go:80-95 `Value: -0.20`; his seeded C6 list carries only the Hexerei CRIT DMG"
+   },
+   "when": [
+    {
+     "condition": "c6_hit",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "c6_absorbed",
+     "values": [
+      "cryo"
+     ]
+    }
+   ],
+   "go": "pando:Venti.ts:91-95,134,165-178",
+   "gcsim": "cons.go:80-95"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "kit",
+   "what": "Witch's Eve Rite: Windsunder Arrows, burst DMG, the doubled C2 shred, C4 to the active character and C6 CRIT DMG",
+   "reason": "the Hexerei party mechanic is not modelled (as for Sucrose and Mona)"
+  },
+  {
+   "source": "talent",
+   "what": "Wind's Grand Ode: absorbed-element DMG takes the absorbed element",
+   "reason": "the row's channel is the user's to set to the absorbed element"
+  },
+  {
+   "source": "a1",
+   "what": "Embrace of Winds: updraft duration",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "a4",
+   "what": "Stormeye: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Splitting Gales: extra arrows",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

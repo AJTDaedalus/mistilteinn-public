@@ -1,0 +1,167 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Chiori",
+ "nanoka_id": "10000094",
+ "slug": "chiori",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Chiori.ts",
+  "wr": "libs/gi/sheets/src/Characters/Chiori/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/chiori/",
+ "verified_by": [
+  "chiori_a4_c6_on_her_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Chiori.ts:113-114",
+   "gcsim": "chiori.go:41"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Chiori.ts:113,115",
+   "gcsim": "chiori.go:40"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "6": [
+    12.0,
+    2.35,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.2,
+    20.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "construct",
+   "label": "After a nearby party member creates a Geo construct (A4)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "needs a teammate's Geo construct: set it on in a team that makes one"
+   },
+   "go": "pando:Chiori.ts:92,100-102"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_geo",
+   "label": "A4 The Finishing Touch: Geo DMG",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "geo"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "construct",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Chiori.ts:61-64,100-102,117",
+   "gcsim": "asc.go:186-194"
+  },
+  {
+   "key": "c6_normal",
+   "label": "C6 Sole Principle Pursuit: Normal Attack DMG + a share of her DEF",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1,
+    "times_stat": "def"
+   },
+   "go": "pando:Chiori.ts:80-83,103-108,118"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Tailor-Made: Geo infusion after her skill",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Geo"
+  },
+  {
+   "source": "a1",
+   "what": "Tailor-Made: Tamoto dolls' hits",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c1",
+   "what": "Six Paths of Sage Silkcraft: Tamoto area",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "In Five Colors Dyed: a second Tamoto",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "A Tailor's Three Courtesies: Kinu dolls",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "Sole Principle Pursuit: skill cooldown",
+   "reason": "no damage effect"
+  }
+ ]
+}

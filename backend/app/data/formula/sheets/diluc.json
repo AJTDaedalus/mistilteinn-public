@@ -1,0 +1,301 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Diluc",
+ "nanoka_id": "10000016",
+ "slug": "diluc",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Diluc.ts",
+  "wr": "libs/gi/sheets/src/Characters/Diluc/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/diluc/",
+ "verified_by": [
+  "diluc_a4_c1_c2_c6_on_his_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Diluc.ts:129-130",
+   "gcsim": "diluc.go:32"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Diluc.ts:129,131",
+   "gcsim": "diluc.go:33"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "1": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    0.1,
+    0.05,
+    10.0,
+    3.0,
+    1.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    6.0,
+    0.3,
+    0.3,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    4.0,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "infusion",
+   "label": "In his burst's Pyro infusion (A4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Diluc.ts:93,101-104"
+  },
+  {
+   "key": "c1_above",
+   "label": "Opponents above 50% HP (C1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "holds only for the first half of an opponent's HP"
+   },
+   "go": "pando:Diluc.ts:93,105-107"
+  },
+  {
+   "key": "c2_stacks",
+   "label": "Stacks after he takes DMG (C2)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "step": 1,
+   "usual": {
+    "value": 0,
+    "reason": "needs him to take DMG"
+   },
+   "go": "pando:Diluc.ts:94-100,108-117"
+  },
+  {
+   "key": "c4_rhythm",
+   "label": "His second or third skill strike, cast in rhythm (C4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Diluc.ts:124,165-183"
+  },
+  {
+   "key": "c6_after",
+   "label": "His next two Normal Attacks after his skill (C6)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Diluc.ts:93,118-123"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_pyro",
+   "label": "A4 Blessing of Phoenix: Pyro DMG in his burst's infusion",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "pyro"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "infusion",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Diluc.ts:64-67,101-104,133",
+   "gcsim": "diluc.go:44"
+  },
+  {
+   "key": "c1_dmg",
+   "label": "C1 Conviction: DMG against opponents above 50% HP",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "constellation": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c1_above",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Diluc.ts:68-71,105-107,136",
+   "gcsim": "cons.go:16-17"
+  },
+  {
+   "key": "c2_atk",
+   "label": "C2 Searing Ember: ATK per stack",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "c2_stacks",
+   "go": "pando:Diluc.ts:72-78,108-112,134",
+   "gcsim": "cons.go:58-60"
+  },
+  {
+   "key": "c4_skill",
+   "label": "C4 Flowing Flame: his second and third skill strikes' DMG",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "3-Hit DMG"
+    }
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c4_rhythm",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Diluc.ts:79-81,124,165-183",
+   "gcsim": "diluc.go:54"
+  },
+  {
+   "key": "c6_normal",
+   "label": "C6 Flaming Sword, Nemesis of the Dark: Normal Attack DMG after his skill",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "c6_after",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Diluc.ts:82-86,118-120,137",
+   "gcsim": "skill.go:66-67"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Dawn: Pyro infusion of his Normal, Charged and Plunging Attacks",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Pyro"
+  },
+  {
+   "source": "a1",
+   "what": "Relentless: stamina",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Searing Ember: ATK SPD",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Flaming Sword, Nemesis of the Dark: ATK SPD",
+   "reason": "no damage effect"
+  }
+ ]
+}

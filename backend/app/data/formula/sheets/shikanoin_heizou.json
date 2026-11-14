@@ -1,0 +1,232 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Shikanoin Heizou",
+ "nanoka_id": "10000059",
+ "slug": "shikanoin_heizou",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/ShikanoinHeizou.ts",
+  "wr": "libs/gi/sheets/src/Characters/ShikanoinHeizou/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/heizou/",
+ "verified_by": [
+  "heizou_declension_c6_on_his_own_skill"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:ShikanoinHeizou.ts:119-120",
+   "gcsim": "heizou.go:28"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:ShikanoinHeizou.ts:119,121",
+   "gcsim": "heizou.go:29"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Declension DMG Bonus|{param2:F1P}/stack",
+    "Conviction DMG Bonus|{param3:F1P}"
+   ]
+  },
+  "constellations": {
+   "6": [
+    0.04,
+    0.32,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    10.0,
+    80.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "declension",
+   "label": "Declension stacks on his skill (four is Conviction)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 4,
+   "step": 1,
+   "go": "pando:ShikanoinHeizou.ts:87,89-100"
+  },
+  {
+   "key": "skill_hit",
+   "label": "After his skill hits an opponent (A4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:ShikanoinHeizou.ts:86,101"
+  }
+ ],
+ "effects": [
+  {
+   "key": "declension",
+   "label": "Heartstopper Strike: Declension, a share of ATK per stack on his skill",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Skill DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Declension DMG Bonus",
+    "times_stat": "atk"
+   },
+   "per": "declension",
+   "go": "pando:ShikanoinHeizou.ts:46-52,89-100,135"
+  },
+  {
+   "key": "conviction",
+   "label": "Heartstopper Strike: Conviction, a share of ATK at four stacks",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Skill DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Conviction DMG Bonus",
+    "times_stat": "atk"
+   },
+   "when": [
+    {
+     "condition": "declension",
+     "values": [
+      4
+     ]
+    }
+   ],
+   "go": "pando:ShikanoinHeizou.ts:46-52,89-100,135"
+  },
+  {
+   "key": "a4_em",
+   "label": "A4 Penetrative Reasoning: EM to the other party members",
+   "source": "a4",
+   "receivers": "others",
+   "stat": "elemental_mastery",
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "skill_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:ShikanoinHeizou.ts:59-62,101,126",
+   "gcsim": "heizou.go:40"
+  },
+  {
+   "key": "c6_cr",
+   "label": "C6 Curious Casefiles: skill CRIT Rate per Declension stack",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "per": "declension",
+   "go": "pando:ShikanoinHeizou.ts:75-78,105-109,124",
+   "gcsim": "skill.go:95"
+  },
+  {
+   "key": "c6_cd",
+   "label": "C6 Curious Casefiles: skill CRIT DMG at four stacks",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "declension",
+     "values": [
+      4
+     ]
+    }
+   ],
+   "go": "pando:ShikanoinHeizou.ts:75-78,110-115,125",
+   "gcsim": "skill.go:96"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Windmuster Kick: Windmuster Iris takes the element it absorbed",
+   "reason": "the row's channel is the user's to set to the absorbed element"
+  },
+  {
+   "source": "c1",
+   "what": "Named Juvenile Casebook: ATK SPD",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Tome of Lies: Energy",
+   "reason": "no damage effect"
+  }
+ ]
+}

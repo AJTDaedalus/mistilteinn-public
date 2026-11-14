@@ -1,7 +1,8 @@
 """Math-fallback P2, task 9 — `/formula/kit-buffs`: the two-pass team evaluation, end to end.
 
-A team of three of the caller's builds: Diluc (no sheet; this was Xiangling, then Hu Tao, until
-task 11 gave each one), Bennett and Kazuha. The buffs must be computed from **each giver's own
+A team of three of the caller's builds: a Pyro practice mannequin (no sheet, and never one: a
+mannequin has no kit; this was Xiangling, then Hu Tao, then Diluc, until task 11 gave each one),
+Bennett and Kazuha. The buffs must be computed from **each giver's own
 build** (pass 1) — Bennett's burst from Bennett's base ATK, Kazuha's A4 from Kazuha's EM — and
 reach the optimized character. Each giver figure is checked against an independent route:
 `/builds/{id}/search-context`, which publishes the same build's base, so the kit's number and
@@ -96,12 +97,12 @@ async def _build(session: AsyncSession, owner: str, character: Character, *,
 
 @pytest.fixture
 async def team(db_session: AsyncSession, authed_user: tuple[User, str]) -> dict[str, str]:
-    """Diluc (subject, no sheet), a C1 Bennett with a weapon, and Kazuha with 200 EM."""
+    """A Pyro mannequin (subject, no sheet), a C1 Bennett with a weapon, and Kazuha with 200 EM."""
     user, _ = authed_user
     owner = str(user.id)
-    diluc = await _character(
-        db_session, nanoka_id="10000016", name="Diluc", element=Element.PYRO,
-        weapon_type=WeaponType.CLAYMORE, base_atk=18.9, burst=None,
+    manekin = await _character(
+        db_session, nanoka_id="10000117-2", name="Manekin", element=Element.PYRO,
+        weapon_type=WeaponType.SWORD, base_atk=18.9, burst=None,
     )
     bennett = await _character(
         db_session, nanoka_id="10000032", name="Bennett", element=Element.PYRO,
@@ -135,7 +136,7 @@ async def team(db_session: AsyncSession, authed_user: tuple[User, str]) -> dict[
     await db_session.flush()
 
     builds = {
-        "diluc": await _build(db_session, owner, diluc),
+        "manekin": await _build(db_session, owner, manekin),
         "bennett": await _build(db_session, owner, bennett, weapon=weapon, constellation=1),
         "kazuha": await _build(db_session, owner, kazuha),
     }
@@ -170,7 +171,7 @@ async def _base(client: AsyncClient, build_id: str, label: str) -> dict[str, flo
 async def _kit(client: AsyncClient, team: dict[str, str], subject: str) -> dict:
     response = await client.get(KIT, params={
         "subject_build_id": team[subject],
-        "member_build_id": [team["diluc"], team["bennett"], team["kazuha"]],
+        "member_build_id": [team["manekin"], team["bennett"], team["kazuha"]],
     })
     assert response.status_code == 200, response.text
     return response.json()
@@ -180,7 +181,7 @@ async def test_teammates_buffs_come_from_their_own_builds(
     authed_client: AsyncClient, db_session: AsyncSession, team: dict[str, str],
 ):
     db_session.expire_all()
-    kit = await _kit(authed_client, team, "diluc")
+    kit = await _kit(authed_client, team, "manekin")
     by_id = {s["id"]: s for s in kit["sources"]}
     assert set(by_id) == {"kit:bennett", "kit:kaedehara_kazuha"}
 
@@ -211,10 +212,10 @@ async def test_a_member_with_no_sheet_is_named_not_dropped(
     authed_client: AsyncClient, db_session: AsyncSession, team: dict[str, str],
 ):
     db_session.expire_all()
-    kit = await _kit(authed_client, team, "diluc")
+    kit = await _kit(authed_client, team, "manekin")
     members = {m["name"]: m for m in kit["members"]}
-    assert members["Diluc"]["status"] == "no_sheet"
-    assert members["Diluc"]["is_subject"] is True
+    assert members["Manekin"]["status"] == "no_sheet"
+    assert members["Manekin"]["is_subject"] is True
     assert members["Bennett"]["status"] == "partial"
 
 
@@ -236,17 +237,17 @@ async def test_the_subject_must_be_a_member_and_builds_must_be_the_callers(
 ):
     db_session.expire_all()
     outside = await authed_client.get(KIT, params={
-        "subject_build_id": team["diluc"], "member_build_id": [team["bennett"]],
+        "subject_build_id": team["manekin"], "member_build_id": [team["bennett"]],
     })
     assert outside.status_code == 422
     missing = await authed_client.get(KIT, params={
-        "subject_build_id": team["diluc"],
-        "member_build_id": [team["diluc"], "00000000-0000-0000-0000-000000000000"],
+        "subject_build_id": team["manekin"],
+        "member_build_id": [team["manekin"], "00000000-0000-0000-0000-000000000000"],
     })
     assert missing.status_code == 404
     repeated = await authed_client.get(KIT, params={
-        "subject_build_id": team["diluc"],
-        "member_build_id": [team["diluc"], team["diluc"]],
+        "subject_build_id": team["manekin"],
+        "member_build_id": [team["manekin"], team["manekin"]],
     })
     assert repeated.status_code == 422
 
@@ -257,7 +258,7 @@ async def test_team_elements_reach_a_sheet_that_counts_them(
 ):
     """Task 11: Vesna's A4 counts the party's Anemo/Cryo members and the others (GO
     `team.common.count.<ele>`), so the route must hand `resolve` every member's element. With
-    Kazuha and Vesna (Anemo) and Diluc and Bennett (Pyro): ATK 6% x 2 and EM 25 x 2."""
+    Kazuha and Vesna (Anemo) and the mannequin and Bennett (Pyro): ATK 6% x 2 and EM 25 x 2."""
     user, _ = authed_user
     vesna = await _character(
         db_session, nanoka_id="10000143", name="Vesna", element=Element.ANEMO,
@@ -273,7 +274,7 @@ async def test_team_elements_reach_a_sheet_that_counts_them(
     db_session.expire_all()
     response = await authed_client.get(KIT, params={
         "subject_build_id": build_id,
-        "member_build_id": [team["diluc"], team["bennett"], team["kazuha"], build_id],
+        "member_build_id": [team["manekin"], team["bennett"], team["kazuha"], build_id],
     })
     assert response.status_code == 200, response.text
     by_id = {s["id"]: s for s in response.json()["sources"]}
@@ -288,8 +289,8 @@ async def test_the_party_highest_em_is_read_from_the_teammates_pass_one(
 ):
     """Task 11, fourth batch: Nahida's A1 is 25% of the party's **highest** EM (GO
     `team.premod.eleMas.max`), capped. The highest is each teammate's pass-1 EM — Kazuha's 200
-    from his flower beats Nahida's bare build — and never the subject's: Diluc's 2,000-EM
-    sands must not enter it, since his EM moves with every candidate. As the subject, Nahida's
+    from his flower beats Nahida's bare build — and never the subject's: the mannequin's 2,000-EM
+    sands must not enter it, since its EM moves with every candidate. As the subject, Nahida's
     own A1 is withheld by name."""
     user, _ = authed_user
     owner = str(user.id)
@@ -308,16 +309,16 @@ async def test_the_party_highest_em_is_read_from_the_teammates_pass_one(
     db_session.add(artifact_set)
     await db_session.flush()
     db_session.add(Artifact(
-        owner_id=owner, artifact_set_id=str(artifact_set.id), build_id=team["diluc"],
+        owner_id=owner, artifact_set_id=str(artifact_set.id), build_id=team["manekin"],
         slot=ArtifactSlot.SANDS, rarity=Rarity.FIVE_STAR, level=20,
         main_stat_type=StatType.ELEMENTAL_MASTERY, main_stat_value=2000.0, substats=[],
     ))
     await db_session.flush()
     db_session.expire_all()
-    members = [team["diluc"], team["bennett"], team["kazuha"], nahida_id]
+    members = [team["manekin"], team["bennett"], team["kazuha"], nahida_id]
 
     response = await authed_client.get(KIT, params={
-        "subject_build_id": team["diluc"], "member_build_id": members})
+        "subject_build_id": team["manekin"], "member_build_id": members})
     assert response.status_code == 200, response.text
     nahida_kit = {s["id"]: s for s in response.json()["sources"]}["kit:nahida"]
     kazuha_em = (await _base(authed_client, team["kazuha"], "Slashing DMG")).get(

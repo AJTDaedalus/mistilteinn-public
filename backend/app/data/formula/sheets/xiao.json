@@ -1,0 +1,224 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Xiao",
+ "nanoka_id": "10000026",
+ "slug": "xiao",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Xiao.ts",
+  "wr": "libs/gi/sheets/src/Characters/Xiao/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/xiao/",
+ "verified_by": [
+  "xiao_burst_a1_on_his_own_plunge"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Xiao.ts:131-132",
+   "gcsim": "xiao.go:31"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Xiao.ts:131,133",
+   "gcsim": "xiao.go:30"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_burst": [
+    "Normal/Charged/Plunging Attack DMG Bonus|{param1:F1P}"
+   ]
+  },
+  "passives": {
+   "1": [
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    7.0,
+    0.15,
+    3.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "in_burst",
+   "label": "In Bane of All Evil, his burst",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Xiao.ts:81,97-102"
+  },
+  {
+   "key": "a1_stacks",
+   "label": "Conqueror of Evil: Tamer of Demons: 5% per stack, one more every 3s of his burst (A1)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 5,
+   "step": 1,
+   "go": "pando:Xiao.ts:83-89,103-113"
+  },
+  {
+   "key": "a4_stacks",
+   "label": "Dissolution Eon: Heaven Fall: stacks from casting his skill in succession (A4)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Xiao.ts:56-60,90-95,114-118"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_auto",
+   "label": "Bane of All Evil: Normal, Charged and Plunging Attack DMG",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal",
+    "charged",
+    "plunge"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Normal/Charged/Plunging Attack DMG Bonus"
+   },
+   "when": [
+    {
+     "condition": "in_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiao.ts:46-52,97-102,135-137",
+   "gcsim": "xiao.go:85"
+  },
+  {
+   "key": "a1_dmg",
+   "label": "A1 Conqueror of Evil: Tamer of Demons: DMG per stack during his burst",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "per": "a1_stacks",
+   "when": [
+    {
+     "condition": "in_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Xiao.ts:53-55,103-113,138",
+   "gcsim": "asc.go:21-26"
+  },
+  {
+   "key": "a4_skill",
+   "label": "A4 Dissolution Eon: Heaven Fall: skill DMG per stack",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "skill"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 1
+   },
+   "per": "a4_stacks",
+   "go": "pando:Xiao.ts:56-60,114-118,139",
+   "gcsim": "asc.go:46-47"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Bane of All Evil: Anemo infusion of his Normal, Charged and Plunging Attacks",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Anemo"
+  },
+  {
+   "source": "c1",
+   "what": "Dissolution Eon: Destroyer of Worlds: a skill charge",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c2",
+   "what": "Annihilation Eon: Blossom of Kaleidos: Energy Recharge while off-field",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Transcension: Extinction of Suffering: DEF below 50% HP",
+   "reason": "no damage effect: his hits scale with ATK"
+  },
+  {
+   "source": "c6",
+   "what": "Conqueror of Evil: Guardian Yaksha: skill cooldowns",
+   "reason": "no damage effect"
+  }
+ ]
+}

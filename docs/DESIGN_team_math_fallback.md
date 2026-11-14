@@ -499,6 +499,46 @@ effect is a team Normal Attack talent level (+1, GO `teamBuff.char.auto`), which
 as not modelled (talent boosts from a passive), so a sheet would ship verified on nothing but its
 row moves.
 
+**Seventh batch (task 11, 2026-11-14; `feat/math-fallback-p2-sheets-batch7`;
+`test_formula_sheets_batch7.py`, `go_fixtures_batch7.py`).** The commonly played characters next on
+the list: Xiao, Venti, Nilou, Albedo, Chiori, Sigewinne, Sethos, Shikanoin Heizou, Freminet,
+Rosaria, Candace, Mika, Diluc, Klee, Lisa, Ningguang, Chongyun. One addition, small and tested
+(mutation-checked: dropping it fails 63 tests):
+
+| addition | where | why |
+|---|---|---|
+| `crit_rate` as a giver stat | `sheets.GIVER_STATS` | Rosaria's A4 shares 15% of her own CRIT Rate with the others, capped at 15% (GO `min(prod(percent(crBonus), own.premod.critRate_), percent(maxBonus))`). Her pass-1 CRIT Rate, as every giver stat is (rule 5): GO's includes her own A1 when it is up, so GO's share is higher until the cap, said in her sheet |
+
+No frontend change: every effect these sheets write was already carried by the recipe.
+
+| sheet | main effects | row scope / row moves | named, not applied |
+|---|---|---|---|
+| Xiao | burst Normal/Charged/Plunging DMG (talent row), A1 DMG per stack in the burst, A4 skill DMG per stack | — | the Anemo infusion (G4); C4 DEF (he scales with ATK) |
+| Venti | C2 Anemo/Physical RES −12% (−24% launched: a choice), C4 Anemo DMG, C6 Anemo RES −20% and the absorbed element's (a choice that follows the receiver, as Sucrose's C6) | — | every Hexerei part (Windsunder, the doubled C2, C4 to others, C6 CRIT DMG); C1 arrows |
+| Nilou | A1 party EM, C2 Hydro and Dendro RES −35%, all behind a team gate (only Hydro and Dendro, both present); C4 burst DMG | — | Bountiful Cores and A4 (P3); C1 (one part of a two-hit row); C6 CRIT from HP (a capped conversion into CRIT the recipe does not carry) |
+| Albedo | A1 Transient Blossom DMG (opponent below half HP, off), A4 party EM, C2 burst flat damage from DEF per stack, C4 plunge DMG and C6 DMG to the active character in his field | A1 on Transient Blossom | every Hexerei part |
+| Chiori | A4 Geo DMG (after a teammate's construct: off, with the reason), C6 Normal Attack flat damage from DEF | — | A1 infusion and dolls |
+| Sigewinne | A1 Hydro DMG, A1 party skill flat damage from her Max HP above 30,000 capped (a number for teammates, a per-build conversion on herself), C1's raise as a second effect (A1 and C1 reach their caps at the same HP, so the two sum to GO's one), the skill's per-tier DMG (cited 5%), C2 Hydro RES | — | C1's raise on her own skill (two capped conversions on one hit are refused); C6 CRIT from HP |
+| Sethos | burst Dusk Bolt flat damage from EM, A4 Shadowpiercing flat damage from EM, C1 CRIT Rate, C2 Electro DMG per stack, C4 party EM (two opponents: off) | Dusk Bolt on his 1–3-Hit rows; A4/C1 on Shadowpiercing; Shadowpiercing → charged | Dusk Bolts are Charged Attacks in GO (the rows keep their move) |
+| Shikanoin Heizou | Declension and Conviction (talent rows, flat damage from ATK on Skill DMG), A4 EM to the others, C6 skill CRIT per stack and at four | Declension/Conviction on Skill DMG | — |
+| Freminet | Frost DMG doubled after his burst (a cited base multiplier), A4 and C1 on the five Shattering Pressure rows, C4 ATK capped at two of three stacks (two gated effects: per stack below the top, × C4's own 2 at three), C6 CRIT DMG per stack | Frost; the pressure rows | — |
+| Rosaria | A1 CRIT Rate, A4 CRIT Rate share (above), C1 Normal Attack DMG, C6 Physical RES | — | her A1 in GO's reading of A4 |
+| Candace | burst elemental Normal Attack DMG (talent row) and A4 per 1,000 Max HP (a cited unit; a per-build conversion on herself), C2 HP | — | the Hydro infusion; C6 waves |
+| Mika | A1 Physical DMG per Detector stack to the active character (maximum 4, 5 from C6 by `max_raise`), C6 Physical CRIT DMG | — | the stack below A4 (the maximum counts A4) |
+| Diluc | A4 Pyro DMG, C1 DMG above half HP (off), C2 ATK per stack (off: he must take DMG), C4 second/third skill strike, C6 Normal Attack DMG | C4 on skill 2-/3-Hit | the infusion |
+| Klee | A1 Charged DMG with Explosive Spark (cited 0.5), C2 DEF −23%, C6 party Pyro DMG (cited) | — | every Hexerei part; GO's A1 is its own Charged row |
+| Lisa | A4 DEF −15% | — | — |
+| Ningguang | A4 party Geo DMG | — | C4's RES (no damage effect) |
+| Chongyun | A4 Cryo RES −10%, C6 burst DMG (opponent below his HP share: off) | — | the infusion |
+
+Seventeen fixtures, one per sheet on its main damage effect; all agree with GO exactly
+(relative ≤ 4.3e-8, the f32 floor). **Where GO's own files or GO and gcsim disagree**: Nilou's pando
+port gives C3 to her skill; her WR sheet, gcsim and the generated table give C3 to her burst, which
+the sheet follows. Klee's C2 is GO's 23%, gcsim's 23.3% (`cons.go:51`); GO is the comparator. Lisa's
+A4 is gated at ascension 4 here, as the passive is; GO's sheet gates it at 1 (`pando Lisa.ts:81-84`,
+noted there). Mika's C6 CRIT DMG has its own GO toggle, folded here into Soulwind as the
+constellation's text gives it.
+
 **Pinned, as `set_effects.json` is.** A constellation or passive list that differs from its pin,
 or a talent row whose label changed or which has no row at the effective level, **withholds
 that effect** and lists it as unmodelled with the reason. It is never read by a stale index.
