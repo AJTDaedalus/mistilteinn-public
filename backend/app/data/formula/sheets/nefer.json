@@ -97,6 +97,10 @@
    "label": "Ascendant Gleam: two or more Moonsign characters in the party",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: a party composition the estimate does not check; turn it on if your party has it"
+   },
    "go": "pando:Nefer.ts:130-131,143-144,157-158"
   },
   {

@@ -105,6 +105,11 @@
    "label": "Citlali in Nightsoul's Blessing and a party member triggered Frozen or Melt (A1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "she is played in Freeze and Melt parties, where her skill keeps her in Nightsoul's Blessing as they react",
+    "cite": "KQM Skirk quick guide (its Freeze teams with Citlali), keqingmains.com/q/skirk-quickguide/"
+   },
    "go": "pando:Citlali.ts:63-66,108,119-136,194-199; wr:index.tsx:126-145,192-207,286-295"
   },
   {
@@ -112,6 +117,10 @@
    "label": "Opal Fire's Obsidian Blades consumed by a teammate's hit (C1)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her C1 blades are spent by any teammate's hit, which is ordinary play"
+   },
    "go": "pando:Citlali.ts:74-75,108,149-151,186-191; wr:index.tsx:157-177"
   },
   {
@@ -119,6 +128,10 @@
    "label": "Shielded by Citlali, as the active character (C2)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her skill shields the active character"
+   },
    "go": "pando:Citlali.ts:81-83,108,154-156,192-193; wr:index.tsx:179-190,297"
   },
   {

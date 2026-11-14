@@ -130,6 +130,10 @@
    "label": "Ascendant Gleam: two or more Moonsign characters in the party",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: a party composition the estimate does not check; turn it on if your party has it"
+   },
    "go": "pando:Linnea.ts:126-130"
   },
   {
@@ -137,6 +141,10 @@
    "label": "The optimized character is a Moonsign character",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: whether the optimized character is a Moonsign character is not in the data the estimate reads; turn it on if they are"
+   },
    "go": "pando:Linnea.ts:119,135-136; wr:index.tsx:142-156"
   },
   {

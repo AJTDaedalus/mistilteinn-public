@@ -434,12 +434,50 @@ class ValueRef(_Strict):
                 if p is not None]
 
 
+class Usual(_Strict):
+    """The value a condition's character holds it at in ordinary play, and why: the default
+    rule of owner ruling 2026-11-14 (`DECISIONS.md` §40 (ii)). `reason` is the one line the
+    panel shows beside the control; `cite` names where the value comes from (a GO default, a
+    seeded parameter, a KQM guide's sentence) where one exists. **Never invented**: where no
+    usual value can be justified, `value` is `"max"` and the reason says so.
+
+    A `value` of 0 (or `""` for a choice) keeps the condition off, and `reason` then says why:
+    the circumstance it needs is not the character's normal play."""
+
+    value: float | str
+    reason: str
+    cite: str | None = None
+    #: The usual value holds only when the optimized character's element is one of these
+    #: (Kazuha swirls the element of the carry he buffs): for any other receiver the condition
+    #: is off, and the note says why. A choice may instead name `"receiver_element"` as its
+    #: value: the option equal to the receiver's element (Sucrose's C6 absorbs it).
+    receiver_elements: tuple[str, ...] | None = None
+
+    @model_validator(mode="after")
+    def _elements(self) -> Usual:
+        for element in self.receiver_elements or ():
+            if element not in VISIONS:
+                raise ValueError(f"{element!r} is not one of {VISIONS}")
+        return self
+
+
 class SheetCondition(_Strict):
-    """A condition as a sheet declares it. Its default follows the owner's rule
-    (`DECISIONS.md` §39) and is derived, never written: `self` is on at its maximum,
-    `situational` off, and `giver_is_subject` is `self` when the giver is the optimized
-    character and `situational` when a teammate is (Bennett standing in his own field is his
-    own doing; a teammate standing in it depends on the fight)."""
+    """A condition as a sheet declares it, and its default.
+
+    **The default rule, in this one place** (owner rulings `DECISIONS.md` §39 (i), amended by
+    §40 (ii) on 2026-11-14):
+
+    1. A condition with a curated `usual` defaults to it — the value its character's ordinary
+       play holds it at, with the reason shown (`default_reason` `usual`; `situational` where
+       the usual value is off).
+    2. Otherwise `default_by` decides: `self` (triggered by the character's own kit) is on at
+       its maximum; `giver_is_subject` is the same when the giver is the optimized character,
+       and when a teammate is, the teammate's buff is assumed up as they play it — on at its
+       maximum (`teammate`), said in the note.
+    3. A `situational` condition (the enemy, the fight, rare circumstances) must carry a
+       `usual`: either its normal-play value, or 0 with the reason it stays off. So no
+       condition is off without a reason, and every one stays a visible toggle.
+    """
 
     key: str
     label: str
@@ -456,13 +494,18 @@ class SheetCondition(_Strict):
     #: Impact Momentum limit (GO `momentumLimitInc: 30`, a literal; his C4 list holds only its
     #: charging efficiency).
     max_raise_cited: CountBonus | None = None
+    #: The curated usual value (§40 (ii)); required on a `situational` condition.
+    usual: Usual | None = None
     go: str
 
     @model_validator(mode="after")
     def _derivable(self) -> SheetCondition:
-        if self.kind == "choice" and self.default_by != "situational":
-            raise ValueError(f"{self.key}: a choice has no maximum to default to; "
-                             "only a situational one (none chosen) is derivable")
+        if self.kind == "choice" and self.usual is None:
+            raise ValueError(f"{self.key}: a choice has no maximum to default to; it names "
+                             "its usual option (or none, with the reason)")
+        if self.default_by == "situational" and self.usual is None:
+            raise ValueError(f"{self.key}: a situational condition names its usual value, or "
+                             "0 with the reason it stays off")
         if self.kind in ("stacks", "number") and self.max is None:
             raise ValueError(f"{self.key}: a {self.kind} names its max")
         if ((self.max_raise is not None or self.max_raise_cited is not None)
@@ -470,26 +513,67 @@ class SheetCondition(_Strict):
             raise ValueError(f"{self.key}: only a stacks or number condition has a max to raise")
         if self.max_raise is not None and self.max_raise_cited is not None:
             raise ValueError(f"{self.key}: a maximum is raised by a parameter or a constant")
+        if self.usual is not None:
+            self._check_usual(self.usual.value)
         return self
 
-    def resolve(self, *, giver_is_subject: bool, raised: float = 0.0) -> Condition:
-        """The P1 `Condition` for this receiver, its default derived; `raised` is what an
-        unlocked `max_raise` adds to the maximum."""
-        reason: Literal["self", "situational"]
-        if self.default_by == "giver_is_subject":
-            reason = "self" if giver_is_subject else "situational"
-        else:
-            reason = self.default_by
-        top = None if self.max is None else self.max + raised
+    def _check_usual(self, value: float | str) -> None:
+        if value == "max":
+            if self.kind == "choice":
+                raise ValueError(f"{self.key}: a choice has no maximum")
+            return
+        if value == "receiver_element":
+            if self.kind != "choice" or not set(self.options or ()) <= set(VISIONS):
+                raise ValueError(f"{self.key}: only a choice of elements can follow the "
+                                 "receiver's")
+            return
         if self.kind == "choice":
-            default: float | str = ""
-        elif reason == "situational":
-            default = 0
+            if not isinstance(value, str) or (value and value not in (self.options or ())):
+                raise ValueError(f"{self.key}: usual {value!r} is not an option")
+        elif isinstance(value, str):
+            raise ValueError(f"{self.key}: a {self.kind} usual is a number or \"max\"")
+        elif self.kind == "toggle" and value not in (0, 1):
+            raise ValueError(f"{self.key}: a toggle's usual is 0 or 1")
+        elif self.kind != "toggle" and not 0 <= value <= (self.max or 0):
+            raise ValueError(f"{self.key}: usual {value} is outside [0, {self.max}]")
+
+    def resolve(self, *, giver_is_subject: bool, raised: float = 0.0,
+                receiver_element: str | None = None) -> Condition:
+        """The P1 `Condition` for this receiver, its default by the rule above; `raised` is
+        what an unlocked `max_raise` adds to the maximum, `receiver_element` the optimized
+        character's element (read only by a usual value that follows it)."""
+        top = None if self.max is None else self.max + raised
+        at_max: float = 1 if self.kind == "toggle" else float(top or 0)
+        note: str | None = None
+        reason: Literal["self", "situational", "usual", "teammate"]
+        default: float | str
+        if self.usual is not None:
+            usual = self.usual
+            element = None if receiver_element is None else receiver_element.lower()
+            value = usual.value
+            note = usual.reason
+            if value == "receiver_element":
+                value = element if element in (self.options or ()) else ""
+                if not value:
+                    note = f"Off: the optimized character's element is not an option. {note}"
+            if usual.receiver_elements is not None and element not in usual.receiver_elements:
+                value = "" if self.kind == "choice" else 0
+                note = (f"Off: the optimized character is not "
+                        f"{'/'.join(e.capitalize() for e in usual.receiver_elements)}. {note}")
+            default = at_max if value == "max" else value
+            reason = "situational" if default in (0, "") else "usual"
+        elif self.default_by == "self" or (self.default_by == "giver_is_subject"
+                                           and giver_is_subject):
+            reason, default = "self", at_max
         else:
-            default = 1 if self.kind == "toggle" else float(top or 0)
+            # A teammate's buff with no curated usual value: up, at its maximum, and said so.
+            reason, default = "teammate", at_max
+            note = ("a teammate's buff, assumed up as they play it; at its maximum, since no "
+                    "usual value is curated")
         return Condition(
             key=self.key, label=self.label, kind=self.kind, default=default,
-            default_reason=reason, max=top, step=self.step, options=self.options,
+            default_reason=reason, default_note=note, max=top, step=self.step,
+            options=self.options,
         )
 
 
@@ -1108,7 +1192,8 @@ def resolve(
     ]
     conditions = tuple(
         c.resolve(giver_is_subject=giver_is_subject,
-                  raised=_raised(sheet, giver, c, unmodelled))
+                  raised=_raised(sheet, giver, c, unmodelled),
+                  receiver_element=receiver_element)
         for c in sheet.conditions
     )
     effects: list[Effect] = []

@@ -143,6 +143,11 @@
    "default_by": "situational",
    "max": 3,
    "step": 1,
+   "usual": {
+    "value": 3,
+    "reason": "her teammates' Electro reactions fill all three stacks",
+    "cite": "KQM Clorinde quick guide, keqingmains.com/q/clorinde-quickguide/: 'making it very easy to reach max stacks'"
+   },
    "go": "pando:Clorinde.ts:62-67,107-113"
   },
   {

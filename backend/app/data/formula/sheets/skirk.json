@@ -120,6 +120,10 @@
     "2",
     "3"
    ],
+   "usual": {
+    "value": "3",
+    "reason": "three: no usual count is documented, so the most her burst can absorb"
+   },
    "go": "pando:Skirk.ts:134-135,173-190; wr:index.tsx:159-166"
   },
   {
@@ -129,6 +133,11 @@
    "default_by": "situational",
    "max": 3,
    "step": 1,
+   "usual": {
+    "value": 3,
+    "reason": "each Hydro or Cryo teammate grants one, and she is played with three of them",
+    "cite": "KQM Skirk quick guide, keqingmains.com/q/skirk-quickguide/: 'The vast majority of Skirk's kit is locked to teams with only Hydro and Cryo characters'"
+   },
    "go": "pando:Skirk.ts:136-137,146-157; wr:index.tsx:167-180"
   },
   {

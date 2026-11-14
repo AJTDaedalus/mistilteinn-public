@@ -120,6 +120,11 @@
    "default_by": "situational",
    "max": 3,
    "step": 1,
+   "usual": {
+    "value": 0,
+    "reason": "his burst is best used with no Mirrors active, so it consumes none and his C4 reads three generated",
+    "cite": "KQM Alhaitham quick guide, keqingmains.com/q/alhaitham-quickguide/: 'It is generally better to use Alhaitham's Burst with 0 Mirrors active'"
+   },
    "go": "pando:Alhaitham.ts:102-109,126-147"
   },
   {

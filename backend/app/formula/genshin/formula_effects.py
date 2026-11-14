@@ -141,13 +141,18 @@ ElementSource = Literal["wearer"] | str
 
 ConditionKind = Literal["toggle", "stacks", "choice", "number"]
 
-#: Why a default is what it is. The rule (owner decision pending — `TASKS` task 7):
+#: Why a default is what it is.
 #:
 #: - `self` — the wearer triggers it in ordinary play on their own (*after using an Elemental
 #:   Skill*, stacks from their own hits): **on, at its maximum**.
 #: - `situational` — it depends on the enemy, the team, HP changes, shields, reactions or being
 #:   off-field: **off**, which is also GO's default for every conditional.
-DefaultReason = Literal["self", "situational"]
+#: - `usual` — a kit condition at the value its character's ordinary play holds it at, curated
+#:   with a reason (owner ruling 2026-11-14, `DECISIONS.md` §40 (ii); `sheets.SheetCondition`).
+#:   Any value in range: Arlecchino's Bond at 130%, Alhaitham's mirrors consumed at 0.
+#: - `teammate` — a teammate's kit buff, assumed up as that teammate plays it: **on, at its
+#:   maximum**, where no usual value is curated (§40 (ii)).
+DefaultReason = Literal["self", "situational", "usual", "teammate"]
 
 
 class _Model(BaseModel):
@@ -163,6 +168,10 @@ class Condition(_Model):
     #: toggle: 0 or 1. stacks/number: a count. choice: the option's name, or "" for none.
     default: float | str
     default_reason: DefaultReason
+    #: The one-line reason the default is what it is, shown beside the control: a kit
+    #: condition's curated usual value and where it comes from, or why it is off. Sets and
+    #: resonance leave it out; their `default_reason` says it.
+    default_note: str | None = None
     #: stacks/number: the largest value it can hold.
     max: float | None = None
     #: number: the step a picker offers (GO's `range(1000, 15000, 1000)`).
@@ -186,16 +195,22 @@ class Condition(_Model):
                 self.max is None or not 0 <= self.default <= self.max
             ):
                 raise ValueError(f"{self.key}: default must lie in [0, max]")
-        expected = {"self": "on", "situational": "off"}[self.default_reason]
+        if self.default_reason == "usual":
+            # A curated value: any value in range, said in its note.
+            if not self.default_note:
+                raise ValueError(f"{self.key}: a `usual` default carries its reason")
+            return self
+        expected = {"self": "on", "teammate": "on", "situational": "off"}[self.default_reason]
         is_on = bool(self.default)
         if (expected == "on") != is_on:
             raise ValueError(
                 f"{self.key}: a `{self.default_reason}` condition defaults "
                 f"{expected}, and this one does not",
             )
-        if (self.default_reason == "self" and self.kind in ("stacks", "number")
+        if (self.default_reason in ("self", "teammate") and self.kind in ("stacks", "number")
                 and self.default != self.max):
-            raise ValueError(f"{self.key}: a `self` stack count defaults to its maximum")
+            raise ValueError(f"{self.key}: a `{self.default_reason}` stack count defaults to "
+                             "its maximum")
         return self
 
 

@@ -91,6 +91,10 @@
    "label": "Stellar Radiance: Stellar Swirl",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: a party composition the estimate does not check; turn it on if your party has it"
+   },
    "go": "pando:Vesna.ts:106-107,116-118"
   },
   {

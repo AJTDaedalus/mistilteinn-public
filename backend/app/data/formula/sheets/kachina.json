@@ -119,6 +119,10 @@
    "kind": "stacks",
    "default_by": "situational",
    "max": 4,
+   "usual": {
+    "value": 1,
+    "reason": "the estimate scores one target; more opponents in range raise it, so set it to how many you fight"
+   },
    "go": "pando:Kachina.ts:85-86,97-101; wr:index.tsx:104-111,273-277"
   }
  ],

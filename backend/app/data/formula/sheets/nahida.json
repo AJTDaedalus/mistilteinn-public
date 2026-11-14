@@ -134,6 +134,10 @@
    "label": "The active character is in the Shrine of Maya (A1 Compassion Illuminated)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her teams fight inside her Shrine of Maya: that is what her burst is for"
+   },
    "go": "pando:Nahida.ts:112,168-182,212; wr:index.tsx:166-195,362"
   },
   {
@@ -148,6 +152,10 @@
    "label": "Opponents marked by Seeds of Skandha were hit by Quicken, Aggravate or Spread (C2 The Root of All Fullness)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs a Quicken, Aggravate or Spread party"
+   },
    "go": "pando:Nahida.ts:112,116,230-233; wr:index.tsx:278-283,359"
   },
   {
@@ -157,6 +165,10 @@
    "default_by": "situational",
    "max": 4,
    "step": 1,
+   "usual": {
+    "value": 1,
+    "reason": "the estimate scores one target; more opponents in range raise it, so set it to how many you fight"
+   },
    "go": "pando:Nahida.ts:115,204-210; wr:index.tsx:285-300,345"
   }
  ],

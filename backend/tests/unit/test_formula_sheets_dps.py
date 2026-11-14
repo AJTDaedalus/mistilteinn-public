@@ -81,7 +81,8 @@ def test_each_void_rift_count_reads_its_own_parameter_of_the_one_row():
     assert by_rifts == {"0": pytest.approx(0.08), "1": pytest.approx(0.12),
                         "2": pytest.approx(0.16), "3": pytest.approx(0.2)}
     rifts = _condition(kit, "void_rifts")
-    assert (rifts.default, rifts.default_reason) == ("", "situational")  # type: ignore[attr-defined]
+    # No usual count is documented, so the most (§40 (ii)), said.
+    assert (rifts.default, rifts.default_reason) == ("3", "usual")  # type: ignore[attr-defined]
 
 
 def test_a_row_that_names_fewer_parameters_withholds_the_missing_ones():
@@ -126,7 +127,7 @@ def test_skirks_a4_and_c4_are_read_by_the_stack_count_and_default_off():
           if e.stat == "atk_pct" and e.when[0].condition == "a4_stacks"}
     assert c4 == dict(zip((1, 2, 3), skirk.pins.constellations[4][:3], strict=True))
     stacks = _condition(kit, "a4_stacks")
-    assert (stacks.default, stacks.max) == (0, 3)  # type: ignore[attr-defined]
+    assert (stacks.default, stacks.max) == (3, 3)  # type: ignore[attr-defined]
 
 
 # ── a unit on a `per` condition (Neuvillette's A4) ───────────────────────────────────────
@@ -140,6 +141,7 @@ def test_neuvillettes_a4_is_per_percentage_point_of_hp_counted_per_100():
     assert a4.value == pytest.approx(neuvillette.pins.passives[4][2] / 100)
     hp = _condition(kit, "a4_hp")
     assert (hp.default, hp.default_reason, hp.max) == (0, "situational", 50)  # type: ignore[attr-defined]
+    assert "no usual value is documented" in hp.default_note  # type: ignore[attr-defined]
 
 
 def test_a_unit_counts_a_stat_or_a_condition_and_nothing_else():
@@ -209,13 +211,15 @@ def test_mavuika_on_herself_at_c2():
     assert _condition(kit, "fighting_spirit").default == 200  # type: ignore[attr-defined]
 
 
-def test_mavuikas_a4_reaches_a_teammate_off_by_default_and_c4_needs_a4():
+def test_mavuikas_a4_reaches_a_teammate_on_by_default_and_c4_needs_a4():
     mavuika = _sheet("mavuika")
     kit = sheets.resolve(mavuika, _mavuika(constellation=4), giver_is_subject=False)
     assert sorted(_effects(kit, "dmg_bonus")) == pytest.approx(
         sorted([0.002, mavuika.pins.constellations[4][0]]))
-    assert _condition(kit, "a4_after_burst").default == 0  # type: ignore[attr-defined]
-    assert _condition(kit, "fighting_spirit").default == 0  # type: ignore[attr-defined]
+    # A teammate's buffs default on (§40 (ii)): her burst at its usual 200 Fighting Spirit.
+    assert _condition(kit, "a4_after_burst").default == 1  # type: ignore[attr-defined]
+    assert _condition(kit, "a4_after_burst").default_reason == "teammate"  # type: ignore[attr-defined]
+    assert _condition(kit, "fighting_spirit").default == 200  # type: ignore[attr-defined]
     low = sheets.resolve(mavuika, _giver(mavuika, constellation=4, ascension=3),
                          giver_is_subject=False)
     assert _effects(low, "dmg_bonus") == []

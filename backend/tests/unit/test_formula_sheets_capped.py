@@ -140,9 +140,9 @@ def test_clorindes_a1_is_capped_and_c2_replaces_it(constellation: int, ratio: An
         (("burst",), ()),
         (None, (("elemental_skill", "Swift Hunt DMG"), ("elemental_skill",
                                                          "Impale the Night DMG")))}
-    # The party's reactions are the trigger: situational, off until the user says.
+    # The party's reactions are the trigger, and they fill it (§40 (ii), KQM): three, said.
     [stacks] = [c for c in kit.bonus.conditions if c.key == "a1_stacks"]
-    assert (stacks.default, stacks.max) == (0, 3)
+    assert (stacks.default, stacks.max, stacks.default_reason) == (3, 3, "usual")
 
 
 def test_clorindes_c2_needs_her_first_ascension_too():

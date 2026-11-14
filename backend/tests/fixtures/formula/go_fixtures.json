@@ -89,6 +89,7 @@
                 "kind": "stacks",
                 "default": 3.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 3.0,
                 "step": null,
                 "options": null
@@ -245,6 +246,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -436,6 +438,7 @@
                 "kind": "stacks",
                 "default": 3.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 3.0,
                 "step": null,
                 "options": null
@@ -511,7 +514,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "set:15006:4/stacks": 3
+      },
       "expected": 83535.86125199603,
       "go_value": 83527.61752670546,
       "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
@@ -604,8 +609,9 @@
                 "key": "in_field",
                 "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "his teams fight inside his field: that is what his burst is for (above 70% HP below C1, assumed as GO does)",
                 "max": null,
                 "step": null,
                 "options": null
@@ -801,7 +807,8 @@
                 "label": "Standing in Bennett's Inspiration Field (above 70% HP below C1, assumed as GO does)",
                 "kind": "toggle",
                 "default": 1.0,
-                "default_reason": "self",
+                "default_reason": "usual",
+                "default_note": "his teams fight inside his field: that is what his burst is for (above 70% HP below C1, assumed as GO does)",
                 "max": null,
                 "step": null,
                 "options": null
@@ -850,7 +857,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:bennett/in_field": 1
+      },
       "expected": 8535.910928180238,
       "go_value": 8535.910928180238,
       "divergence": "none: no reaction",
@@ -942,6 +951,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Pyro. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -952,6 +962,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Hydro. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -962,6 +973,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Electro. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -972,6 +984,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Cryo. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1097,6 +1110,9 @@
         }
       ],
       "conditionals": {
+        "kit:kaedehara_kazuha/swirl_hydro": 0,
+        "kit:kaedehara_kazuha/swirl_electro": 0,
+        "kit:kaedehara_kazuha/swirl_cryo": 0,
         "kit:kaedehara_kazuha/swirl_pyro": 1
       },
       "expected": 3282.4392465963324,
@@ -1183,6 +1199,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Pyro. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1193,6 +1210,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Hydro. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1203,6 +1221,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Electro. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1213,6 +1232,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "Off: the optimized character is not Cryo. he swirls the element of the carry he buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1338,6 +1358,9 @@
         }
       ],
       "conditionals": {
+        "kit:kaedehara_kazuha/swirl_hydro": 0,
+        "kit:kaedehara_kazuha/swirl_electro": 0,
+        "kit:kaedehara_kazuha/swirl_cryo": 0,
         "kit:kaedehara_kazuha/swirl_pyro": 1
       },
       "expected": 585.7838121511385,
@@ -1423,6 +1446,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -1484,7 +1508,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:kachina/a1_nightsoul_burst": 1
+      },
       "expected": 2102.7420942748336,
       "go_value": 2102.7420942748336,
       "divergence": "none: no reaction",
@@ -1578,6 +1604,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1588,6 +1615,7 @@
                 "kind": "stacks",
                 "default": 3.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 3.0,
                 "step": null,
                 "options": null
@@ -1598,6 +1626,7 @@
                 "kind": "stacks",
                 "default": 3.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 3.0,
                 "step": null,
                 "options": null
@@ -1683,6 +1712,8 @@
         }
       ],
       "conditionals": {
+        "kit:nefer/veils_consumed": 3,
+        "kit:nefer/veil_stacks": 3,
         "kit:nefer/moonsign_gleam": 1
       },
       "expected": 19540.48465316782,
@@ -1772,6 +1803,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it needs a party member's Cryo reaction while he is in Masterstroke mode, which depends on the party",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1909,6 +1941,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -1919,6 +1952,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
                 "max": null,
                 "step": null,
                 "options": null
@@ -1929,6 +1963,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -1939,6 +1974,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -2108,7 +2144,12 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:linnea/lumi_present": 1,
+        "kit:linnea/moonsign_gleam": 0,
+        "kit:linnea/c2_moondrift": 1,
+        "kit:linnea/c4_moondrift": 1
+      },
       "expected": 6836.408806072674,
       "go_value": 6836.408806072674,
       "divergence": "none: no reaction",
@@ -2200,6 +2241,7 @@
                 "kind": "stacks",
                 "default": 4.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 4.0,
                 "step": null,
                 "options": null
@@ -2210,6 +2252,7 @@
                 "kind": "stacks",
                 "default": 4.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 4.0,
                 "step": null,
                 "options": null
@@ -2268,7 +2311,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:mitya/a1_beacons": 4,
+        "kit:mitya/a4_stacks": 4
+      },
       "expected": 17871.321092583064,
       "go_value": 17871.321092583064,
       "divergence": "none: no reaction",
@@ -2355,6 +2401,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -2365,6 +2412,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
                 "max": null,
                 "step": null,
                 "options": null
@@ -2375,6 +2423,7 @@
                 "kind": "number",
                 "default": 100.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 100.0,
                 "step": 5.0,
                 "options": null
@@ -2463,7 +2512,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:valeriy/charged_offensive": 1,
+        "kit:valeriy/stellar_radiance": 0,
+        "kit:valeriy/momentum": 100
+      },
       "expected": 6304.394844985651,
       "go_value": 6304.394844985651,
       "divergence": "none: no reaction",
@@ -2550,6 +2603,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -2560,6 +2614,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -2637,7 +2692,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:vodyanitsa/skill_hit": 1,
+        "kit:vodyanitsa/a1_vortex": 1
+      },
       "expected": 2808.1833279803664,
       "go_value": 2808.1833279803664,
       "divergence": "none: no reaction",
@@ -2723,6 +2781,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
                 "max": null,
                 "step": null,
                 "options": null
@@ -2733,6 +2792,7 @@
                 "kind": "stacks",
                 "default": 6.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 6.0,
                 "step": null,
                 "options": null
@@ -2886,6 +2946,7 @@
         }
       ],
       "conditionals": {
+        "kit:vesna/a1_stacks": 6,
         "kit:vesna/stellar_radiance": 1
       },
       "expected": 2270.5096055385693,
@@ -2973,7 +3034,8 @@
                 "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
                 "kind": "number",
                 "default": 400.0,
-                "default_reason": "self",
+                "default_reason": "usual",
+                "default_note": "at the cap: no typical stack is documented, and self-sustaining on-fielders reach it by themselves; set it near 0 in a party without a healer",
                 "max": 400.0,
                 "step": 50.0,
                 "options": null
@@ -2984,6 +3046,7 @@
                 "kind": "number",
                 "default": 400.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 400.0,
                 "step": 50.0,
                 "options": null
@@ -3072,7 +3135,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:furina/fanfare": 400,
+        "kit:furina/c2_overstack": 400
+      },
       "expected": 21780.25635584084,
       "go_value": 21780.25635584084,
       "divergence": "none: no reaction",
@@ -3156,6 +3222,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -3225,7 +3292,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:xingqiu/rain_swords": 1
+      },
       "expected": 1847.496532817153,
       "go_value": 1847.496532817153,
       "divergence": "none: no reaction",
@@ -3309,6 +3378,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: the active character has to pick the chili up, which a rotation does not reliably do",
                 "max": null,
                 "step": null,
                 "options": null
@@ -3317,8 +3387,9 @@
                 "key": "after_guoba_hit",
                 "label": "Opponent hit by Guoba's flame (C1)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -3327,8 +3398,9 @@
                 "key": "pyronado",
                 "label": "During Pyronado (C6)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -3434,6 +3506,7 @@
         }
       ],
       "conditionals": {
+        "kit:xiangling/after_chili": 0,
         "kit:xiangling/after_guoba_hit": 1,
         "kit:xiangling/pyronado": 1
       },
@@ -3524,8 +3597,9 @@
                 "key": "a1_freeze_melt",
                 "label": "Citlali in Nightsoul's Blessing and a party member triggered Frozen or Melt (A1)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "she is played in Freeze and Melt parties, where her skill keeps her in Nightsoul's Blessing as they react",
                 "max": null,
                 "step": null,
                 "options": null
@@ -3534,8 +3608,9 @@
                 "key": "c1_blades",
                 "label": "Opal Fire's Obsidian Blades consumed by a teammate's hit (C1)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her C1 blades are spent by any teammate's hit, which is ordinary play",
                 "max": null,
                 "step": null,
                 "options": null
@@ -3544,8 +3619,9 @@
                 "key": "c2_shield",
                 "label": "Shielded by Citlali, as the active character (C2)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her skill shields the active character",
                 "max": null,
                 "step": null,
                 "options": null
@@ -3679,6 +3755,7 @@
         }
       ],
       "conditionals": {
+        "kit:citlali/c2_shield": 0,
         "kit:citlali/a1_freeze_melt": 1,
         "kit:citlali/c1_blades": 1
       },
@@ -3765,8 +3842,9 @@
                 "key": "a4_stacks",
                 "label": "Seconds the active character has fought in Depth-Clarion Dice (A4)",
                 "kind": "number",
-                "default": 14.0,
-                "default_reason": "self",
+                "default": 7.0,
+                "default_reason": "usual",
+                "default_note": "the middle of its ramp: 1%, then 3.5% more a second up to 50% at 14 s, so a hit lands near 7 s on average",
                 "max": 14.0,
                 "step": 1.0,
                 "options": null
@@ -3854,7 +3932,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:yelan/a4_stacks": 14
+      },
       "expected": 22853.659736245503,
       "go_value": 22853.659736245503,
       "divergence": "none: no reaction",
@@ -3940,6 +4020,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -3950,6 +4031,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -4023,7 +4105,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:escoffier/a4_hit": 1,
+        "kit:escoffier/c1_after": 1
+      },
       "expected": 2685.286804457087,
       "go_value": 2685.286804457087,
       "divergence": "none: no reaction",
@@ -4115,8 +4200,9 @@
                 "key": "a1_overloaded",
                 "label": "A party member triggered Overloaded (A1)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her A1 reaches only a Pyro-and-Electro party, whose reaction is Overloaded, so a party member triggers it throughout",
                 "max": null,
                 "step": null,
                 "options": null
@@ -4125,8 +4211,9 @@
                 "key": "a4_after_ball",
                 "label": "After Chevreuse fired an Overcharged Ball (A4)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -4281,6 +4368,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -4291,6 +4379,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -4371,7 +4460,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:jean/c1_hold": 1,
+        "kit:jean/c4_field": 1
+      },
       "expected": 15194.913507950665,
       "go_value": 15194.913507950665,
       "divergence": "none: no reaction",
@@ -4456,7 +4548,8 @@
                 "label": "Opponent near a character shielded by Jade Shield",
                 "kind": "toggle",
                 "default": 1.0,
-                "default_reason": "self",
+                "default_reason": "usual",
+                "default_note": "his teams keep the Jade Shield up, so its RES shred reaches the opponents near the shielded character",
                 "max": null,
                 "step": null,
                 "options": null
@@ -4569,7 +4662,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:zhongli/shielded": 1
+      },
       "expected": 31947.003210845585,
       "go_value": 31947.003210845585,
       "divergence": "none: no reaction",
@@ -4656,6 +4751,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -4666,6 +4762,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -4676,6 +4773,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -4776,7 +4874,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:faruzan/burst_benefit": 1,
+        "kit:faruzan/burst_hit": 1,
+        "kit:faruzan/a4_active": 1
+      },
       "expected": 17610.813142885137,
       "go_value": 17610.813142885137,
       "divergence": "none: no reaction",
@@ -4865,8 +4967,9 @@
                 "key": "swirl_pyro",
                 "label": "Sucrose triggered a Swirl with Pyro (A1)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "she swirls the element of the carry she buffs",
                 "max": null,
                 "step": null,
                 "options": null
@@ -4875,8 +4978,9 @@
                 "key": "skill_hit",
                 "label": "Sucrose's Elemental Skill or Burst hit an opponent (A4)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her skill and burst hit opponents in ordinary play",
                 "max": null,
                 "step": null,
                 "options": null
@@ -5039,6 +5143,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5049,6 +5154,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5147,7 +5253,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:kamisato_ayaka/after_skill": 1,
+        "kit:kamisato_ayaka/after_sprint_hit": 1
+      },
       "expected": 6710.82565228694,
       "go_value": 6710.82565228694,
       "divergence": "none: no reaction",
@@ -5356,6 +5465,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5408,7 +5518,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:noelle/sweeping_time": 1
+      },
       "expected": 4635.596109728143,
       "go_value": 4635.596109728143,
       "divergence": "none: no reaction",
@@ -5494,8 +5606,9 @@
                 "key": "a1_stacks",
                 "label": "A1 stacks: Hydro-related reactions the party triggered",
                 "kind": "number",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 2.0,
+                "default_reason": "usual",
+                "default_note": "two stacks, as in his Furina teams at C0 (one in a Hydro-and-Cryo party, three with Electro, Pyro and Dendro teammates)",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -5506,6 +5619,7 @@
                 "kind": "number",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: his HP above 30% moves with Furina's drain and his own Charged Attack's, and no usual value is documented; set it to yours",
                 "max": 50.0,
                 "step": 1.0,
                 "options": null
@@ -5714,7 +5828,8 @@
                 "label": "Fighting Spirit consumed by Hour of Burning Skies",
                 "kind": "number",
                 "default": 200.0,
-                "default_reason": "self",
+                "default_reason": "usual",
+                "default_note": "200, the most her burst can consume, which her teams reach in a rotation",
                 "max": 200.0,
                 "step": 10.0,
                 "options": null
@@ -5725,6 +5840,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5735,6 +5851,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5745,6 +5862,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5755,6 +5873,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5765,6 +5884,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -5938,7 +6058,14 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:mavuika/fighting_spirit": 200,
+        "kit:mavuika/a1_nightsoul_burst": 1,
+        "kit:mavuika/a4_after_burst": 1,
+        "kit:mavuika/c1_gain_spirit": 1,
+        "kit:mavuika/c2_form": 1,
+        "kit:mavuika/c2_flamestrider": 1
+      },
       "expected": 54668.52051105258,
       "go_value": 54668.52051105258,
       "divergence": "none: no reaction",
@@ -6026,6 +6153,7 @@
                 "kind": "number",
                 "default": 12.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 12.0,
                 "step": 1.0,
                 "options": null
@@ -6034,8 +6162,9 @@
                 "key": "void_rifts",
                 "label": "Void Rifts absorbed after her burst",
                 "kind": "choice",
-                "default": "",
-                "default_reason": "situational",
+                "default": "3",
+                "default_reason": "usual",
+                "default_note": "three: no usual count is documented, so the most her burst can absorb",
                 "max": null,
                 "step": null,
                 "options": [
@@ -6049,8 +6178,9 @@
                 "key": "a4_stacks",
                 "label": "A4 stacks: Hydro or Cryo teammates' skills and bursts hit opponents",
                 "kind": "number",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 3.0,
+                "default_reason": "usual",
+                "default_note": "each Hydro or Cryo teammate grants one, and she is played with three of them",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -6362,7 +6492,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:skirk/serpent_over": 12,
+        "kit:skirk/void_rifts": "",
+        "kit:skirk/a4_stacks": 0
+      },
       "expected": 17433.27389727351,
       "go_value": 17433.27389727351,
       "divergence": "none: no reaction",
@@ -6452,8 +6586,9 @@
                 "key": "a1_field",
                 "label": "The active character is in the Shrine of Maya (A1 Compassion Illuminated)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her teams fight inside her Shrine of Maya: that is what her burst is for",
                 "max": null,
                 "step": null,
                 "options": null
@@ -6464,6 +6599,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it needs a Quicken, Aggravate or Spread party",
                 "max": null,
                 "step": null,
                 "options": null
@@ -6647,6 +6783,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -6657,6 +6794,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it needs a Quicken, Aggravate or Spread party",
                 "max": null,
                 "step": null,
                 "options": null
@@ -6665,8 +6803,9 @@
                 "key": "c4_count",
                 "label": "Opponents near Nahida affected by Seeds of Skandha (C4 The Stem of Manifest Inference)",
                 "kind": "number",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "the estimate scores one target; more opponents in range raise it, so set it to how many you fight",
                 "max": 4.0,
                 "step": 1.0,
                 "options": null
@@ -6775,6 +6914,8 @@
         }
       ],
       "conditionals": {
+        "kit:nahida/shrine": 1,
+        "kit:nahida/c2_quicken": 0,
         "kit:nahida/c4_count": 2
       },
       "expected": 5940.608720802648,
@@ -6866,6 +7007,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -6876,6 +7018,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -6960,7 +7103,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:kujou_sara/ambush": 1,
+        "kit:kujou_sara/c6": 1
+      },
       "expected": 18909.002609267474,
       "go_value": 18909.002609267474,
       "divergence": "none: no reaction",
@@ -7052,8 +7198,9 @@
                 "key": "quill",
                 "label": "Icy Quill stacks on the character (Spring Spirit Summoning)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7062,8 +7209,9 @@
                 "key": "burst_field",
                 "label": "Opponents in the Talisman Spirit's field (Divine Maiden's Deliverance)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7072,8 +7220,9 @@
                 "key": "a1_field",
                 "label": "The active character is in the Talisman Spirit's field (A1 Deific Embrace)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7082,8 +7231,9 @@
                 "key": "a4_press",
                 "label": "After a press Spring Spirit Summoning (A4 Spirit Communion Seal)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7092,8 +7242,9 @@
                 "key": "a4_hold",
                 "label": "After a hold Spring Spirit Summoning (A4 Spirit Communion Seal)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7308,6 +7459,7 @@
         }
       ],
       "conditionals": {
+        "kit:shenhe/a4_hold": 0,
         "kit:shenhe/quill": 1,
         "kit:shenhe/burst_field": 1,
         "kit:shenhe/a1_field": 1,
@@ -7404,8 +7556,9 @@
                 "key": "flying_cloud",
                 "label": "Flying Cloud Flag Formation is active (Cliffbreaker's Banner)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7608,6 +7761,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -7618,6 +7772,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -7628,6 +7783,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -7794,7 +7950,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:gorou/banner": 1,
+        "kit:gorou/after_burst": 1,
+        "kit:gorou/after_skill_burst": 1
+      },
       "expected": 5373.78183150434,
       "go_value": 5373.78183150434,
       "divergence": "none: no reaction",
@@ -7906,8 +8066,9 @@
                 "key": "source_active",
                 "label": "Source Samples are active (Yohual's Scratch)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -7916,8 +8077,9 @@
                 "key": "c4_blooming",
                 "label": "Blooming from Suchitl's Trance (C4)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -8169,6 +8331,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -8179,6 +8342,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -8187,8 +8351,9 @@
                 "key": "ns_burst",
                 "label": "After a Nightsoul Burst (A4 Portable Armored Sheath)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her own Natlan hits trigger Nightsoul Burst",
                 "max": null,
                 "step": null,
                 "options": null
@@ -8401,7 +8566,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:xilonen/source_active": 1,
+        "kit:xilonen/ns_blessing": 1,
+        "kit:xilonen/ns_burst": 0
+      },
       "expected": 9171.987527516188,
       "go_value": 9171.987527516188,
       "divergence": "none: no reaction",
@@ -8499,8 +8668,9 @@
                 "key": "a1_stacks",
                 "label": "Opponents hit by Driftcloud Waves: Galefeather Pursuit stacks (A1)",
                 "kind": "number",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 4.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": 4.0,
                 "step": 1.0,
                 "options": null
@@ -8509,8 +8679,9 @@
                 "key": "a4_stacks",
                 "label": "Starwicker has stacks (A4 Consider, the Adeptus in Her Realm) \u2014 plunge impact only: turn it off on a Plunge DMG (collision) row",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -8711,6 +8882,7 @@
                 "kind": "number",
                 "default": 4.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 4.0,
                 "step": 1.0,
                 "options": null
@@ -8721,6 +8893,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -8731,6 +8904,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -8741,6 +8915,7 @@
                 "kind": "number",
                 "default": 3.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -8924,7 +9099,12 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:xianyun/a1_stacks": 4,
+        "kit:xianyun/a4_stacks": 1,
+        "kit:xianyun/c2_after_skill": 1,
+        "kit:xianyun/c6_uses": 3
+      },
       "expected": 20821.43463316359,
       "go_value": 20821.43463316359,
       "divergence": "none: no reaction",
@@ -9015,8 +9195,9 @@
                 "key": "omen",
                 "label": "The opponent is affected by Omen (Stellaris Phantasm)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
                 "max": null,
                 "step": null,
                 "options": null
@@ -9027,6 +9208,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it depends on the party's reactions on an Omen-affected opponent",
                 "max": null,
                 "step": null,
                 "options": null
@@ -9250,6 +9432,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -9258,8 +9441,9 @@
                 "key": "resolve",
                 "label": "Chakra Desiderata: Resolve stacks consumed (Secret Art: Musou Shinsetsu)",
                 "kind": "number",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 60.0,
+                "default_reason": "usual",
+                "default_note": "the maximum, which her teams reach",
                 "max": 60.0,
                 "step": 10.0,
                 "options": null
@@ -9270,6 +9454,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -9417,6 +9602,8 @@
         }
       ],
       "conditionals": {
+        "kit:raiden_shogun/eye": 1,
+        "kit:raiden_shogun/in_burst": 1,
         "kit:raiden_shogun/resolve": 60
       },
       "expected": 30972.923789329274,
@@ -9511,6 +9698,7 @@
                 "kind": "number",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "the optimized character's burst Energy Cost: set it to theirs (the estimate does not read it)",
                 "max": 90.0,
                 "step": 10.0,
                 "options": null
@@ -9519,8 +9707,9 @@
                 "key": "c4_after_burst",
                 "label": "After Musou Isshin ends (C4 Pledge of Propriety)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her teammates deal their damage after her burst ends, in her teams' rotation",
                 "max": null,
                 "step": null,
                 "options": null
@@ -9693,6 +9882,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: a party composition the estimate does not check; turn it on if your party has it",
                 "max": null,
                 "step": null,
                 "options": null
@@ -9703,6 +9893,7 @@
                 "kind": "stacks",
                 "default": 5.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 5.0,
                 "step": null,
                 "options": null
@@ -9713,6 +9904,7 @@
                 "kind": "stacks",
                 "default": 5.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 5.0,
                 "step": null,
                 "options": null
@@ -9802,6 +9994,8 @@
         }
       ],
       "conditionals": {
+        "kit:nefer/veils_consumed": 5,
+        "kit:nefer/veil_stacks": 5,
         "kit:nefer/moonsign_gleam": 1
       },
       "expected": 27313.460548105424,
@@ -9893,6 +10087,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -9903,6 +10098,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it depends on her HP; turn it on if you keep her below half",
                 "max": null,
                 "step": null,
                 "options": null
@@ -10098,8 +10294,9 @@
                 "key": "bond",
                 "label": "Her Bond of Life, in percentage points of her Max HP (200 is the Bond of Life cap; set it to what your rotation holds)",
                 "kind": "number",
-                "default": 200.0,
-                "default_reason": "self",
+                "default": 130.0,
+                "default_reason": "usual",
+                "default_note": "she starts her Normal Attack string at 130% Bond of Life from a Blood-Debt Directive and her attacks consume it; 200% is the cap, not where she fights",
                 "max": 200.0,
                 "step": 5.0,
                 "options": null
@@ -10253,8 +10450,9 @@
                 "key": "a1_stacks",
                 "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
                 "kind": "stacks",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 3.0,
+                "default_reason": "usual",
+                "default_note": "her teammates' Electro reactions fill all three stacks",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -10265,6 +10463,7 @@
                 "kind": "stacks",
                 "default": 2.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 2.0,
                 "step": 1.0,
                 "options": null
@@ -10275,6 +10474,7 @@
                 "kind": "number",
                 "default": 100.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 100.0,
                 "step": 5.0,
                 "options": null
@@ -10381,6 +10581,8 @@
         }
       ],
       "conditionals": {
+        "kit:clorinde/a1_stacks": 0,
+        "kit:clorinde/bond_changes": 2,
         "kit:clorinde/bond": 60
       },
       "expected": 46946.321087811695,
@@ -10468,6 +10670,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -10478,6 +10681,7 @@
                 "kind": "number",
                 "default": 3.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -10579,7 +10783,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:navia/after_skill": 1,
+        "kit:navia/extra": 3
+      },
       "expected": 20644.367115425495,
       "go_value": 20644.367115425495,
       "divergence": "none: no reaction",
@@ -10666,6 +10873,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -10676,6 +10884,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -10686,6 +10895,7 @@
                 "kind": "stacks",
                 "default": 5.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 5.0,
                 "step": 1.0,
                 "options": null
@@ -10783,7 +10993,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:wriothesley/chilling": 1,
+        "kit:wriothesley/rebuke": 1,
+        "kit:wriothesley/edicts": 5
+      },
       "expected": 3823.7375922901633,
       "go_value": 3823.7375922901633,
       "divergence": "none: no reaction",
@@ -10890,6 +11104,7 @@
                 "kind": "stacks",
                 "default": 5.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 5.0,
                 "step": 1.0,
                 "options": null
@@ -10900,6 +11115,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -10910,6 +11126,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -11050,7 +11267,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:lyney/props": 5,
+        "kit:lyney/hat": 1,
+        "kit:lyney/pyro_mark": 1
+      },
       "expected": 14517.924244279435,
       "go_value": 14517.924244279435,
       "divergence": "none: no reaction",
@@ -11137,6 +11358,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -11147,6 +11369,7 @@
                 "kind": "stacks",
                 "default": 10.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 10.0,
                 "step": 1.0,
                 "options": null
@@ -11215,7 +11438,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:yoimiya/niwabi": 1,
+        "kit:yoimiya/tricks": 10
+      },
       "expected": 5215.075676456951,
       "go_value": 5215.075676456951,
       "divergence": "none: no reaction",
@@ -11303,6 +11529,7 @@
                 "kind": "stacks",
                 "default": 10.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 10.0,
                 "step": 1.0,
                 "options": null
@@ -11311,8 +11538,9 @@
                 "key": "aurous",
                 "label": "After her burst, while Aurous Blaze lasts (A4, to her teammates)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "her burst opens her rotation, and her teammates' off-field damage lands under it",
                 "max": null,
                 "step": null,
                 "options": null
@@ -11378,6 +11606,7 @@
         }
       ],
       "conditionals": {
+        "kit:yoimiya/tricks": 10,
         "kit:yoimiya/aurous": 1
       },
       "expected": 2871.495359867077,
@@ -11472,6 +11701,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -11482,6 +11712,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -11554,7 +11785,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:ganyu/a1_fired": 1,
+        "kit:ganyu/in_field": 1
+      },
       "expected": 9870.099381461976,
       "go_value": 9870.099381461976,
       "divergence": "none: no reaction",
@@ -11651,6 +11885,7 @@
                 "kind": "stacks",
                 "default": 30.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 30.0,
                 "step": 1.0,
                 "options": null
@@ -11661,6 +11896,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -11759,7 +11995,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:eula/lightfall": 30,
+        "kit:eula/consumed": 1
+      },
       "expected": 128300.59963387295,
       "go_value": 128300.59963387295,
       "divergence": "none: no reaction",
@@ -11862,6 +12101,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -11936,7 +12176,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:arataki_itto/descent": 1
+      },
       "expected": 14829.944953213402,
       "go_value": 14829.944953213402,
       "divergence": "none: no reaction",
@@ -12042,6 +12284,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -12052,6 +12295,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -12164,7 +12408,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:cyno/pactsworn": 1,
+        "kit:cyno/judication": 1
+      },
       "expected": 3078.352202038892,
       "go_value": 3078.352202038892,
       "divergence": "none: no reaction",
@@ -12254,6 +12501,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -12264,6 +12512,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it depends on her HP; turn it on if you keep her below half",
                 "max": null,
                 "step": null,
                 "options": null
@@ -12334,7 +12583,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:hu_tao/paramita": 1,
+        "kit:hu_tao/low_hp": 0
+      },
       "expected": 3095.544000686827,
       "go_value": 3095.544000686827,
       "divergence": "none: no reaction",
@@ -12424,6 +12676,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -12434,6 +12687,7 @@
                 "kind": "toggle",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "off: it depends on her HP; turn it on if you keep her below half",
                 "max": null,
                 "step": null,
                 "options": null
@@ -12504,7 +12758,10 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:hu_tao/paramita": 1,
+        "kit:hu_tao/low_hp": 0
+      },
       "expected": 2982.3519992123074,
       "go_value": 2982.3519992123074,
       "divergence": "none: no reaction",
@@ -12590,8 +12847,9 @@
                 "key": "a1_stacks",
                 "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
                 "kind": "stacks",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 3.0,
+                "default_reason": "usual",
+                "default_note": "her teammates' Electro reactions fill all three stacks",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -12602,6 +12860,7 @@
                 "kind": "stacks",
                 "default": 2.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 2.0,
                 "step": 1.0,
                 "options": null
@@ -12685,6 +12944,7 @@
         }
       ],
       "conditionals": {
+        "kit:clorinde/bond_changes": 2,
         "kit:clorinde/a1_stacks": 3
       },
       "expected": 32597.243474023417,
@@ -12772,8 +13032,9 @@
                 "key": "a1_stacks",
                 "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
                 "kind": "stacks",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 3.0,
+                "default_reason": "usual",
+                "default_note": "her teammates' Electro reactions fill all three stacks",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -12784,6 +13045,7 @@
                 "kind": "stacks",
                 "default": 2.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 2.0,
                 "step": 1.0,
                 "options": null
@@ -12871,6 +13133,7 @@
         }
       ],
       "conditionals": {
+        "kit:clorinde/bond_changes": 2,
         "kit:clorinde/a1_stacks": 3
       },
       "expected": 60818.034944877014,
@@ -13291,7 +13554,8 @@
                 "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
                 "kind": "number",
                 "default": 300.0,
-                "default_reason": "self",
+                "default_reason": "usual",
+                "default_note": "at the cap: no typical stack is documented, and self-sustaining on-fielders reach it by themselves; set it near 0 in a party without a healer",
                 "max": 300.0,
                 "step": 50.0,
                 "options": null
@@ -13458,7 +13722,8 @@
                 "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
                 "kind": "number",
                 "default": 300.0,
-                "default_reason": "self",
+                "default_reason": "usual",
+                "default_note": "at the cap: no typical stack is documented, and self-sustaining on-fielders reach it by themselves; set it near 0 in a party without a healer",
                 "max": 300.0,
                 "step": 50.0,
                 "options": null
@@ -13633,6 +13898,7 @@
                 "kind": "stacks",
                 "default": 4.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 4.0,
                 "step": 1.0,
                 "options": null
@@ -13731,7 +13997,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:alhaitham/debate": 4
+      },
       "expected": 4780.079402371599,
       "go_value": 4780.079402371599,
       "divergence": "none: no reaction",
@@ -13824,6 +14092,7 @@
                 "kind": "stacks",
                 "default": 4.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": 4.0,
                 "step": 1.0,
                 "options": null
@@ -13834,6 +14103,7 @@
                 "kind": "number",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "his burst is best used with no Mirrors active, so it consumes none and his C4 reads three generated",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -13844,6 +14114,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -14078,7 +14349,11 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:alhaitham/debate": 4,
+        "kit:alhaitham/mirrors_consumed": 0,
+        "kit:alhaitham/excess_mirror": 1
+      },
       "expected": 11555.05861504246,
       "go_value": 11555.05861504246,
       "divergence": "none: no reaction",
@@ -14168,6 +14443,7 @@
                 "kind": "number",
                 "default": 0.0,
                 "default_reason": "situational",
+                "default_note": "his burst is best used with no Mirrors active, so it consumes none and his C4 reads three generated",
                 "max": 3.0,
                 "step": 1.0,
                 "options": null
@@ -14311,6 +14587,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -14375,7 +14652,9 @@
           }
         }
       ],
-      "conditionals": {},
+      "conditionals": {
+        "kit:tighnari/wreath": 1
+      },
       "expected": 3168.746364325372,
       "go_value": 3168.746364325372,
       "divergence": "none: no reaction",
@@ -14467,6 +14746,7 @@
                 "kind": "toggle",
                 "default": 1.0,
                 "default_reason": "self",
+                "default_note": null,
                 "max": null,
                 "step": null,
                 "options": null
@@ -14475,8 +14755,9 @@
                 "key": "enemy_in_field",
                 "label": "An opponent is inside his Vijnana-Khanda Field (C2)",
                 "kind": "toggle",
-                "default": 0.0,
-                "default_reason": "situational",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "his skill places the field on the opponent",
                 "max": null,
                 "step": null,
                 "options": null
@@ -14587,6 +14868,7 @@
         }
       ],
       "conditionals": {
+        "kit:tighnari/wreath": 1,
         "kit:tighnari/enemy_in_field": 1
       },
       "expected": 3233.8792777513854,
@@ -14676,8 +14958,9 @@
                 "key": "c4",
                 "label": "After his burst (C4): 'after' alone, or 'react' when it also triggered a Dendro reaction",
                 "kind": "choice",
-                "default": "",
-                "default_reason": "situational",
+                "default": "after",
+                "default_reason": "usual",
+                "default_note": "'after': he bursts every rotation; 'react' needs a Dendro reaction, which depends on the party",
                 "max": null,
                 "step": null,
                 "options": [

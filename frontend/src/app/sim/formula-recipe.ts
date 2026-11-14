@@ -77,7 +77,14 @@ export interface FormulaCondition {
   label: string;
   kind: 'toggle' | 'stacks' | 'choice' | 'number';
   default: ConditionValue;
-  default_reason: 'self' | 'situational';
+  /**
+   * `self`: triggered by the wearer or character, on at its maximum. `situational`: off.
+   * `usual`: a kit condition at its curated usual value. `teammate`: a teammate's kit buff, on
+   * at its maximum (owner ruling 2026-11-14, `DECISIONS.md` §40 (ii)).
+   */
+  default_reason: 'self' | 'situational' | 'usual' | 'teammate';
+  /** Why the default is what it is, one line, for a kit condition. */
+  default_note?: string | null;
   max?: number | null;
   step?: number | null;
   options?: string[] | null;
@@ -695,6 +702,21 @@ export function rowHits(
   return { hits, skipped };
 }
 
+/**
+ * Why a condition's default is what it is, in words: its curated note where it has one (a kit
+ * condition's usual value and its source, or why it stays off), else the rule's reason.
+ * `who` names who triggers a `self` condition: the wearer of a set, or a kit's character.
+ */
+export function defaultWhy(condition: FormulaCondition, who = 'the wearer triggers it'): string {
+  if (condition.default_note) return condition.default_note;
+  switch (condition.default_reason) {
+    case 'self': return who;
+    case 'teammate': return 'a teammate\'s buff, assumed up as they play it';
+    case 'usual': return 'its usual value';
+    default: return 'depends on the situation';
+  }
+}
+
 /** The sentence a condition's current value becomes in the assumptions list. */
 function describe(
   source: FormulaSource, condition: FormulaCondition, value: ConditionValue,
@@ -702,10 +724,7 @@ function describe(
   const shown = condition.kind === 'toggle'
     ? (value ? 'on' : 'off')
     : condition.kind === 'choice' ? (value === '' ? 'none' : String(value)) : String(value);
-  const why = value === condition.default
-    ? `default — ${condition.default_reason === 'self'
-      ? 'the wearer triggers it' : 'depends on the situation'}`
-    : 'set by you';
+  const why = value === condition.default ? `default — ${defaultWhy(condition)}` : 'set by you';
   return `${source.label}: ${condition.label} = ${shown} (${why})`;
 }
 

@@ -125,7 +125,9 @@ def test_the_masque_on_arlecchino_is_a_per_candidate_conversion_divided_by_its_u
         (("burst",), pytest.approx(arle.pins.constellations[6][4] / 100), "bond"),
     ]
     bond = next(c for c in kit.bonus.conditions if c.key == "bond")
-    assert (bond.default, bond.default_reason, bond.max) == (200, "self", 200)
+    # Her usual Bond, not the cap (§40 (ii)): 130% from a Blood-Debt Directive, cited to KQM.
+    assert (bond.default, bond.default_reason, bond.max) == (130, "usual", 200)
+    assert "130%" in (bond.default_note or "")
 
 
 def test_arlecchinos_kit_reaches_no_teammate():
@@ -258,17 +260,19 @@ def test_yoimiyas_a4_reaches_teammates_only_and_reads_her_stacks():
     assert "atk_pct" not in _by_key(own, yoimiya)
     a4 = yoimiya.pins.passives[4]
     assert [(e.value, e.per) for e in mate.bonus.effects] == [(a4[0], None), (a4[1], "tricks")]
-    assert {c.key: c.default for c in mate.bonus.conditions} == {"aurous": 0, "tricks": 10}
+    assert {c.key: c.default for c in mate.bonus.conditions} == {"aurous": 1, "tricks": 10}
 
 
-def test_ganyus_field_and_c4_default_on_for_her_and_off_for_a_teammate():
+def test_ganyus_field_and_c4_default_on_for_her_and_for_a_teammate():
     ganyu = _sheet("ganyu")
     own = sheets.resolve(ganyu, _giver(ganyu, constellation=4), giver_is_subject=True)
     mate = sheets.resolve(ganyu, _giver(ganyu, constellation=4), giver_is_subject=False)
     assert {c.key: c.default for c in own.bonus.conditions} == {
         "a1_fired": 1, "in_field": 1, "c1_hit": 1, "c4_stacks": 5}
+    # A teammate's buffs default on at their maximum (§40 (ii)), said as such.
     assert {c.key: c.default for c in mate.bonus.conditions} == {
-        "in_field": 0, "c1_hit": 0, "c4_stacks": 0}
+        "in_field": 1, "c1_hit": 1, "c4_stacks": 5}
+    assert {c.default_reason for c in mate.bonus.conditions} == {"teammate"}
     [c4] = [e for e in mate.bonus.effects if e.per == "c4_stacks"]
     assert c4.value == 0.05
     [c1] = [e for e in mate.bonus.effects if e.stat == "enemy_res"]
@@ -310,7 +314,7 @@ def test_ittos_burst_and_a4_move_with_his_def_and_c4_reaches_the_party():
     mate = sheets.resolve(itto, _giver(itto, constellation=4, rows=rows), giver_is_subject=False)
     assert {e.stat: e.value for e in mate.bonus.effects} == {
         "atk_pct": itto.pins.constellations[4][1], "def_pct": itto.pins.constellations[4][0]}
-    assert {c.key: c.default for c in mate.bonus.conditions} == {"after": 0}
+    assert {c.key: c.default for c in mate.bonus.conditions} == {"after": 1}
 
 
 # ── Cyno: the burst's EM, read by A4 on his Pactsworn rows ───────────────────────────────

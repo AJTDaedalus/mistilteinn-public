@@ -108,6 +108,11 @@
     "constellation": 1,
     "param": 1
    },
+   "usual": {
+    "value": "max",
+    "reason": "at the cap: no typical stack is documented, and self-sustaining on-fielders reach it by themselves; set it near 0 in a party without a healer",
+    "cite": "KQM Furina quick guide, keqingmains.com/q/furina-quickguide/: 'Self-sustaining on-fielders like Neuvillette or Clorinde can stack Fanfare by themselves'"
+   },
    "go": "pando:Furina.ts:114-119,129-133; wr:index.tsx:135-148,613-634"
   },
   {

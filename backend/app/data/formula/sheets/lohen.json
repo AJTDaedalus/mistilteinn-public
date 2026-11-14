@@ -91,6 +91,10 @@
    "label": "After a nearby party member triggers a Cryo reaction while in Masterstroke mode",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs a party member's Cryo reaction while he is in Masterstroke mode, which depends on the party"
+   },
    "go": "pando:Lohen.ts:129-136,156-161; wr:index.tsx:159-174"
   },
   {
@@ -98,6 +102,10 @@
    "label": "Evilsbane Blade triggered",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it needs Evilsbane Blade to trigger"
+   },
    "go": "pando:Lohen.ts:165-167; wr:index.tsx:191-197"
   },
   {

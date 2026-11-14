@@ -102,6 +102,10 @@
    "label": "Stellar Radiance: Stellar-Conduct (replaces the Electro bonus)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: a party composition the estimate does not check; turn it on if your party has it"
+   },
    "go": "wr:index.tsx:109-112,118-151"
   },
   {

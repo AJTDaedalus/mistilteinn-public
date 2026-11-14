@@ -152,6 +152,10 @@
     "voice",
     "vortex"
    ],
+   "usual": {
+    "value": "",
+    "reason": "none: which state she is in is the player's choice; pick the one you play"
+   },
    "go": "pando:Vodyanitsa.ts:113,205-233"
   },
   {
@@ -160,6 +164,10 @@
    "kind": "stacks",
    "default_by": "situational",
    "max": 3,
+   "usual": {
+    "value": "max",
+    "reason": "at the cap: no usual count is documented"
+   },
    "go": "pando:Vodyanitsa.ts:114-119,247-258"
   }
  ],

@@ -146,6 +146,11 @@
    "default_by": "giver_is_subject",
    "max": 200,
    "step": 10,
+   "usual": {
+    "value": "max",
+    "reason": "200, the most her burst can consume, which her teams reach in a rotation",
+    "cite": "KQM Clorinde quick guide, keqingmains.com/q/clorinde-quickguide/: 'even if Mavuika can reach 200 Fighting Spirit in a single rotation'"
+   },
    "go": "pando:Mavuika.ts:109,120-121,125-127; wr:index.tsx:123-136"
   },
   {

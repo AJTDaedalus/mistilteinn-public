@@ -93,6 +93,10 @@
    "label": "Opponent below 50% HP (C4)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it depends on the opponent's HP, which the estimate does not follow"
+   },
    "go": "pando:Eula.ts:86-87,106-108"
   }
  ],

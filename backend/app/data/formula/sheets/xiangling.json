@@ -95,6 +95,10 @@
    "label": "Picked up Xiangling's chili pepper (A4), as the active character",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: the active character has to pick the chili up, which a rotation does not reliably do"
+   },
    "go": "pando:Xiangling.ts:85-90; wr:index.tsx:87-95,240-252"
   },
   {

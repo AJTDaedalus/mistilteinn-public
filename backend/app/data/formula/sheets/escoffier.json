@@ -107,6 +107,10 @@
    "label": "Cold Dish stacks remain for a teammate's Cryo hit (C2)",
    "kind": "toggle",
    "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "her burst grants the stacks and her party's Cryo hits spend them"
+   },
    "go": "pando:Escoffier.ts:84-87,107,130-133,147; wr:index.tsx:139-154,412-425"
   }
  ],

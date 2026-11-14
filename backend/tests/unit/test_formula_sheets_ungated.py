@@ -114,7 +114,7 @@ def test_per_travels_with_the_effect_and_its_condition_is_offered():
     [a1] = [e for e in kit.bonus.effects if e.stat == "elemental_mastery"]
     assert (a1.value, a1.per) == (pytest.approx(mitya.pins.passives[1][0]), "a1_beacons")
     beacons = next(c for c in kit.bonus.conditions if c.key == "a1_beacons")
-    assert (beacons.default, beacons.default_reason) == (0, "situational")
+    assert (beacons.default, beacons.default_reason) == (4, "teammate")
     own = sheets.resolve(mitya, _giver(mitya), giver_is_subject=True)
     beacons = next(c for c in own.bonus.conditions if c.key == "a1_beacons")
     assert (beacons.default, beacons.default_reason) == (4, "self")
@@ -196,7 +196,7 @@ def test_a_teammates_flat_damage_is_a_number_from_the_givers_atk():
     assert (a4.stat, a4.value) == ("flat_damage",
                                    pytest.approx(valeriy.pins.passives[4][0] * 2000.0))
     momentum = next(c for c in kit.bonus.conditions if c.key == "momentum")
-    assert (momentum.kind, momentum.default, momentum.max) == ("number", 0, 100)
+    assert (momentum.kind, momentum.default, momentum.max) == ("number", 100, 100)
 
 
 def test_others_never_reach_the_giver():

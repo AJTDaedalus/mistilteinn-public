@@ -102,6 +102,11 @@
    "default_by": "self",
    "max": 200,
    "step": 5,
+   "usual": {
+    "value": 130,
+    "reason": "she starts her Normal Attack string at 130% Bond of Life from a Blood-Debt Directive and her attacks consume it; 200% is the cap, not where she fights",
+    "cite": "KQM Arlecchino quick guide, keqingmains.com/q/arlecchino-quickguide/: 'starts off with a Bond of Life worth 130%'"
+   },
    "go": "pando:Arlecchino.ts:107,114-115,119-122"
   },
   {

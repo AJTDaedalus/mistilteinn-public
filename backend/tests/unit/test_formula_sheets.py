@@ -140,8 +140,10 @@ def test_bennett_burst_is_his_ratio_times_his_own_base_atk():
     kit = sheets.resolve(BENNETT, bennett(), giver_is_subject=False)
     assert _effects(kit) == {("flat_atk", None): pytest.approx(1.008 * 799.16)}
     [condition] = kit.bonus.conditions
+    # DECISIONS §40 (ii): his teams fight in his field, so it is on at its usual value, said.
     assert (condition.key, condition.default, condition.default_reason) == (
-        "in_field", 0, "situational")
+        "in_field", 1, "usual")
+    assert "his teams fight inside his field" in (condition.default_note or "")
     assert kit.verified
     assert "burst_atk pando:Bennett.ts" in kit.citation
 
@@ -160,7 +162,7 @@ def test_c1_adds_its_own_effect_and_c5_raises_the_burst_level():
 def test_bennett_on_himself_defaults_the_field_on_and_keeps_c2():
     kit = sheets.resolve(BENNETT, bennett(constellation=2), giver_is_subject=True)
     by_key = {c.key: c for c in kit.bonus.conditions}
-    assert (by_key["in_field"].default, by_key["in_field"].default_reason) == (1, "self")
+    assert (by_key["in_field"].default, by_key["in_field"].default_reason) == (1, "usual")
     assert (by_key["below_70_hp"].default, by_key["below_70_hp"].default_reason) == (
         0, "situational")
     assert _effects(kit)[("energy_recharge", None)] == pytest.approx(0.3)

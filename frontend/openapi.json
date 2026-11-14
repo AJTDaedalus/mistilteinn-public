@@ -8244,9 +8244,22 @@
             "type": "string",
             "enum": [
               "self",
-              "situational"
+              "situational",
+              "usual",
+              "teammate"
             ],
             "title": "Default Reason"
+          },
+          "default_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Note"
           },
           "max": {
             "anyOf": [

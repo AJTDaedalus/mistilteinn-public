@@ -159,7 +159,9 @@ def test_c4_reads_its_em_by_the_opponent_count_from_the_list():
     assert c4.per == "c4_count"
     assert c4.by_stack == nahida.pins.constellations[4][:4]
     count = next(c for c in kit.bonus.conditions if c.key == "c4_count")
-    assert (count.max, count.default, count.default_reason) == (4, 0, "situational")
+    # The estimate scores one target (§40 (ii)): one opponent, said.
+    assert (count.max, count.default, count.default_reason) == (4, 1, "usual")
+    assert "one target" in (count.default_note or "")
 
 
 def test_a_stack_table_needs_a_fixed_maximum_and_a_list():
