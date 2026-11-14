@@ -1,0 +1,294 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Wanderer",
+ "nanoka_id": "10000075",
+ "slug": "wanderer",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Wanderer.ts",
+  "wr": "libs/gi/sheets/src/Characters/Wanderer/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/wanderer/",
+ "verified_by": [
+  "wanderer_windfavored_on_his_own_normal"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Wanderer.ts:166-167",
+   "gcsim": "wanderer.go:28"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Wanderer.ts:166,168",
+   "gcsim": "wanderer.go:27"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Kuugo: Fushoudan DMG|{param2:F1P} Normal Attack DMG",
+    "Kuugo: Toufukai DMG|{param3:F1P} Charged Attack DMG"
+   ]
+  },
+  "constellations": {
+   "2": [
+    0.04,
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    0.3,
+    20.0,
+    0.2,
+    0.8,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "windfavored",
+   "label": "Windfavored, after his skill",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Wanderer.ts:104-105,112-119"
+  },
+  {
+   "key": "pyro_contact",
+   "label": "His skill absorbed Pyro (A1; needs a Pyro member)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Wanderer.ts:106-108,120-126"
+  },
+  {
+   "key": "cryo_contact",
+   "label": "His skill absorbed Cryo (A1; needs a Cryo member)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Wanderer.ts:106-108,127-133"
+  },
+  {
+   "key": "c2_points",
+   "label": "Kuugoryoku Points below the maximum when he bursts (C2)",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 50,
+   "step": 5,
+   "usual": {
+    "value": "max",
+    "reason": "he bursts as Windfavored ends, his points spent; no usual count is documented, so at its maximum"
+   },
+   "go": "pando:Wanderer.ts:86-97,109-110,140-160"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill_normal",
+   "label": "Hanega: Normal Attacks deal a multiple of their DMG in Windfavored (the skill row, as a base multiplier)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Kuugo: Fushoudan DMG",
+    "offset": {
+     "constant": -1,
+     "cite": "GO pando:Wanderer.ts:112-115,177-181 multiplies the Normal Attack row by the skill row; as a base multiplier added to 1 (GO `baseMulti` default 1, formula/src/data/char/util.ts) it is the row less 1"
+    }
+   },
+   "when": [
+    {
+     "condition": "windfavored",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wanderer.ts:43-46,112-115,177-181"
+  },
+  {
+   "key": "skill_charged",
+   "label": "Hanega: Charged Attacks deal a multiple of their DMG in Windfavored (the skill row, as a base multiplier)",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "base_dmg_bonus",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Kuugo: Toufukai DMG",
+    "offset": {
+     "constant": -1,
+     "cite": "GO pando:Wanderer.ts:116-119,182-184 multiplies the Charged Attack row by the skill row; as a base multiplier added to 1 (GO `baseMulti` default 1, formula/src/data/char/util.ts) it is the row less 1"
+    }
+   },
+   "when": [
+    {
+     "condition": "windfavored",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wanderer.ts:43-47,116-119,182-184"
+  },
+  {
+   "key": "a1_pyro",
+   "label": "A1 Jade-Claimed Flower: ATK after absorbing Pyro",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 1,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "windfavored",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "pyro_contact",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "team_gate": {
+    "includes": [
+     "pyro"
+    ]
+   },
+   "go": "pando:Wanderer.ts:55-61,120-126,170",
+   "gcsim": "asc.go:147"
+  },
+  {
+   "key": "a1_cryo",
+   "label": "A1 Jade-Claimed Flower: CRIT Rate after absorbing Cryo",
+   "source": "a1",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "passive": 1,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "windfavored",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "cryo_contact",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "team_gate": {
+    "includes": [
+     "cryo"
+    ]
+   },
+   "go": "pando:Wanderer.ts:55-61,127-133,171",
+   "gcsim": "asc.go:158"
+  },
+  {
+   "key": "c2_burst",
+   "label": "C2 Niban: Isle Amidst White Waves: burst DMG per Kuugoryoku Point below the maximum",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "c2_points",
+   "when": [
+    {
+     "condition": "windfavored",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Wanderer.ts:73-76,140-160,173",
+   "gcsim": "cons.go:34-41"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Jade-Claimed Flower: Hydro and Electro absorption",
+   "reason": "no damage effect: Kuugoryoku Points and Energy"
+  },
+  {
+   "source": "a1",
+   "what": "Jade-Claimed Flower: ATK and CRIT Rate without a Pyro or Cryo member",
+   "reason": "the estimate applies them only when the party has that element to absorb; GO leaves both to the user"
+  },
+  {
+   "source": "a4",
+   "what": "Gales of Reverie: Windfavored wind arrows",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c1",
+   "what": "Shoban: Ostentatious Plumage: ATK SPD and the wind arrows' extra scaling",
+   "reason": "attack speed has no closed-form damage effect; the arrows are a damage instance, not offered as a target row yet"
+  },
+  {
+   "source": "c6",
+   "what": "Shugen: The Curtains' Melancholic Sway: extra Normal Attack hits",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ]
+}

@@ -1,0 +1,229 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Lynette",
+ "nanoka_id": "10000083",
+ "slug": "lynette",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Lynette.ts",
+  "wr": "libs/gi/sheets/src/Characters/Lynette/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/lynette/",
+ "verified_by": [
+  "lynette_a1_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_burst",
+   "go": "pando:Lynette.ts:114-115",
+   "gcsim": "lynette.go:27"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_skill",
+   "go": "pando:Lynette.ts:114,116",
+   "gcsim": "lynette.go:28"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "6": [
+    0.2,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "1": [
+    10.0,
+    0.08,
+    0.12,
+    0.16,
+    0.2,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    0.15,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "a1_after",
+   "label": "After her burst (A1)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Lynette.ts:86,89-95"
+  },
+  {
+   "key": "absorbed",
+   "label": "Her Bogglecat Box absorbed an element (A4)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Lynette.ts:87,96-100"
+  },
+  {
+   "key": "c6_thrust",
+   "label": "After her Enigma Thrust (C6)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Lynette.ts:86,101-103"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a1_atk",
+   "label": "A1 Sophisticated Synergy: party ATK by the number of different elements",
+   "source": "a1",
+   "receivers": "team",
+   "stat": "atk_pct",
+   "value": {
+    "passive": 1,
+    "param": 1,
+    "index_by_team": {
+     "count": "distinct",
+     "size": 4
+    }
+   },
+   "when": [
+    {
+     "condition": "a1_after",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lynette.ts:62-71,89-95,119"
+  },
+  {
+   "key": "a4_burst",
+   "label": "A4 Props Positively Prepped: burst DMG once the Box absorbed an element",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "moves": [
+    "burst"
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "absorbed",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lynette.ts:72-74,96-100,120"
+  },
+  {
+   "key": "c6_anemo",
+   "label": "C6 Watchful Eye: Anemo DMG after her Enigma Thrust",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "anemo"
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "c6_thrust",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Lynette.ts:75-78,101-103,121"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "c6",
+   "what": "Watchful Eye: Anemo infusion",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+  },
+  {
+   "source": "c2",
+   "what": "Endless Mysteries: an extra Vivid Shot",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  },
+  {
+   "source": "c4",
+   "what": "Tacit Coordination: a second skill charge",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "A Cold Blade Like a Shadow: pull",
+   "reason": "no damage effect"
+  }
+ ]
+}

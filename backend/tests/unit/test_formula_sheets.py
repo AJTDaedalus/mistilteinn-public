@@ -96,11 +96,15 @@ DPS2 = {"hu_tao", "arlecchino", "clorinde", "navia", "wriothesley", "lyney", "yo
         "eula", "arataki_itto", "cyno"}
 #: Written with the capped self-conversions (DECISIONS §40), whose A4s are exactly that shape.
 CAPPED = {"alhaitham", "tighnari"}
+#: Task 11's sixth batch: the fifth's leftovers, then the supports and buffers by use.
+BATCH6 = {"chasca", "kinich", "wanderer", "keqing", "sangonomiya_kokomi", "yae_miko",
+          "kamisato_ayato", "baizhu", "dehya", "layla", "kirara", "lynette", "thoma", "beidou",
+          "ororon", "iansan", "lan_yan"}
 
 
 def test_every_sheet_loads_and_is_named_after_its_slug():
     assert {s.slug for s in sheets.all_sheets().values()} == {
-        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED}
+        "bennett", "kaedehara_kazuha", *UNGATED, *BUFFERS, *BATCH4, *DPS, *DPS2, *CAPPED, *BATCH6}
 
 
 def test_every_sheet_is_cited_to_the_pinned_go_and_gcsim_commits():

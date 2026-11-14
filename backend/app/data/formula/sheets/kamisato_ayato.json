@@ -1,0 +1,251 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Kamisato Ayato",
+ "nanoka_id": "10000066",
+ "slug": "kamisato_ayato",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/KamisatoAyato.ts",
+  "wr": "libs/gi/sheets/src/Characters/KamisatoAyato/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/ayato/",
+ "verified_by": [
+  "ayato_namisen_c2_on_his_own_shunsuiken"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:KamisatoAyato.ts:146-147",
+   "gcsim": "ayato.go:31"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:KamisatoAyato.ts:146,148",
+   "gcsim": "ayato.go:30"
+  }
+ ],
+ "pins": {
+  "talent_rows": {
+   "elemental_skill": [
+    "Namisen DMG Bonus|{param5:F2P}Max HP/Stack"
+   ],
+   "elemental_burst": [
+    "Normal Attack DMG Bonus|{param2:F1P}"
+   ]
+  },
+  "constellations": {
+   "1": [
+    0.5,
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "2": [
+    1.0,
+    0.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "namisen",
+   "label": "Namisen stacks",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 4,
+   "step": 1,
+   "max_raise": {
+    "constellation": 2,
+    "param": 0
+   },
+   "go": "pando:KamisatoAyato.ts:51-52,95-105"
+  },
+  {
+   "key": "in_area",
+   "label": "The active character is in his burst's Garden of Purity",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:KamisatoAyato.ts:93-94,123-125"
+  },
+  {
+   "key": "low_hp",
+   "label": "Opponent at or below 50% HP (C1)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "off: it depends on the opponent's HP, which the estimate does not follow"
+   },
+   "go": "pando:KamisatoAyato.ts:93-94,111-113"
+  }
+ ],
+ "effects": [
+  {
+   "key": "namisen_flat",
+   "label": "Kamisato Art: Kyouka: Shunsuiken DMG + a share of his Max HP per Namisen stack",
+   "source": "talent",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Shunsuiken 1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Shunsuiken 2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Shunsuiken 3-Hit DMG"
+    }
+   ],
+   "value": {
+    "talent": "elemental_skill",
+    "row": "Namisen DMG Bonus",
+    "times_stat": "hp"
+   },
+   "per": "namisen",
+   "go": "pando:KamisatoAyato.ts:43-52,100-110,129-141",
+   "gcsim": "ayato.go:90"
+  },
+  {
+   "key": "burst_normal",
+   "label": "Kamisato Art: Suiyuu: the active character's Normal Attack DMG",
+   "source": "talent",
+   "receivers": "active",
+   "stat": "dmg_bonus",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "talent": "elemental_burst",
+    "row": "Normal Attack DMG Bonus"
+   },
+   "when": [
+    {
+     "condition": "in_area",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KamisatoAyato.ts:55-60,123-125,152",
+   "gcsim": "burst.go:48"
+  },
+  {
+   "key": "c1_shun",
+   "label": "C1 Kyouka Fuushi: Shunsuiken DMG against a low-HP opponent",
+   "source": "c1",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Shunsuiken 1-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Shunsuiken 2-Hit DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Shunsuiken 3-Hit DMG"
+    }
+   ],
+   "value": {
+    "constellation": 1,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:KamisatoAyato.ts:71-74,111-113,129-141",
+   "gcsim": "cons.go:18-29"
+  },
+  {
+   "key": "c2_hp",
+   "label": "C2 World Source: Max HP at three Namisen stacks or more",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "constellation": 2,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "namisen",
+     "values": [
+      3,
+      4,
+      5
+     ]
+    }
+   ],
+   "go": "pando:KamisatoAyato.ts:75-79,114-122,150",
+   "gcsim": "cons.go:38-50"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Kamisato Art: Suiyuu: Bloomwater Blade",
+   "reason": "its own row; the bonus to teammates is applied"
+  },
+  {
+   "source": "a1",
+   "what": "Kamisato Art: Mine Wo Matoishi Kiyotaki: Namisen stacks on entering and leaving",
+   "reason": "the stack count is the user's condition"
+  },
+  {
+   "source": "a4",
+   "what": "Kamisato Art: Michiyuku Hagetsu: Energy",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c4",
+   "what": "Endless Flow: party ATK SPD",
+   "reason": "attack speed has no closed-form damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Boundless Origin: two extra Shunsuiken strikes",
+   "reason": "a damage instance, not a buff: not offered as a target row yet"
+  }
+ ],
+ "row_moves": [
+  {
+   "talent": "elemental_skill",
+   "labels": [
+    "Shunsuiken 1-Hit DMG",
+    "Shunsuiken 2-Hit DMG",
+    "Shunsuiken 3-Hit DMG"
+   ],
+   "move": "normal",
+   "go": "pando:KamisatoAyato.ts:129-141,163-165"
+  }
+ ]
+}

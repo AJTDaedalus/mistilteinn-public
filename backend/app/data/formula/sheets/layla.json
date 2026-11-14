@@ -1,0 +1,223 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Layla",
+ "nanoka_id": "10000074",
+ "slug": "layla",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Layla.ts",
+  "wr": "libs/gi/sheets/src/Characters/Layla/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/layla/",
+ "verified_by": [
+  "layla_c4_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Layla.ts:129-130",
+   "gcsim": "layla.go:25"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Layla.ts:129,131",
+   "gcsim": "layla.go:24"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "4": [
+    0.05,
+    3.0,
+    0.05,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.2,
+    0.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.015,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "c4_active",
+   "label": "Dawn Star after her Night Stars launch (C4)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "pando:Layla.ts:86,113-119"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_star",
+   "label": "A4 Sweet Slumber Undisturbed: Shooting Star DMG + a share of her Max HP",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Shooting Star DMG"
+    }
+   ],
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "go": "pando:Layla.ts:61-63,108-112,148-157"
+  },
+  {
+   "key": "c4_normal",
+   "label": "C4 Starry Illumination: party Normal Attack DMG + a share of her Max HP",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "normal"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "c4_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Layla.ts:69-73,113-119,135"
+  },
+  {
+   "key": "c4_charged",
+   "label": "C4 Starry Illumination: party Charged Attack DMG + a share of her Max HP",
+   "source": "c4",
+   "receivers": "team",
+   "stat": "flat_damage",
+   "moves": [
+    "charged"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 0,
+    "times_stat": "hp"
+   },
+   "when": [
+    {
+     "condition": "c4_active",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Layla.ts:69-73,113-119,136"
+  },
+  {
+   "key": "c6_star",
+   "label": "C6 Radiant Soulfire: Shooting Star DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Shooting Star DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "go": "pando:Layla.ts:74-77,120-123,148-157"
+  },
+  {
+   "key": "c6_slug",
+   "label": "C6 Radiant Soulfire: Starlight Slug DMG",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "rows": [
+    {
+     "talent": "elemental_burst",
+     "label": "Starlight Slug DMG"
+    }
+   ],
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "go": "pando:Layla.ts:74-77,120-123,160-168"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "a1",
+   "what": "Like Nascent Light: Shield Strength",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c1",
+   "what": "Fortress of Fantasy: Shield Strength and a party shield",
+   "reason": "no damage effect"
+  },
+  {
+   "source": "c6",
+   "what": "Radiant Soulfire: Night Star interval",
+   "reason": "no damage effect"
+  }
+ ]
+}
