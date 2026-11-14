@@ -73,8 +73,10 @@ def test_a1_is_a_quarter_of_the_teams_highest_em_capped(highest: float, expected
                          team_max={"elemental_mastery": highest})
     [a1] = _effects(kit, "elemental_mastery")
     assert a1.value == pytest.approx(expected)
-    assert sheets.stats_read(nahida, _nahida(), {"elemental_mastery": highest}) == {
-        "team_max_elemental_mastery": highest}
+    read = sheets.stats_read(nahida, _nahida(), {"elemental_mastery": highest})
+    assert read["team_max_elemental_mastery"] == highest
+    # Her own EM is read too, since DECISIONS §40: her A4 converts it.
+    assert set(read) == {"team_max_elemental_mastery", "elemental_mastery"}
 
 
 def test_a1_without_the_teams_highest_is_withheld_and_on_nahida_herself_too():

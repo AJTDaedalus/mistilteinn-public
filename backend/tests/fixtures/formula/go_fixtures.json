@@ -2965,7 +2965,7 @@
         {
           "id": "kit:furina",
           "label": "Furina (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Furina.ts (pando), libs/gi/sheets/src/Characters/Furina/index.tsx (wr) @ 2c13fc40 \u2014 burst_dmg pando:Furina.ts:133-137,201-202; wr:index.tsx:149-155,351-354; c2_hp pando:Furina.ts:160-164,200; wr:index.tsx:190-200,343; gcsim internal/characters/furina/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Furina.ts (pando), libs/gi/sheets/src/Characters/Furina/index.tsx (wr) @ 2c13fc40 \u2014 burst_dmg pando:Furina.ts:133-137,201-202; wr:index.tsx:149-155,351-354; c2_hp pando:Furina.ts:160-164,200; wr:index.tsx:190-200,343; a4_salon pando:Furina.ts:73-77,143-150,180-191,250-252; gcsim internal/characters/furina/ @ b107b5dc",
           "bonus": {
             "conditions": [
               {
@@ -3023,6 +3023,36 @@
                 "cap": null,
                 "threshold": null,
                 "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_hp",
+                "value": 7e-06,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Gentilhomme Usher DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Surintendante Chevalmarin DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Mademoiselle Crabaletta DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.28,
+                "threshold": null,
+                "weapon_types": null
               }
             ],
             "unmodelled": [
@@ -3037,10 +3067,6 @@
               {
                 "what": "A1: Endless Waltz healing",
                 "reason": "no damage effect: healing"
-              },
-              {
-                "what": "A4: Unheard Confession: Salon members' DMG + 0.7% per 1,000 of Furina's Max HP, up to 28%",
-                "reason": "scoped to the Salon members' rows (not her Ousia bubble, which is the same move), and read from her own HP, which moves with every candidate through a cap the recipe cannot carry per candidate"
               }
             ]
           }
@@ -6499,10 +6525,6 @@
                 "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
               },
               {
-                "what": "A4: Awakening Elucidated: Tri-Karma Purification DMG and CRIT Rate from her Elemental Mastery above 200",
-                "reason": "a thresholded, capped conversion of the optimized character's own EM, which the recipe cannot carry per candidate: the owner's open question in DECISIONS.md \u00a739"
-              },
-              {
                 "what": "C2: The Root of All Fullness: Burning, Bloom, Hyperbloom, Burgeon and Lunar-Bloom CRIT",
                 "reason": "transformative and Lunar reaction damage is not modelled yet (P3)"
               },
@@ -9799,6 +9821,9 @@
           "name": "Hu Tao",
           "constellation": 2,
           "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
           "stats": "the optimized character"
         }
       ],
@@ -9859,9 +9884,19 @@
         {
           "id": "kit:hu_tao",
           "label": "Hu Tao (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/HuTao.ts (pando), libs/gi/sheets/src/Characters/HuTao/index.tsx (wr) @ 2c13fc40 \u2014 a4_pyro pando:HuTao.ts:70-73,116-118,150; c2_blossom pando:HuTao.ts:74-76,119-126,151; gcsim internal/characters/hutao/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/HuTao.ts (pando), libs/gi/sheets/src/Characters/HuTao/index.tsx (wr) @ 2c13fc40 \u2014 skill_atk pando:HuTao.ts:48-56,103-112,144; a4_pyro pando:HuTao.ts:70-73,116-118,150; c2_blossom pando:HuTao.ts:74-76,119-126,151; gcsim internal/characters/hutao/ @ b107b5dc",
           "bonus": {
             "conditions": [
+              {
+                "key": "paramita",
+                "label": "In Paramita Papilio, her Elemental Skill (ATK from her Max HP)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
               {
                 "key": "low_hp",
                 "label": "Hu Tao's HP is at or below 50% (A4)",
@@ -9874,6 +9909,30 @@
               }
             ],
             "effects": [
+              {
+                "stat": "flat_atk_from_hp",
+                "value": 0.06256,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "paramita",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2860.0,
+                "threshold": null,
+                "weapon_types": null
+              },
               {
                 "stat": "dmg_bonus",
                 "value": 0.33,
@@ -9922,10 +9981,6 @@
             ],
             "unmodelled": [
               {
-                "what": "TALENT: Guide to Afterlife: ATK from her Max HP, capped at a multiple of her base ATK",
-                "reason": "a capped conversion of her own Max HP (GO `min(prod(atkInc, premod.hp), prod(maxAtkInc, base.atk))`, pando:HuTao.ts:103-112): the recipe carries no cap on a per-candidate term, which is the owner's open question on capped self-conversions (DECISIONS \u00a739); the cap is also a parameter no seeded row label names"
-              },
-              {
                 "what": "TALENT: Guide to Afterlife: Pyro infusion",
                 "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
               },
@@ -9942,7 +9997,8 @@
         }
       ],
       "conditionals": {
-        "kit:hu_tao/low_hp": 1
+        "kit:hu_tao/low_hp": 1,
+        "kit:hu_tao/paramita": 0
       },
       "expected": 4714.030879220796,
       "go_value": 4714.030879220796,
@@ -10190,9 +10246,19 @@
         {
           "id": "kit:clorinde",
           "label": "Clorinde (kit)",
-          "citation": "GO libs/gi/formula/src/data/char/Clorinde.ts (pando), libs/gi/sheets/src/Characters/Clorinde/index.tsx (wr) @ 2c13fc40 \u2014 a4_crit pando:Clorinde.ts:68-74,147-151,185; c4_burst pando:Clorinde.ts:85-88,152-156,186; gcsim internal/characters/clorinde/ @ b107b5dc",
+          "citation": "GO libs/gi/formula/src/data/char/Clorinde.ts (pando), libs/gi/sheets/src/Characters/Clorinde/index.tsx (wr) @ 2c13fc40 \u2014 c2_burst pando:Clorinde.ts:81-84,129-146,164-174,184,197-201; c2_vigil pando:Clorinde.ts:81-84,129-146,164-174,184,197-201; a4_crit pando:Clorinde.ts:68-74,147-151,185; c4_burst pando:Clorinde.ts:85-88,152-156,186; gcsim internal/characters/clorinde/ @ b107b5dc",
           "bonus": {
             "conditions": [
+              {
+                "key": "a1_stacks",
+                "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
+                "kind": "stacks",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              },
               {
                 "key": "bond_changes",
                 "label": "Bond of Life changes in Night Vigil (A4 stacks)",
@@ -10215,6 +10281,51 @@
               }
             ],
             "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "a1_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2700.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Swift Hunt DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Impale the Night DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "a1_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2700.0,
+                "threshold": null,
+                "weapon_types": null
+              },
               {
                 "stat": "crit_rate",
                 "value": 0.1,
@@ -10253,14 +10364,6 @@
               }
             ],
             "unmodelled": [
-              {
-                "what": "A1: Dark-Shattering Flame: Normal Attack and burst DMG + a share of her ATK per stack, capped at a flat amount",
-                "reason": "a capped conversion of her own ATK (GO `min(maxDmgInc, prod(atkRatio, final.atk, stacks))`, pando:Clorinde.ts:129-146): the recipe carries no cap on a per-candidate term, the owner's open question on capped self-conversions (DECISIONS \u00a739)"
-              },
-              {
-                "what": "C2: \"Now, As We Face the Perils of the Long Night\": A1's larger share and cap",
-                "reason": "raises A1, which is not modelled (above)"
-              },
               {
                 "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
                 "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
@@ -12066,6 +12169,2594 @@
       "go_value": 3078.352202038892,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "hu_tao_paramita_below_cap_on_her_own_blossom",
+      "covers": "self flat ATK from her own Max HP, capped at a multiple of her base ATK (a talent row's unnamed parameter), per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/HuTao.ts:48-56,103-112,144,165"
+      ],
+      "givers": [
+        {
+          "name": "Hu Tao",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 715.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15552.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 876.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.466,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "blossom",
+          "label": "Blood Blossom DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Blood Blossom DMG|{param3:P}",
+            "params": [
+              0.3,
+              0.06256,
+              1.152
+            ]
+          },
+          "multiplier": 1.152,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:hu_tao",
+          "label": "Hu Tao (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/HuTao.ts (pando), libs/gi/sheets/src/Characters/HuTao/index.tsx (wr) @ 2c13fc40 \u2014 skill_atk pando:HuTao.ts:48-56,103-112,144; a4_pyro pando:HuTao.ts:70-73,116-118,150; gcsim internal/characters/hutao/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "paramita",
+                "label": "In Paramita Papilio, her Elemental Skill (ATK from her Max HP)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "low_hp",
+                "label": "Hu Tao's HP is at or below 50% (A4)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_atk_from_hp",
+                "value": 0.06256,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "paramita",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2860.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.33,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "low_hp",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Guide to Afterlife: Pyro infusion",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+              },
+              {
+                "what": "TALENT: Spirit Soother: HP regeneration",
+                "reason": "no damage effect: healing (its low-HP damage is its own row)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 3095.544000686827,
+      "go_value": 3095.544000686827,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "hu_tao_paramita_past_cap_on_her_own_blossom",
+      "covers": "self flat ATK from her own Max HP, capped at a multiple of her base ATK (a talent row's unnamed parameter), per candidate",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/HuTao.ts:48-56,103-112,144,165"
+      ],
+      "givers": [
+        {
+          "name": "Hu Tao",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_skill": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 715.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15552.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 876.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 1.998,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "blossom",
+          "label": "Blood Blossom DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Blood Blossom DMG|{param3:P}",
+            "params": [
+              0.3,
+              0.06256,
+              1.152
+            ]
+          },
+          "multiplier": 1.152,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:hu_tao",
+          "label": "Hu Tao (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/HuTao.ts (pando), libs/gi/sheets/src/Characters/HuTao/index.tsx (wr) @ 2c13fc40 \u2014 skill_atk pando:HuTao.ts:48-56,103-112,144; a4_pyro pando:HuTao.ts:70-73,116-118,150; gcsim internal/characters/hutao/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "paramita",
+                "label": "In Paramita Papilio, her Elemental Skill (ATK from her Max HP)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "low_hp",
+                "label": "Hu Tao's HP is at or below 50% (A4)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_atk_from_hp",
+                "value": 0.06256,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "paramita",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2860.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.33,
+                "elements": [
+                  "pyro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "low_hp",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Guide to Afterlife: Pyro infusion",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4)"
+              },
+              {
+                "what": "TALENT: Spirit Soother: HP regeneration",
+                "reason": "no damage effect: healing (its low-HP damage is its own row)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 2982.3519992123074,
+      "go_value": 2982.3519992123074,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "clorinde_a1_below_cap_on_her_own_burst",
+      "covers": "self flat damage from her own ATK per stack, the stacked total capped (A1, raised and replaced by C2), per candidate; over a five-hit row",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Clorinde.ts:62-74,81-84,129-151,184-185,204"
+      ],
+      "givers": [
+        {
+          "name": "Clorinde",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 1009.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12956.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 5,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P}\u00d75",
+            "params": [
+              2.28384,
+              1.2,
+              15.0,
+              60.0
+            ]
+          },
+          "multiplier": 2.28384,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:clorinde",
+          "label": "Clorinde (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Clorinde.ts (pando), libs/gi/sheets/src/Characters/Clorinde/index.tsx (wr) @ 2c13fc40 \u2014 a1_burst pando:Clorinde.ts:62-67,129-146,164-174,184,197-201; a1_vigil pando:Clorinde.ts:62-67,129-146,164-174,184,197-201; a4_crit pando:Clorinde.ts:68-74,147-151,185; gcsim internal/characters/clorinde/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_stacks",
+                "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
+                "kind": "stacks",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "bond_changes",
+                "label": "Bond of Life changes in Night Vigil (A4 stacks)",
+                "kind": "stacks",
+                "default": 2.0,
+                "default_reason": "self",
+                "max": 2.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "a1_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 1800.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Swift Hunt DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Impale the Night DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "a1_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 1800.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond_changes",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
+                "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
+              },
+              {
+                "what": "TALENT: Hunter's Vigil: healing and Bond of Life",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:clorinde/a1_stacks": 3
+      },
+      "expected": 32597.243474023417,
+      "go_value": 32597.243474023417,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "clorinde_c2_a1_past_cap_on_her_own_burst",
+      "covers": "self flat damage from her own ATK per stack, the stacked total capped (A1, raised and replaced by C2), per candidate; over a five-hit row",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Clorinde.ts:62-74,81-84,129-151,184-185,204"
+      ],
+      "givers": [
+        {
+          "name": "Clorinde",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 1009.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12956.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 1.7,
+        "flat_atk": 311.0,
+        "electro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.8
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "burst",
+          "label": "Skill DMG",
+          "move": "burst",
+          "count": 5,
+          "talent_row": {
+            "label": "Skill DMG|{param1:F1P}\u00d75",
+            "params": [
+              2.28384,
+              1.2,
+              15.0,
+              60.0
+            ]
+          },
+          "multiplier": 2.28384,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:clorinde",
+          "label": "Clorinde (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Clorinde.ts (pando), libs/gi/sheets/src/Characters/Clorinde/index.tsx (wr) @ 2c13fc40 \u2014 c2_burst pando:Clorinde.ts:81-84,129-146,164-174,184,197-201; c2_vigil pando:Clorinde.ts:81-84,129-146,164-174,184,197-201; a4_crit pando:Clorinde.ts:68-74,147-151,185; gcsim internal/characters/clorinde/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "a1_stacks",
+                "label": "Dark-Shattering Flame stacks: Electro reactions triggered by the party during Night Vigil (A1)",
+                "kind": "stacks",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "bond_changes",
+                "label": "Bond of Life changes in Night Vigil (A4 stacks)",
+                "kind": "stacks",
+                "default": 2.0,
+                "default_reason": "self",
+                "max": 2.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "a1_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2700.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "flat_damage_from_atk",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Swift Hunt DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Impale the Night DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": "a1_stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 2700.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond_changes",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Hunter's Vigil: Swift Hunt and Impale the Night are Normal Attacks",
+                "reason": "they are skill-talent rows that GO counts as Normal Attacks (as Skirk's): a teammate's Normal Attack buff reaches them only once the row's move is set to normal; their Electro infusion is the row's element (G4)"
+              },
+              {
+                "what": "TALENT: Hunter's Vigil: healing and Bond of Life",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "C1: \"From This Day, I Pass the Candle's Shadow-Veil\": Nightvigil Shade attacks",
+                "reason": "a damage instance, not a buff: not offered as a target row yet"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:clorinde/a1_stacks": 3
+      },
+      "expected": 60818.034944877014,
+      "go_value": 60818.034944877014,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "nahida_a4_below_cap_on_her_own_tri_karma",
+      "covers": "self DMG% and CRIT Rate from her own EM above a threshold, the counted EM capped (A4), each priced alone per candidate, on one of her rows",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Nahida.ts:83-87,184-197,246-255"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "hydro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 841.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10360.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 115.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 487.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "karma",
+          "label": "Tri-Karma Purification DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Tri-Karma Purification DMG|{param3:F1P} ATK+{param4:F1P} Elemental Mastery",
+            "params": [
+              1.7712,
+              2.3472,
+              1.8576,
+              3.7152
+            ]
+          },
+          "multiplier": 1.8576,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 3.7152
+            }
+          ],
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Tri-Karma Purification DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:nahida",
+          "label": "Nahida (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 a4_dmg pando:Nahida.ts:83-87,184-190,246-253; a4_crit pando:Nahida.ts:83-87,184-186,191-197,246-254; gcsim internal/characters/nahida/ @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.001,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Tri-Karma Purification DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.8,
+                "threshold": 200.0,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate_from_em",
+                "value": 0.0003,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Tri-Karma Purification DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.24,
+                "threshold": 200.0,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
+                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+              },
+              {
+                "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
+                "reason": "no damage effect: they change how often and how long, not how much a hit deals"
+              },
+              {
+                "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
+                "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              },
+              {
+                "what": "A1: A1 Compassion Illuminated: Elemental Mastery, 25% of the party's highest",
+                "reason": "withheld: it reads the team's highest elemental_mastery, which includes Nahida's own, and that moves with every candidate through a cap the recipe cannot carry per candidate"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 6346.956671512921,
+      "go_value": 6346.956671512921,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "nahida_a4_past_cap_on_her_own_tri_karma",
+      "covers": "self DMG% and CRIT Rate from her own EM above a threshold, the counted EM capped (A4), each priced alone per candidate, on one of her rows",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Nahida.ts:83-87,184-197,246-255"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "hydro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 841.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10360.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 115.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 1000.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "karma",
+          "label": "Tri-Karma Purification DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Tri-Karma Purification DMG|{param3:F1P} ATK+{param4:F1P} Elemental Mastery",
+            "params": [
+              1.7712,
+              2.3472,
+              1.8576,
+              3.7152
+            ]
+          },
+          "multiplier": 1.8576,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 3.7152
+            }
+          ],
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Tri-Karma Purification DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:nahida",
+          "label": "Nahida (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Nahida.ts (pando), libs/gi/sheets/src/Characters/Nahida/index.tsx (wr) @ 2c13fc40 \u2014 a4_dmg pando:Nahida.ts:83-87,184-190,246-253; a4_crit pando:Nahida.ts:83-87,184-186,191-197,246-254; gcsim internal/characters/nahida/ @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.001,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Tri-Karma Purification DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.8,
+                "threshold": 200.0,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate_from_em",
+                "value": 0.0003,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Tri-Karma Purification DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.24,
+                "threshold": 200.0,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "A1: Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
+                "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
+              },
+              {
+                "what": "TALENT: Illusory Heart: the Electro and Hydro parts (Tri-Karma trigger interval, Shrine duration)",
+                "reason": "no damage effect: they change how often and how long, not how much a hit deals"
+              },
+              {
+                "what": "KIT: Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
+                "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+              },
+              {
+                "what": "A1: A1 Compassion Illuminated: Elemental Mastery, 25% of the party's highest",
+                "reason": "withheld: it reads the team's highest elemental_mastery, which includes Nahida's own, and that moves with every candidate through a cap the recipe cannot carry per candidate"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 8177.147508964431,
+      "go_value": 8177.147508964431,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "furina_a4_below_cap_on_her_own_usher",
+      "covers": "self DMG% from her own Max HP per 1,000 (a cited unit), capped (A4), per candidate, on her Salon members' rows only",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Furina.ts:73-77,128,143-150,180-191,250"
+      ],
+      "givers": [
+        {
+          "name": "Furina",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 674.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15307.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 696.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "usher",
+          "label": "Gentilhomme Usher DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Gentilhomme Usher DMG|{param3:F2P} Max HP",
+            "params": [
+              0.141552,
+              30.0,
+              0.10728
+            ]
+          },
+          "multiplier": 0.10728,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Gentilhomme Usher DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:furina",
+          "label": "Furina (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Furina.ts (pando), libs/gi/sheets/src/Characters/Furina/index.tsx (wr) @ 2c13fc40 \u2014 burst_dmg pando:Furina.ts:133-137,201-202; wr:index.tsx:149-155,351-354; a4_salon pando:Furina.ts:73-77,143-150,180-191,250-252; gcsim internal/characters/furina/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "fanfare",
+                "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
+                "kind": "number",
+                "default": 300.0,
+                "default_reason": "self",
+                "max": 300.0,
+                "step": 50.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.0025,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "fanfare",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_hp",
+                "value": 7e-06,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Gentilhomme Usher DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Surintendante Chevalmarin DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Mademoiselle Crabaletta DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.28,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Let the People Rejoice: Incoming Healing Bonus per Fanfare point",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "TALENT: Salon Solitaire: Salon members' DMG multiplier from the number of party members whose HP they consume (110-140%)",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "A1: Endless Waltz healing",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:furina/fanfare": 0
+      },
+      "expected": 4849.892309109429,
+      "go_value": 4849.892309109429,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "furina_a4_past_cap_on_her_own_usher",
+      "covers": "self DMG% from her own Max HP per 1,000 (a cited unit), capped (A4), per candidate, on her Salon members' rows only",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Furina.ts:73-77,128,143-150,180-191,250"
+      ],
+      "givers": [
+        {
+          "name": "Furina",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "talent_levels": {
+            "elemental_burst": 10
+          },
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 674.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 15307.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 696.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.242,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "hp_pct": 1.4,
+        "flat_hp": 4780.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.9
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "usher",
+          "label": "Gentilhomme Usher DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Gentilhomme Usher DMG|{param3:F2P} Max HP",
+            "params": [
+              0.141552,
+              30.0,
+              0.10728
+            ]
+          },
+          "multiplier": 0.10728,
+          "scaling_stat": "hp",
+          "amplifying": null,
+          "conditionals": {},
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "Gentilhomme Usher DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:furina",
+          "label": "Furina (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Furina.ts (pando), libs/gi/sheets/src/Characters/Furina/index.tsx (wr) @ 2c13fc40 \u2014 burst_dmg pando:Furina.ts:133-137,201-202; wr:index.tsx:149-155,351-354; a4_salon pando:Furina.ts:73-77,143-150,180-191,250-252; gcsim internal/characters/furina/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "fanfare",
+                "label": "Fanfare points during Let the People Rejoice (from the party's HP changes, which her own Salon members drain)",
+                "kind": "number",
+                "default": 300.0,
+                "default_reason": "self",
+                "max": 300.0,
+                "step": 50.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.0025,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "fanfare",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_hp",
+                "value": 7e-06,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Gentilhomme Usher DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Surintendante Chevalmarin DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "Mademoiselle Crabaletta DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.28,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Let the People Rejoice: Incoming Healing Bonus per Fanfare point",
+                "reason": "no damage effect: healing"
+              },
+              {
+                "what": "TALENT: Salon Solitaire: Salon members' DMG multiplier from the number of party members whose HP they consume (110-140%)",
+                "reason": "a multiplier on one hit's base damage (GO `baseMulti`): the format has no base-multiplier stat"
+              },
+              {
+                "what": "A1: Endless Waltz healing",
+                "reason": "no damage effect: healing"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:furina/fanfare": 0
+      },
+      "expected": 5997.010875703418,
+      "go_value": 5997.010875703418,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "alhaitham_a4_c2_below_cap_on_his_own_projection",
+      "covers": "self DMG% from his own EM, capped (A4), per candidate, on his Projection Attack rows; a self EM buff per stack (C2) that the conversion reads",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Alhaitham.ts:69-72,77-81,112-125,162,198-206"
+      ],
+      "givers": [
+        {
+          "name": "Alhaitham",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "dendro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 855.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13348.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 782.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "dendro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "elemental_mastery": 400.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "mirror",
+          "label": "1-Mirror Projection Attack DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Mirror Projection Attack DMG|{param4:F1P} ATK+{param5:F1P} Elemental Mastery",
+            "params": [
+              3.4848,
+              2.78784,
+              1.6,
+              1.2096,
+              2.4192
+            ]
+          },
+          "multiplier": 1.2096,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 2.4192
+            }
+          ],
+          "hit": {
+            "talent": "elemental_skill",
+            "label": "1-Mirror Projection Attack DMG"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:alhaitham",
+          "label": "Alhaitham (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Alhaitham.ts (pando), libs/gi/sheets/src/Characters/Alhaitham/index.tsx (wr) @ 2c13fc40 \u2014 a4_projection pando:Alhaitham.ts:69-72,112-119,198-206; a4_burst pando:Alhaitham.ts:69-72,112-120,207-215; c2_em pando:Alhaitham.ts:77-81,121-125,162; gcsim internal/characters/alhaitham/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "debate",
+                "label": "Debate stacks: Chisel-Light Mirrors he generated in the last 8 seconds (C2)",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "max": 4.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.001,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Mirror Projection Attack DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Mirror Projection Attack DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Mirror Projection Attack DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 1.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.001,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 1.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 50.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "debate",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Universality: An Elaboration on Form: Dendro infusion of his Normal, Charged and Plunging Attacks while he holds a mirror",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Dendro"
+              },
+              {
+                "what": "TALENT: Particular Field: Fetters of Phenomena: attack instances by mirrors held",
+                "reason": "a count of hits, which is the row's count, not a buff"
+              },
+              {
+                "what": "A1: Four-Causal Correction: a mirror from Charged and Plunging Attacks",
+                "reason": "no damage effect: it generates mirrors (their buffs are C2's, C4's, C6's conditions)"
+              },
+              {
+                "what": "C1: Intuition: skill cooldown reduced by Projection Attacks",
+                "reason": "no damage effect: cooldown"
+              },
+              {
+                "what": "KIT: Mirrors consumed at 0 on C6 (GO's WR reading: three generated)",
+                "reason": "GO's pando port itself loses this state, gating on one or more consumed (pando:Alhaitham.ts:131-132); followed as written"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 4780.079402371599,
+      "go_value": 4780.079402371599,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "alhaitham_a4_past_cap_c6_on_his_own_burst",
+      "covers": "self DMG% from his own EM past its cap (A4) on his burst; C6's CRIT Rate and DMG; a boosted burst row (C5)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Alhaitham.ts:69-72,77-92,112-125,148-153,158-167,207-215"
+      ],
+      "givers": [
+        {
+          "name": "Alhaitham",
+          "constellation": 6,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "dendro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 855.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13348.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 782.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "dendro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "elemental_mastery": 900.0,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "fetters",
+          "label": "Single-Instance DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Single-Instance DMG|{param1:F1P} ATK+{param2:F1P} Elemental Mastery",
+            "params": [
+              2.584,
+              2.0672
+            ]
+          },
+          "multiplier": 2.584,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "extra_terms": [
+            {
+              "stat": "elemental_mastery",
+              "multiplier": 2.0672
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:alhaitham",
+          "label": "Alhaitham (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Alhaitham.ts (pando), libs/gi/sheets/src/Characters/Alhaitham/index.tsx (wr) @ 2c13fc40 \u2014 a4_projection pando:Alhaitham.ts:69-72,112-119,198-206; a4_burst pando:Alhaitham.ts:69-72,112-120,207-215; c2_em pando:Alhaitham.ts:77-81,121-125,162; c6_dendro_1 pando:Alhaitham.ts:82-87,131-147,165; c6_dendro_2 pando:Alhaitham.ts:82-87,131-147,165; c6_dendro_3 pando:Alhaitham.ts:82-87,131-147,165; c6_crit_rate pando:Alhaitham.ts:88-92,148-150,166; c6_crit_dmg pando:Alhaitham.ts:88-92,151-153,167; gcsim internal/characters/alhaitham/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "debate",
+                "label": "Debate stacks: Chisel-Light Mirrors he generated in the last 8 seconds (C2)",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "max": 4.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "mirrors_consumed",
+                "label": "Chisel-Light Mirrors his burst consumed (C4): Elemental Mastery to the others per mirror consumed; Dendro DMG to him per mirror it then generates (3 minus those consumed, 3 at C6)",
+                "kind": "number",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              },
+              {
+                "key": "excess_mirror",
+                "label": "A mirror was generated beyond the maximum of three (C6)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.001,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": [
+                  {
+                    "talent": "elemental_skill",
+                    "label": "1-Mirror Projection Attack DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "2-Mirror Projection Attack DMG"
+                  },
+                  {
+                    "talent": "elemental_skill",
+                    "label": "3-Mirror Projection Attack DMG"
+                  }
+                ],
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 1.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.001,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 1.0,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 50.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "debate",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.1,
+                "elements": [
+                  "dendro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "mirrors_consumed",
+                    "values": [
+                      1.0,
+                      2.0,
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.1,
+                "elements": [
+                  "dendro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "mirrors_consumed",
+                    "values": [
+                      1.0,
+                      2.0,
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.1,
+                "elements": [
+                  "dendro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "mirrors_consumed",
+                    "values": [
+                      1.0,
+                      2.0,
+                      3.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "excess_mirror",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.7,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "excess_mirror",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Universality: An Elaboration on Form: Dendro infusion of his Normal, Charged and Plunging Attacks while he holds a mirror",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Dendro"
+              },
+              {
+                "what": "TALENT: Particular Field: Fetters of Phenomena: attack instances by mirrors held",
+                "reason": "a count of hits, which is the row's count, not a buff"
+              },
+              {
+                "what": "A1: Four-Causal Correction: a mirror from Charged and Plunging Attacks",
+                "reason": "no damage effect: it generates mirrors (their buffs are C2's, C4's, C6's conditions)"
+              },
+              {
+                "what": "C1: Intuition: skill cooldown reduced by Projection Attacks",
+                "reason": "no damage effect: cooldown"
+              },
+              {
+                "what": "C6: Structuration: the burst keeps his mirrors at three",
+                "reason": "no damage effect itself: its effect on C4's Dendro DMG (three generated) is applied"
+              },
+              {
+                "what": "KIT: Mirrors consumed at 0 on C6 (GO's WR reading: three generated)",
+                "reason": "GO's pando port itself loses this state, gating on one or more consumed (pando:Alhaitham.ts:131-132); followed as written"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 11555.05861504246,
+      "go_value": 11555.05861504246,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "alhaitham_c4_on_xiangling",
+      "covers": "a teammate EM buff per a user-set count, to the others only (C4), into an amplifying reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484",
+        "libs/gi/formula/src/data/char/Alhaitham.ts:82-87,126-130,163-164"
+      ],
+      "givers": [
+        {
+          "name": "Alhaitham",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "dendro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:alhaitham",
+          "label": "Alhaitham (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Alhaitham.ts (pando), libs/gi/sheets/src/Characters/Alhaitham/index.tsx (wr) @ 2c13fc40 \u2014 c4_team_em pando:Alhaitham.ts:82-87,126-130,163-164; gcsim internal/characters/alhaitham/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "mirrors_consumed",
+                "label": "Chisel-Light Mirrors his burst consumed (C4): Elemental Mastery to the others per mirror consumed; Dendro DMG to him per mirror it then generates (3 minus those consumed, 3 at C6)",
+                "kind": "number",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": 3.0,
+                "step": 1.0,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 30.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "mirrors_consumed",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Universality: An Elaboration on Form: Dendro infusion of his Normal, Charged and Plunging Attacks while he holds a mirror",
+                "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Dendro"
+              },
+              {
+                "what": "TALENT: Particular Field: Fetters of Phenomena: attack instances by mirrors held",
+                "reason": "a count of hits, which is the row's count, not a buff"
+              },
+              {
+                "what": "A1: Four-Causal Correction: a mirror from Charged and Plunging Attacks",
+                "reason": "no damage effect: it generates mirrors (their buffs are C2's, C4's, C6's conditions)"
+              },
+              {
+                "what": "C1: Intuition: skill cooldown reduced by Projection Attacks",
+                "reason": "no damage effect: cooldown"
+              },
+              {
+                "what": "KIT: Mirrors consumed at 0 on C6 (GO's WR reading: three generated)",
+                "reason": "GO's pando port itself loses this state, gating on one or more consumed (pando:Alhaitham.ts:131-132); followed as written"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:alhaitham/mirrors_consumed": 3
+      },
+      "expected": 5633.23891812196,
+      "go_value": 5631.854633024579,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.0002457956015525155
+    },
+    {
+      "name": "tighnari_a1_a4_below_cap_on_his_own_wreath",
+      "covers": "self DMG% from his own EM, capped (A4), per candidate, on his Charged Attacks; a self EM buff (A1) that the conversion reads",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Tighnari.ts:58-65,92-102,127-128,143-145"
+      ],
+      "givers": [
+        {
+          "name": "Tighnari",
+          "constellation": 0,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "dendro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 876.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10850.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "dendro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "elemental_mastery": 500.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "wreath",
+          "label": "Wreath Arrow DMG",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Wreath Arrow DMG|{param7:F1P}",
+            "params": [
+              0.8823,
+              0.8296,
+              0.52275,
+              1.3566,
+              0.867,
+              2.232,
+              1.5696
+            ]
+          },
+          "multiplier": 1.5696,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:tighnari",
+          "label": "Tighnari (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Tighnari.ts (pando), libs/gi/sheets/src/Characters/Tighnari/index.tsx (wr) @ 2c13fc40 \u2014 a1_em pando:Tighnari.ts:58-61,92-94,127; a4_charged_burst pando:Tighnari.ts:62-65,95-102,128-129; gcsim internal/characters/tighnari/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "wreath",
+                "label": "After he fires a Wreath Arrow (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 50.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "wreath",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0006,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "charged",
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.6,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Breakthrough Barb: Wreath and Clusterbloom Arrows are Charged Attacks",
+                "reason": "their rows' move is not derived from the label (`suggestMove`): set it to charged for A4 and C1 to reach them"
+              },
+              {
+                "what": "TALENT: Vijnana-Phala Mine: Vijnana Penetrator state",
+                "reason": "no damage effect itself: it shortens the Wreath Arrow's charge time"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 3168.746364325372,
+      "go_value": 3168.746364325372,
+      "divergence": "none: no reaction",
+      "cap_state": "below",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "tighnari_a4_past_cap_c2_on_his_own_wreath",
+      "covers": "self DMG% from his own EM past its cap (A4); a Charged Attack CRIT Rate (C1); a situational Dendro DMG buff (C2)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/formula/src/data/char/Tighnari.ts:58-72,92-110,127-131,143-145"
+      ],
+      "givers": [
+        {
+          "name": "Tighnari",
+          "constellation": 2,
+          "ascension_phase": 6,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "dendro",
+          "electro"
+        ]
+      },
+      "base": {
+        "base_atk": 876.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10850.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "dendro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "elemental_mastery": 1050.0,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "wreath",
+          "label": "Wreath Arrow DMG",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Wreath Arrow DMG|{param7:F1P}",
+            "params": [
+              0.8823,
+              0.8296,
+              0.52275,
+              1.3566,
+              0.867,
+              2.232,
+              1.5696
+            ]
+          },
+          "multiplier": 1.5696,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:tighnari",
+          "label": "Tighnari (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Tighnari.ts (pando), libs/gi/sheets/src/Characters/Tighnari/index.tsx (wr) @ 2c13fc40 \u2014 a1_em pando:Tighnari.ts:58-61,92-94,127; a4_charged_burst pando:Tighnari.ts:62-65,95-102,128-129; c1_crit pando:Tighnari.ts:66-68,103-107,130; c2_dendro pando:Tighnari.ts:69-72,108-110,131; gcsim internal/characters/tighnari/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "wreath",
+                "label": "After he fires a Wreath Arrow (A1)",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "enemy_in_field",
+                "label": "An opponent is inside his Vijnana-Khanda Field (C2)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 50.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "wreath",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus_from_em",
+                "value": 0.0006,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "charged",
+                  "burst"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": 0.6,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.15,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": [
+                  "dendro"
+                ],
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "enemy_in_field",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Breakthrough Barb: Wreath and Clusterbloom Arrows are Charged Attacks",
+                "reason": "their rows' move is not derived from the label (`suggestMove`): set it to charged for A4 and C1 to reach them"
+              },
+              {
+                "what": "TALENT: Vijnana-Phala Mine: Vijnana Penetrator state",
+                "reason": "no damage effect itself: it shortens the Wreath Arrow's charge time"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:tighnari/enemy_in_field": 1
+      },
+      "expected": 3233.8792777513854,
+      "go_value": 3233.8792777513854,
+      "divergence": "none: no reaction",
+      "cap_state": "past",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "tighnari_c4_react_on_xiangling",
+      "covers": "a party EM buff by a user-set choice, the second option applying the parameter twice (C4), into an amplifying reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484",
+        "libs/gi/formula/src/data/char/Tighnari.ts:73-76,111-118,132"
+      ],
+      "givers": [
+        {
+          "name": "Tighnari",
+          "constellation": 4,
+          "ascension_phase": 6,
+          "stats": {}
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "dendro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "kit:tighnari",
+          "label": "Tighnari (kit)",
+          "citation": "GO libs/gi/formula/src/data/char/Tighnari.ts (pando), libs/gi/sheets/src/Characters/Tighnari/index.tsx (wr) @ 2c13fc40 \u2014 c4_em pando:Tighnari.ts:73-76,111-118,132; c4_em_react pando:Tighnari.ts:73-76,111-118,132; gcsim internal/characters/tighnari/ @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "c4",
+                "label": "After his burst (C4): 'after' alone, or 'react' when it also triggered a Dendro reaction",
+                "kind": "choice",
+                "default": "",
+                "default_reason": "situational",
+                "max": null,
+                "step": null,
+                "options": [
+                  "after",
+                  "react"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 60.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c4",
+                    "values": [
+                      "after",
+                      "react"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 60.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "c4",
+                    "values": [
+                      "react"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "TALENT: Breakthrough Barb: Wreath and Clusterbloom Arrows are Charged Attacks",
+                "reason": "their rows' move is not derived from the label (`suggestMove`): set it to charged for A4 and C1 to reach them"
+              },
+              {
+                "what": "TALENT: Vijnana-Phala Mine: Vijnana Penetrator state",
+                "reason": "no damage effect itself: it shortens the Wreath Arrow's charge time"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "kit:tighnari/c4": "react"
+      },
+      "expected": 5794.461049777458,
+      "go_value": 5792.947890074439,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.0002612072008471042
     }
   ]
 }

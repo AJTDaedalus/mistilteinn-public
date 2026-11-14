@@ -1,0 +1,419 @@
+{
+ "_about": "A kit sheet for the formula estimate (math-fallback P2, `app/formula/genshin/sheets.py`). Structure (which number buffs what, for whom, under which condition) is transcribed from Genshin Optimizer's character sheets at `go_commit` (MIT), cited per effect to `pando:`/`wr:` file:lines under the `go` roots, and to gcsim's Go at `gcsim_commit` where gcsim implements the same buff. No number is written here: every value is a reference into the seeded catalogue (a talent row by label, a constellation or passive param_list by index), pinned under `pins` so a re-seed that changes one withholds the effect rather than misreading it.",
+ "character": "Alhaitham",
+ "nanoka_id": "10000078",
+ "slug": "alhaitham",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": {
+  "pando": "libs/gi/formula/src/data/char/Alhaitham.ts",
+  "wr": "libs/gi/sheets/src/Characters/Alhaitham/index.tsx"
+ },
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/characters/alhaitham/",
+ "verified_by": [
+  "alhaitham_a4_c2_below_cap_on_his_own_projection",
+  "alhaitham_a4_past_cap_c6_on_his_own_burst",
+  "alhaitham_c4_on_xiangling"
+ ],
+ "talent_boosts": [
+  {
+   "constellation": 3,
+   "talent": "elemental_skill",
+   "go": "pando:Alhaitham.ts:158-159",
+   "gcsim": "alhaitham.go:28"
+  },
+  {
+   "constellation": 5,
+   "talent": "elemental_burst",
+   "go": "pando:Alhaitham.ts:158,160",
+   "gcsim": "alhaitham.go:27"
+  }
+ ],
+ "pins": {
+  "constellations": {
+   "2": [
+    50.0,
+    8.0,
+    4.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    30.0,
+    15.0,
+    0.1,
+    15.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "6": [
+    0.1,
+    0.7,
+    6.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.001,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "conditions": [
+  {
+   "key": "debate",
+   "label": "Debate stacks: Chisel-Light Mirrors he generated in the last 8 seconds (C2)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 4,
+   "step": 1,
+   "go": "pando:Alhaitham.ts:77-81,102-108"
+  },
+  {
+   "key": "mirrors_consumed",
+   "label": "Chisel-Light Mirrors his burst consumed (C4): Elemental Mastery to the others per mirror consumed; Dendro DMG to him per mirror it then generates (3 minus those consumed, 3 at C6)",
+   "kind": "number",
+   "default_by": "situational",
+   "max": 3,
+   "step": 1,
+   "go": "pando:Alhaitham.ts:102-109,126-147"
+  },
+  {
+   "key": "excess_mirror",
+   "label": "A mirror was generated beyond the maximum of three (C6)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "pando:Alhaitham.ts:100-101,148-153"
+  }
+ ],
+ "effects": [
+  {
+   "key": "a4_projection",
+   "label": "A4 Mysteries Laid Bare: Projection Attack DMG per point of his EM, capped",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery",
+    "cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "1-Mirror Projection Attack DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "2-Mirror Projection Attack DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "3-Mirror Projection Attack DMG"
+    }
+   ],
+   "go": "pando:Alhaitham.ts:69-72,112-119,198-206",
+   "gcsim": "asc.go:33-57"
+  },
+  {
+   "key": "a4_burst",
+   "label": "A4 Mysteries Laid Bare: Particular Field: Fetters of Phenomena DMG per point of his EM, capped",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "elemental_mastery",
+    "cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "moves": [
+    "burst"
+   ],
+   "go": "pando:Alhaitham.ts:69-72,112-120,207-215",
+   "gcsim": "asc.go:33-57"
+  },
+  {
+   "key": "c2_em",
+   "label": "C2 Debate: Elemental Mastery per stack",
+   "source": "c2",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 2,
+    "param": 0
+   },
+   "per": "debate",
+   "go": "pando:Alhaitham.ts:77-81,121-125,162",
+   "gcsim": "cons.go:30-47"
+  },
+  {
+   "key": "c4_team_em",
+   "label": "C4 Elucidation: Elemental Mastery to the other party members per mirror consumed",
+   "source": "c4",
+   "receivers": "others",
+   "stat": "elemental_mastery",
+   "value": {
+    "constellation": 4,
+    "param": 0
+   },
+   "per": "mirrors_consumed",
+   "go": "pando:Alhaitham.ts:82-87,126-130,163-164",
+   "gcsim": "cons.go:53-77"
+  },
+  {
+   "key": "c4_dendro_two",
+   "label": "C4 Elucidation: Dendro DMG per mirror generated (the second of two at one consumed)",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "max_constellation": 5,
+   "when": [
+    {
+     "condition": "mirrors_consumed",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:82-87,133-147,165",
+   "gcsim": "cons.go:79-92"
+  },
+  {
+   "key": "c4_dendro_one",
+   "label": "C4 Elucidation: Dendro DMG per mirror generated (the first, at one or two consumed)",
+   "source": "c4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "max_constellation": 5,
+   "when": [
+    {
+     "condition": "mirrors_consumed",
+     "values": [
+      1,
+      2
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:82-87,133-147,165",
+   "gcsim": "cons.go:79-92"
+  },
+  {
+   "key": "c6_dendro_1",
+   "label": "C4 Elucidation at C6 Structuration: Dendro DMG per mirror generated, three generated (mirror 1 of 3)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "mirrors_consumed",
+     "values": [
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:82-87,131-147,165",
+   "gcsim": "cons.go:79-92"
+  },
+  {
+   "key": "c6_dendro_2",
+   "label": "C4 Elucidation at C6 Structuration: Dendro DMG per mirror generated, three generated (mirror 2 of 3)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "mirrors_consumed",
+     "values": [
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:82-87,131-147,165",
+   "gcsim": "cons.go:79-92"
+  },
+  {
+   "key": "c6_dendro_3",
+   "label": "C4 Elucidation at C6 Structuration: Dendro DMG per mirror generated, three generated (mirror 3 of 3)",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "elements": [
+    "dendro"
+   ],
+   "value": {
+    "constellation": 4,
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "mirrors_consumed",
+     "values": [
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:82-87,131-147,165",
+   "gcsim": "cons.go:79-92"
+  },
+  {
+   "key": "c6_crit_rate",
+   "label": "C6 Structuration: CRIT Rate after an excess mirror",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "constellation": 6,
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "excess_mirror",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:88-92,148-150,166",
+   "gcsim": "cons.go:94-110"
+  },
+  {
+   "key": "c6_crit_dmg",
+   "label": "C6 Structuration: CRIT DMG after an excess mirror",
+   "source": "c6",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "constellation": 6,
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "excess_mirror",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "pando:Alhaitham.ts:88-92,151-153,167",
+   "gcsim": "cons.go:94-110"
+  }
+ ],
+ "unmodelled": [
+  {
+   "source": "talent",
+   "what": "Universality: An Elaboration on Form: Dendro infusion of his Normal, Charged and Plunging Attacks while he holds a mirror",
+   "reason": "an infusion changes a hit's element, which the estimate does not model (G4); a row's own channel can be set to Dendro"
+  },
+  {
+   "source": "talent",
+   "what": "Particular Field: Fetters of Phenomena: attack instances by mirrors held",
+   "reason": "a count of hits, which is the row's count, not a buff"
+  },
+  {
+   "source": "a1",
+   "what": "Four-Causal Correction: a mirror from Charged and Plunging Attacks",
+   "reason": "no damage effect: it generates mirrors (their buffs are C2's, C4's, C6's conditions)"
+  },
+  {
+   "source": "c1",
+   "what": "Intuition: skill cooldown reduced by Projection Attacks",
+   "reason": "no damage effect: cooldown"
+  },
+  {
+   "source": "c6",
+   "what": "Structuration: the burst keeps his mirrors at three",
+   "reason": "no damage effect itself: its effect on C4's Dendro DMG (three generated) is applied"
+  },
+  {
+   "source": "kit",
+   "what": "Mirrors consumed at 0 on C6 (GO's WR reading: three generated)",
+   "reason": "GO's pando port itself loses this state, gating on one or more consumed (pando:Alhaitham.ts:131-132); followed as written"
+  }
+ ]
+}

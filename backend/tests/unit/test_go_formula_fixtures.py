@@ -1682,6 +1682,9 @@ def build() -> dict[str, Any]:
     # Task 11, fifth batch (the next DPS characters), the same way.
     from tests.unit.go_fixtures_batch5 import batch5_fixtures
     fixtures.extend(batch5_fixtures())
+    # The capped self-conversions (DECISIONS §40), and the Alhaitham and Tighnari sheets.
+    from tests.unit.go_fixtures_capped import capped_fixtures
+    fixtures.extend(capped_fixtures())
     for f in fixtures:
         f["relative_divergence_from_go"] = abs(f["expected"] - f["go_value"]) / f["go_value"]
     return {

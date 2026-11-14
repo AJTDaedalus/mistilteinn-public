@@ -57,14 +57,21 @@ def _hit(stats: dict[str, float], *, base_damage: float, flat: float = 0.0, chan
 
 HU_TAO_BLOSSOM = ("Blood Blossom DMG|{param3:P}", [0.3, 0.06256, 1.152])
 HU_TAO_BASE = base._base_stats(base_atk=715.0, base_hp=15552.0, base_def=876.0, crit_dmg=0.884)
+#: Her seeded skill row at 10: the 6.256% ATK Increase is `param2`; `params[6]`, the 4.0 no
+#: label names, is GO's `maxAtkInc` (`skill[6][0]`), the cap of Paramita Papilio's ATK.
+HU_TAO_SKILL_LABELS = ["Activation Cost|{param1:P} Current HP", "ATK Increase|{param2:F2P} Max HP",
+                       "Blood Blossom DMG|{param3:P}", "Blood Blossom Duration|{param4:F1}s",
+                       "Duration|{param5:F1}s", "CD|{param6:F1}s"]
+HU_TAO_SKILL_10 = [0.3, 0.06256, 1.152, 8.0, 9.0, 16.0, 4.0]
+HU_TAO_ROWS = {("elemental_skill", 10): (HU_TAO_SKILL_LABELS, HU_TAO_SKILL_10)}
 HU_TAO_ARTIFACTS = {"hp_pct": 0.466, "flat_hp": 4780.0, "flat_atk": 311.0,
                     "pyro_dmg_bonus": 0.466, "crit_rate": 0.3, "crit_dmg": 0.6}
 
 
 def _hu_tao(_: float) -> float:
     """**Hu Tao, C2, on her own Blood Blossom**, her HP at or below 50% (A4, set by the user —
-    situational). Paramita Papilio is off in both figures: its ATK is the capped conversion the
-    sheet does not model (DECISIONS §39).
+    situational). Paramita Papilio is set off in both figures (the user's choice): its ATK, the
+    capped conversion priced since DECISIONS §40, has its own fixtures (`go_fixtures_capped`).
 
     GO: `dmg('skill', info, 'atk', dm.skill.dmg, 'skill')` (`pando HuTao.ts:165`); C2
     `ownBuff.formula.base.skill` = `prod(percent(constellation2), own.premod.hp)` (`:74-76,
@@ -381,12 +388,13 @@ def batch5_fixtures() -> list[dict[str, Any]]:
         "self flat damage from her own Max HP on one move (C2), per candidate; a situational "
         "self DMG buff (A4)",
         [FORMULA, f"{PANDO}HuTao.ts:70-76,116-126,150-151,165"],
-        _subject("Hu Tao", 2),
+        _subject("Hu Tao", 2, {"elemental_skill": 10}),
         {"element": "pyro", "weapon_type": "WEAPON_POLE", "member_elements": ["pyro", "hydro"]},
         HU_TAO_BASE, HU_TAO_ARTIFACTS, "pyro",
         base._row("blossom", "Blood Blossom DMG", "skill", 1, HU_TAO_BLOSSOM, None),
-        b4._kit("10000046", _own("Hu Tao", "10000046", 2, HU_TAO_BASE), subject=True),
-        {"kit:hu_tao/low_hp": 1}, _hu_tao))
+        b4._kit("10000046", _own("Hu Tao", "10000046", 2, HU_TAO_BASE, HU_TAO_ROWS),
+                subject=True),
+        {"kit:hu_tao/low_hp": 1, "kit:hu_tao/paramita": 0}, _hu_tao))
 
     out.append(fx(
         "arlecchino_masque_on_her_own_normal",

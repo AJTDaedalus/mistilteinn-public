@@ -11,7 +11,9 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/characters/furina/",
  "verified_by": [
-  "furina_fanfare_c2_on_her_own_burst"
+  "furina_fanfare_c2_on_her_own_burst",
+  "furina_a4_below_cap_on_her_own_usher",
+  "furina_a4_past_cap_on_her_own_usher"
  ],
  "talent_boosts": [
   {
@@ -52,6 +54,40 @@
     400.0,
     2.5,
     1.4,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "passives": {
+   "4": [
+    0.007,
+    0.28,
+    0.004,
+    0.16,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
     0.0,
     0.0,
     0.0,
@@ -112,6 +148,42 @@
    "per": "c2_overstack",
    "go": "pando:Furina.ts:160-164,200; wr:index.tsx:190-200,343",
    "gcsim": "cons.go:28-33"
+  },
+  {
+   "key": "a4_salon",
+   "label": "A4 Unheard Confession: Salon members' DMG per 1,000 of her Max HP, capped",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000.0,
+     "cite": "GO pando Furina.ts:147 `prod(final.hp, 1 / 1000, percent(member_dmg_))`; gcsim asc.go:95 `c.MaxHP()/1000*0.007`; no seeded list carries the 1,000"
+    },
+    "cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Gentilhomme Usher DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Surintendante Chevalmarin DMG"
+    },
+    {
+     "talent": "elemental_skill",
+     "label": "Mademoiselle Crabaletta DMG"
+    }
+   ],
+   "go": "pando:Furina.ts:73-77,143-150,180-191,250-252",
+   "gcsim": "asc.go:95"
   }
  ],
  "unmodelled": [
@@ -131,18 +203,13 @@
    "reason": "no damage effect: healing"
   },
   {
-   "source": "a4",
-   "what": "Unheard Confession: Salon members' DMG + 0.7% per 1,000 of Furina's Max HP, up to 28%",
-   "reason": "scoped to the Salon members' rows (not her Ousia bubble, which is the same move), and read from her own HP, which moves with every candidate through a cap the recipe cannot carry per candidate"
-  },
-  {
    "source": "c4",
    "what": "They Know Not Life, Who Dwelt in the Netherworld Not!: Energy",
    "reason": "no damage effect: energy"
   },
   {
    "source": "c6",
-   "what": "Hear Me — Let Us Raise the Chalice of Love!: Hydro infusion, and normal, charged and plunging attack DMG + a share of Furina's Max HP",
+   "what": "Hear Me \u2014 Let Us Raise the Chalice of Love!: Hydro infusion, and normal, charged and plunging attack DMG + a share of Furina's Max HP",
    "reason": "an infusion changes a hit's element (G4), and the flat damage reads her own HP, which the recipe cannot carry per candidate yet"
   }
  ]

@@ -12,7 +12,9 @@
  "gcsim": "internal/characters/nahida/",
  "verified_by": [
   "nahida_a1_c2_on_xiangling",
-  "nahida_burst_c4_on_her_own_tri_karma"
+  "nahida_burst_c4_on_her_own_tri_karma",
+  "nahida_a4_below_cap_on_her_own_tri_karma",
+  "nahida_a4_past_cap_on_her_own_tri_karma"
  ],
  "talent_boosts": [
   {
@@ -65,6 +67,38 @@
     250.0,
     0.0,
     0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "4": [
+    200.0,
+    800.0,
+    0.001,
+    0.0003,
     0.0,
     0.0,
     0.0,
@@ -227,6 +261,62 @@
    "per": "c4_count",
    "by_stack": true,
    "go": "pando:Nahida.ts:95-97,204-210; wr:index.tsx:101-103,285-300,345"
+  },
+  {
+   "key": "a4_dmg",
+   "label": "A4 Awakening Elucidated: Tri-Karma Purification DMG per point of her EM above 200, at most 800 counted",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "passive": 4,
+    "param": 2,
+    "times_stat": "elemental_mastery",
+    "threshold": {
+     "passive": 4,
+     "param": 0
+    },
+    "stat_cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Tri-Karma Purification DMG"
+    }
+   ],
+   "go": "pando:Nahida.ts:83-87,184-190,246-253",
+   "gcsim": "asc.go:62-99"
+  },
+  {
+   "key": "a4_crit",
+   "label": "A4 Awakening Elucidated: Tri-Karma Purification CRIT Rate per point of her EM above 200, at most 800 counted",
+   "source": "a4",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "passive": 4,
+    "param": 3,
+    "times_stat": "elemental_mastery",
+    "threshold": {
+     "passive": 4,
+     "param": 0
+    },
+    "stat_cap": {
+     "passive": 4,
+     "param": 1
+    }
+   },
+   "rows": [
+    {
+     "talent": "elemental_skill",
+     "label": "Tri-Karma Purification DMG"
+    }
+   ],
+   "go": "pando:Nahida.ts:83-87,184-186,191-197,246-254",
+   "gcsim": "asc.go:62-99"
   }
  ],
  "unmodelled": [
@@ -234,11 +324,6 @@
    "source": "a1",
    "what": "Compassion Illuminated when the optimized character's own Elemental Mastery is the party's highest",
    "reason": "the highest is taken over the teammates' pass-1 Elemental Mastery: the optimized character's moves with every candidate, and GO's `team.premod.eleMas.max` would use it where it is larger"
-  },
-  {
-   "source": "a4",
-   "what": "Awakening Elucidated: Tri-Karma Purification DMG and CRIT Rate from her Elemental Mastery above 200",
-   "reason": "a thresholded, capped conversion of the optimized character's own EM, which the recipe cannot carry per candidate: the owner's open question in DECISIONS.md §39"
   },
   {
    "source": "c2",
@@ -258,7 +343,7 @@
   {
    "source": "kit",
    "what": "Teammates' Elemental Mastery buffs (and Nahida's own C4) in the highest EM her A1 reads",
-   "reason": "two-pass rule (DESIGN §2.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
+   "reason": "two-pass rule (DESIGN \u00a72.6): a kit buff never raises a stat another buff reads; GO's `team.premod.eleMas.max` would include them"
   }
  ]
 }
