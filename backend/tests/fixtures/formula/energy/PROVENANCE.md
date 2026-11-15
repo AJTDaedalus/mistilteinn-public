@@ -53,3 +53,28 @@ What the tests read from them (`tests/unit/test_formula_energy_summon_sample.py`
 
 `npm run formula:verify` holds `formula-energy.ts` to the same events (the Favonius particles
 and Raiden's refund).
+
+# Electro resonance and Yae Miko's totems (TASKS 14 refinements, DECISIONS §49)
+
+Two more configs on the same native build at the pin (Go 1.27, `go build ./cmd/gcsim` in a
+clone at `b107b5dc`), each `gcsim -c <file> -out out.json -sample sample.json`, keeping only the
+events the tests read (`particles` for the sources named, the casts, and Yae's totem hits):
+
+| file | from | what it is |
+|---|---|---|
+| `electro_res_sample.json` | `electro_res.txt` (seed `11851196483434702954` in the file) | Raiden, Fischl, Xingqiu, Bennett — a second Electro resonance team, bursts free so four rotations repeat. Every `electro-res` particle event |
+| `yae_energy_sample.json` | `yae_energy.txt` (seed `17448528132612857946`) | Yae Miko with Fischl, Kokomi and Zhongli: one skill, left to expire, then three skills, left to expire. Every particle event from her totems, her casts, and every Sesshou Sakura hit |
+
+What the tests read (`tests/unit/test_formula_energy_refinements_sample.py`), together with
+`summon_energy_sample.json` above, whose 12 `electro-res` events gave Raiden 72.58 energy:
+
+- each resonance particle is 1 Electro particle, `1 × value × field × ER`, distributed to every
+  member at once; procs are never closer than 300 frames (the 5 s cooldown), and both teams
+  proc 3 times a 25 s rotation, under the 5 the cooldown allows;
+- Raiden's 72.58 is `3 procs × 4 rotations × 3 × field × ER` with her on-field share (8 of 12);
+- Raiden, on field, caught all 24 of Oz's particles and 28 of her own Eye's 36 on field;
+- Yae's particles land one every 176 frames — a totem's cadence — with one totem and with
+  three, 8 for a totem set at full length either way, while three totems strike three times
+  as often: the shared ICD.
+
+`npm run formula:verify` holds `formula-energy.ts` to the same events.

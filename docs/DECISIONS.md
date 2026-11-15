@@ -1890,3 +1890,57 @@ owner says. *Owner question: default off, skip or wait?* **Answered 2026-11-15: 
 
 **Verified against gcsim**, a native sample and two 3000-iteration runs at the pin (DESIGN
 §2.11): every particle and refund event exact; the chances per hit within four standard errors.
+
+## 49. ER refinements: Electro resonance, an on-field subject's summons, per-candidate Favonius crit, Yae at gcsim's rate (2026-11-15)
+
+**Owner, 2026-11-15**, four rulings on #393 (§48). Built on `feat/formula-er-refinements`
+(DESIGN §2.11 "Refinements", TASKS 14).
+
+1. **Electro resonance's particles are an energy source** when the team has the resonance (the
+   tally `resonance.py` applies: four members, two Electro). gcsim `setup.go:181-207`: one
+   Electro particle a qualifying reaction, distributed at once, at most once every 300 frames;
+   KQM's resonance table agrees on the particle and "CD: 5s". Choices made on the way, each
+   reversible:
+   - **gcsim's reaction list over KQM's**: gcsim adds Quicken, Aggravate and Hyperbloom and
+     leaves out Swirl; KQM's table names Swirl onto Electro and no Dendro reaction. The team
+     can trigger it only with a Pyro, Cryo, Hydro or Dendro member.
+   - **Default procs: the cooldown ceiling**, `rotation ÷ 5 s`, when a member can react; none
+     when none can. Editable and always bounded by the ceiling. Two gcsim Raiden teams proc 3 in
+     a 25 s rotation against the 5 allowed, so the default over-counts in those teams and the
+     panel says so. *Owner question below.*
+   - **Collection**: whoever is active, so 100 % for an on-field subject (ruling 2), else 0 %.
+2. **An on-field subject catches every `active` generator on field by default** — Raiden's Eye
+   (hers or not), Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele resonance, Yae's totems,
+   and, by the same mechanism, Guoba, Furina's Salon and Nahida's Tri-Karma — and Electro
+   resonance's particle. A teammate's `caster` particles, a teammate's Favonius and the drip
+   keep their defaults. Evidence: on-field Raiden caught 24/24 Oz and 28/36 of her Eye's on
+   field. **On field** is the panel's toggle, defaulting from the rows: a row that is a normal,
+   charged or plunging attack, whichever talent's table publishes it (Raiden's burst-stance
+   attacks are burst-talent rows labelled `1-Hit DMG`), says the subject is on field. Rejected:
+   defaulting every subject to on field (a support's estimate would then catch every teammate's
+   summon on field).
+3. **The optimized holder's Favonius is priced from each candidate's crit**: the base is the
+   recipe's own pre-artifact crit (flat kit crit buffs included, conversions from EM/HP not), and
+   a candidate's artifact crit adds to it. Energy stays non-decreasing in crit and ER, so the
+   bound is admissible; a bounded search equals the exhaustive one in a spec where crit buys
+   energy. The ER-floor requirement is reported at the build's crit; ER's liveness is asked at
+   the base crit. A teammate's Favonius keeps their build's crit. This reverses §48's rejection
+   of "the subject's per-candidate crit rate".
+4. **Yae Miko at gcsim's rate**: one particle a totem strike under a 2.5 s ICD held on the
+   character (shared by all totems), each totem striking every 176 frames (gcsim
+   `kitsune.go:166`; KQM's guide "Every following hit takes 3s"), for 25 s (Edict of Cleansing's
+   10 s on by default at the pin): one particle every 2.93 s while totems stand, however many
+   stand, so casts do not multiply it (`shared_icd`). **KQM's library disagrees** (only each
+   totem's first strike drops one); recorded in the table's note and the panel.
+
+**Verified against gcsim**: two new native samples at the pin (`electro_res.txt`,
+`yae_energy.txt`) and #393's — 96 resonance events exact and never inside 300 frames, Raiden's
+72.58 equal to the closed form at 3 procs and her 8/12 on-field share, Yae's particles one per
+176 frames with one totem or three (8 a full set).
+
+**Left to the owner**:
+- *Electro resonance's default*: the ceiling (`L/5`), or something nearer the samples' 3 of 5?
+- *The drip for an on-field subject*: enemy particles also land on whoever is active, so an
+  on-field subject would catch them on field too; left at 0 % because the ruling named summons.
+- *On field from the rows*: a burst-and-skill-only recipe reads as off field; acceptable, or
+  should the toggle default on for some characters?

@@ -1,0 +1,1038 @@
+{
+ "sim_version": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "seed": "11851196483434702954",
+ "config": "options swap_delay=12 iteration=20 ignore_burst_energy=true;\n\nraiden char lvl=90/90 cons=0 talent=9,9,9;\nraiden add weapon=\"thecatch\" refine=5 lvl=90/90;\nraiden add set=\"emblemofseveredfate\" count=4;\nraiden add stats er=0.5;\n\nfischl char lvl=90/90 cons=0 talent=9,9,9;\nfischl add weapon=\"slingshot\" refine=5 lvl=90/90;\nfischl add set=\"emblemofseveredfate\" count=4;\n\nxingqiu char lvl=90/90 cons=0 talent=9,9,9;\nxingqiu add weapon=\"harbingerofdawn\" refine=5 lvl=90/90;\nxingqiu add set=\"emblemofseveredfate\" count=4;\n\nbennett char lvl=90/90 cons=0 talent=9,9,9;\nbennett add weapon=\"harbingerofdawn\" refine=5 lvl=90/90;\nbennett add set=\"emblemofseveredfate\" count=4;\n\ntarget lvl=100 resist=0.1 radius=2 pos=0,2.4 hp=999999999;\n\nactive xingqiu;\nfor let i = 0; i < 4; i = i + 1 {\n  xingqiu skill, burst;\n  fischl skill;\n  bennett skill;\n  raiden skill, burst;\n  raiden attack:15;\n  wait(240);\n}\n",
+ "elements": {
+  "raidenshogun": "electro",
+  "fischl": "electro",
+  "xingqiu": "hydro",
+  "bennett": "pyro"
+ },
+ "particles": [
+  {
+   "frame": 168,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 168,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 3.5999999999999996
+  },
+  {
+   "frame": 168,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 168,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 510,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 7.4382
+  },
+  {
+   "frame": 510,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 510,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 510,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 815,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 7.4382
+  },
+  {
+   "frame": 815,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 815,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 815,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 1288,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 1288,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 1288,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 1.2
+  },
+  {
+   "frame": 1288,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 1686,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 1686,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 3.5999999999999996
+  },
+  {
+   "frame": 1686,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 1686,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 2000,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 7.4382
+  },
+  {
+   "frame": 2000,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 2000,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 2000,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 2677,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 2677,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 2677,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 1.2
+  },
+  {
+   "frame": 2677,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 3204,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 3204,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 3.5999999999999996
+  },
+  {
+   "frame": 3204,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 3204,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 3528,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 7.4382
+  },
+  {
+   "frame": 3528,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 3528,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 3528,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 4195,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 4195,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 4195,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 1.2
+  },
+  {
+   "frame": 4195,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 4722,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 4.4629199999999996
+  },
+  {
+   "frame": 4722,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 3.5999999999999996
+  },
+  {
+   "frame": 4722,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 4722,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  },
+  {
+   "frame": 5046,
+   "receiver": "raidenshogun",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": true,
+   "party_count": 4,
+   "er": 2.4794,
+   "amt": 7.4382
+  },
+  {
+   "frame": 5046,
+   "receiver": "fischl",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 2.1599999999999997
+  },
+  {
+   "frame": 5046,
+   "receiver": "xingqiu",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.2,
+   "amt": 0.72
+  },
+  {
+   "frame": 5046,
+   "receiver": "bennett",
+   "source": "electro-res",
+   "count": 1,
+   "ele": "electro",
+   "is_active": false,
+   "party_count": 4,
+   "er": 1.4667,
+   "amt": 0.8800199999999999
+  }
+ ],
+ "casts": [
+  {
+   "frame": 1,
+   "character": "xingqiu",
+   "action": "skill"
+  },
+  {
+   "frame": 78,
+   "character": "xingqiu",
+   "action": "burst"
+  },
+  {
+   "frame": 130,
+   "character": "fischl",
+   "action": "swap"
+  },
+  {
+   "frame": 130,
+   "character": "fischl",
+   "action": "skill"
+  },
+  {
+   "frame": 202,
+   "character": "bennett",
+   "action": "swap"
+  },
+  {
+   "frame": 202,
+   "character": "bennett",
+   "action": "skill"
+  },
+  {
+   "frame": 274,
+   "character": "raidenshogun",
+   "action": "swap"
+  },
+  {
+   "frame": 274,
+   "character": "raidenshogun",
+   "action": "skill"
+  },
+  {
+   "frame": 311,
+   "character": "raidenshogun",
+   "action": "burst"
+  },
+  {
+   "frame": 422,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 446,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 467,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 488,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 532,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 596,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 620,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 641,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 662,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 706,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 770,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 794,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 815,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 836,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 880,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 1165,
+   "character": "xingqiu",
+   "action": "swap"
+  },
+  {
+   "frame": 1271,
+   "character": "xingqiu",
+   "action": "skill"
+  },
+  {
+   "frame": 1348,
+   "character": "xingqiu",
+   "action": "burst"
+  },
+  {
+   "frame": 1400,
+   "character": "fischl",
+   "action": "swap"
+  },
+  {
+   "frame": 1648,
+   "character": "fischl",
+   "action": "skill"
+  },
+  {
+   "frame": 1702,
+   "character": "bennett",
+   "action": "swap"
+  },
+  {
+   "frame": 1702,
+   "character": "bennett",
+   "action": "skill"
+  },
+  {
+   "frame": 1774,
+   "character": "raidenshogun",
+   "action": "swap"
+  },
+  {
+   "frame": 1774,
+   "character": "raidenshogun",
+   "action": "skill"
+  },
+  {
+   "frame": 1811,
+   "character": "raidenshogun",
+   "action": "burst"
+  },
+  {
+   "frame": 1922,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 1946,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 1967,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 1988,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2032,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2096,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2120,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2141,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2162,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2206,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2270,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2294,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2315,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2336,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2380,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 2665,
+   "character": "xingqiu",
+   "action": "swap"
+  },
+  {
+   "frame": 2665,
+   "character": "xingqiu",
+   "action": "skill"
+  },
+  {
+   "frame": 2742,
+   "character": "xingqiu",
+   "action": "burst"
+  },
+  {
+   "frame": 2794,
+   "character": "fischl",
+   "action": "swap"
+  },
+  {
+   "frame": 3166,
+   "character": "fischl",
+   "action": "skill"
+  },
+  {
+   "frame": 3220,
+   "character": "bennett",
+   "action": "swap"
+  },
+  {
+   "frame": 3220,
+   "character": "bennett",
+   "action": "skill"
+  },
+  {
+   "frame": 3292,
+   "character": "raidenshogun",
+   "action": "swap"
+  },
+  {
+   "frame": 3292,
+   "character": "raidenshogun",
+   "action": "skill"
+  },
+  {
+   "frame": 3329,
+   "character": "raidenshogun",
+   "action": "burst"
+  },
+  {
+   "frame": 3440,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3464,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3485,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3506,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3550,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3614,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3638,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3659,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3680,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3724,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3788,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3812,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3833,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3854,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 3898,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 4183,
+   "character": "xingqiu",
+   "action": "swap"
+  },
+  {
+   "frame": 4183,
+   "character": "xingqiu",
+   "action": "skill"
+  },
+  {
+   "frame": 4260,
+   "character": "xingqiu",
+   "action": "burst"
+  },
+  {
+   "frame": 4312,
+   "character": "fischl",
+   "action": "swap"
+  },
+  {
+   "frame": 4684,
+   "character": "fischl",
+   "action": "skill"
+  },
+  {
+   "frame": 4738,
+   "character": "bennett",
+   "action": "swap"
+  },
+  {
+   "frame": 4738,
+   "character": "bennett",
+   "action": "skill"
+  },
+  {
+   "frame": 4810,
+   "character": "raidenshogun",
+   "action": "swap"
+  },
+  {
+   "frame": 4810,
+   "character": "raidenshogun",
+   "action": "skill"
+  },
+  {
+   "frame": 4847,
+   "character": "raidenshogun",
+   "action": "burst"
+  },
+  {
+   "frame": 4958,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 4982,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5003,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5024,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5068,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5132,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5156,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5177,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5198,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5242,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5306,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5330,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5351,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5372,
+   "character": "raidenshogun",
+   "action": "attack"
+  },
+  {
+   "frame": 5416,
+   "character": "raidenshogun",
+   "action": "attack"
+  }
+ ]
+}

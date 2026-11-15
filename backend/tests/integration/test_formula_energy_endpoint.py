@@ -41,10 +41,10 @@ XIANGLING_BURST = (
 
 async def _character(
     session: AsyncSession, *, nanoka_id: str, name: str, cost: int | None,
-    burst: tuple[list[str], list[float]] | None = None,
+    burst: tuple[list[str], list[float]] | None = None, element: Element = Element.PYRO,
 ) -> Character:
     character = Character(
-        nanoka_id=nanoka_id, name=name, element=Element.PYRO, weapon_type=WeaponType.POLEARM,
+        nanoka_id=nanoka_id, name=name, element=element, weapon_type=WeaponType.POLEARM,
         rarity=Rarity.FOUR_STAR, base_hp=1000.0, base_atk=20.0, base_def=60.0,
         base_crit_rate=0.05, base_crit_dmg=0.5, prop_curves=CURVES, ascension_stats=[{}] * 6,
         burst_energy_cost=cost,
@@ -177,13 +177,18 @@ async def electro(db_session: AsyncSession, authed_user: tuple[User, str]) -> di
                                         description="", param_list=[*params, 0, 0, 0, 0, 0, 0]))
     # `_character` publishes its burst row at level 1, so the build's level is 1 here.
     raiden = await _character(db_session, nanoka_id="10000052", name="Raiden Shogun", cost=90,
-                              burst=(RAIDEN_BURST_LABELS, RAIDEN_BURST_9))
-    sara = await _character(db_session, nanoka_id="10000056", name="Kujou Sara", cost=80)
-    yae = await _character(db_session, nanoka_id="10000058", name="Yae Miko", cost=90)
+                              burst=(RAIDEN_BURST_LABELS, RAIDEN_BURST_9),
+                              element=Element.ELECTRO)
+    sara = await _character(db_session, nanoka_id="10000056", name="Kujou Sara", cost=80,
+                            element=Element.ELECTRO)
+    yae = await _character(db_session, nanoka_id="10000058", name="Yae Miko", cost=90,
+                           element=Element.ELECTRO)
+    xingqiu = await _character(db_session, nanoka_id="10000025", name="Xingqiu", cost=80,
+                               element=Element.HYDRO)
     await db_session.flush()
     out = {}
     for key, character, weapon, phase in (("raiden", raiden, lance, 6), ("sara", sara, None, 3),
-                                          ("yae", yae, None, 6)):
+                                          ("yae", yae, None, 6), ("xingqiu", xingqiu, None, 6)):
         build = Build(owner_id=str(user.id), character_id=str(character.id),
                       weapon_id=str(weapon.id) if weapon else None, weapon_level=90,
                       refinement=3, character_level=90, ascension_phase=phase,
@@ -226,6 +231,35 @@ async def test_summons_refunds_a_favonius_holder_and_a_member_left_to_the_user(
     assert a4["unavailable"] == "needs ascension 4; the build is at 3"
     assert sara["favonius"] is None
 
+    # Ruling 4 (2026-11-15): Yae is curated at gcsim's rate, one particle a strike under a
+    # shared ICD, so skill casts do not multiply it.
     yae = by_name["Yae Miko"]
-    assert yae["status"] == "no_particle_data"
-    assert yae["note"].startswith("Two cited sources disagree")
+    assert yae["status"] == "curated"
+    assert yae["note"] is None
+    [totems] = yae["sources"]
+    assert (totems["per"], totems["particles"], totems["max_seconds"], totems["shared_icd"],
+            totems["collector"]) == ("second", 1, 25, True, "active")
+    assert totems["interval"] == pytest.approx(176 / 60, abs=1e-6)
+    assert "internal/characters/yaemiko/skill.go:43,46,47" in totems["citation"]
+    assert raiden["sources"][0]["shared_icd"] is False
+    # Three members: no resonance, however many are Electro.
+    assert response.json()["resonance"] is None
+
+
+async def test_a_four_member_team_with_two_electro_has_high_voltage(
+    authed_client: AsyncClient, db_session: AsyncSession, electro: dict[str, str],
+):
+    """Ruling 1: the resonance's particle is served when the tally grants it."""
+    db_session.expire_all()
+    response = await authed_client.get(ENERGY, params={
+        "subject_build_id": electro["raiden"],
+        "member_build_id": [electro["raiden"], electro["sara"], electro["yae"],
+                            electro["xingqiu"]],
+    })
+    assert response.status_code == 200, response.text
+    res = response.json()["resonance"]
+    assert (res["name"], res["element"], res["particles"], res["cooldown_seconds"],
+            res["team_can_trigger"]) == ("High Voltage", "electro", 1, 5, True)
+    assert set(res["trigger_elements"]) == {"pyro", "cryo", "hydro", "dendro"}
+    assert "pkg/simulation/setup.go:" in res["citation"]
+    assert "(CD: 5s)" in res["citation"]

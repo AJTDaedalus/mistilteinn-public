@@ -1,0 +1,30 @@
+options swap_delay=12 iteration=20 ignore_burst_energy=true;
+
+raiden char lvl=90/90 cons=0 talent=9,9,9;
+raiden add weapon="thecatch" refine=5 lvl=90/90;
+raiden add set="emblemofseveredfate" count=4;
+raiden add stats er=0.5;
+
+fischl char lvl=90/90 cons=0 talent=9,9,9;
+fischl add weapon="slingshot" refine=5 lvl=90/90;
+fischl add set="emblemofseveredfate" count=4;
+
+xingqiu char lvl=90/90 cons=0 talent=9,9,9;
+xingqiu add weapon="harbingerofdawn" refine=5 lvl=90/90;
+xingqiu add set="emblemofseveredfate" count=4;
+
+bennett char lvl=90/90 cons=0 talent=9,9,9;
+bennett add weapon="harbingerofdawn" refine=5 lvl=90/90;
+bennett add set="emblemofseveredfate" count=4;
+
+target lvl=100 resist=0.1 radius=2 pos=0,2.4 hp=999999999;
+
+active xingqiu;
+for let i = 0; i < 4; i = i + 1 {
+  xingqiu skill, burst;
+  fischl skill;
+  bennett skill;
+  raiden skill, burst;
+  raiden attack:15;
+  wait(240);
+}

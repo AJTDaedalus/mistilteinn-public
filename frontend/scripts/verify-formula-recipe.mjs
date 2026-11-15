@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  energyAt, fieldMultiplier, flatSourceAt, particleValue, raidenA4Multiplier,
+  energyAt, fieldMultiplier, flatSourceAt, particlesPerRotation, particleValue, raidenA4Multiplier,
   requiredEnergyRecharge,
 } from '../src/app/sim/formula-energy.ts';
 import { synthesizeRecipe } from '../src/app/sim/formula-recipe.ts';
@@ -369,6 +369,81 @@ if (refunds.length !== 5 * 4 * 4 || favoniusChecked === 0) { // 5 a burst, 4 bur
   failures.push(`summon sample: ${refunds.length} restorations, ${favoniusChecked} Favonius events`);
 }
 
+// ── Refinements (owner rulings 2026-11-15, DECISIONS §49) ──────────────────────────────────
+//
+// Electro resonance: every `electro-res` event in two native samples is one Electro particle
+// valued like any other, never closer than the table's cooldown; #393's 72.58 to Raiden is the
+// closed form at 3 procs a rotation and her 8-of-12 on-field share. Yae: her totems drop one
+// every `interval`, one totem or three (the shared ICD), and the per-second form counts a totem
+// set within one particle of gcsim's 8.
+const RES = JSON.parse(readFileSync(join(FRONTEND, '..', 'backend', 'tests', 'fixtures',
+  'formula', 'energy', 'electro_res_sample.json'), 'utf8'));
+const YAE = JSON.parse(readFileSync(join(FRONTEND, '..', 'backend', 'tests', 'fixtures',
+  'formula', 'energy', 'yae_energy_sample.json'), 'utf8'));
+const highVoltage = JSON.parse(readFileSync(TABLE, 'utf8')).resonances.electro;
+let resonanceChecked = 0;
+for (const sample of [SUMMON, RES]) {
+  const events = sample.particles.filter((e) => e.source === 'electro-res');
+  for (const e of events) {
+    const got = highVoltage.particles * particleValue(sample.elements[e.receiver], highVoltage.element)
+      * fieldMultiplier(e.is_active ? 1 : 0, e.party_count) * e.er;
+    if (e.count !== highVoltage.particles || Math.abs(got - e.amt) > 1e-9 * e.amt) {
+      failures.push(`resonance event ${e.frame}/${e.receiver} (${got} against ${e.amt})`);
+    }
+    resonanceChecked += 1;
+  }
+  const frames = [...new Set(events.map((e) => e.frame))].sort((a, b) => a - b);
+  for (let i = 1; i < frames.length; i += 1) {
+    if (frames[i] - frames[i - 1] < highVoltage.cooldown_seconds * 60) {
+      failures.push(`resonance procs ${frames[i - 1]} and ${frames[i]} inside the cooldown`);
+    }
+  }
+}
+const raidenRes = SUMMON.particles.filter((e) => e.source === 'electro-res'
+  && e.receiver === 'raidenshogun');
+const resonanceModel = (procs, onFieldShare) => ({
+  mode: 'off', cost: 90, element: 'electro', partyCount: 4, rotationSeconds: 25, flatEnergy: 0,
+  drip: null, baseEnergyRecharge: 1,
+  sources: [{ key: 'resonance:electro', label: 'High Voltage', element: 'electro',
+    particles: procs * highVoltage.particles, onFieldShare, citation: '' }],
+});
+const resTotal = raidenRes.reduce((s, e) => s + e.amt, 0);
+const resEr = raidenRes[0].er;
+if (Math.abs(4 * energyAt(resonanceModel(3, 8 / 12), resEr) - resTotal) > 1e-9) {
+  failures.push(`resonance: 4 rotations bank ${4 * energyAt(resonanceModel(3, 8 / 12), resEr)}, gcsim ${resTotal}`);
+}
+// Plants: every proc off field, or the cooldown ceiling (5 a rotation), must miss the sample.
+for (const [name, model] of [['all off field', resonanceModel(3, 0)],
+  ['the ceiling', resonanceModel(25 / highVoltage.cooldown_seconds, 8 / 12)]]) {
+  if (Math.abs(4 * energyAt(model, resEr) - resTotal) <= 1e-6) {
+    failures.push(`resonance plant "${name}" still matches gcsim`);
+  }
+}
+const [totems] = table['Yae Miko'].sources;
+const yaeOwn = YAE.particles.filter((e) => e.receiver === 'yaemiko').map((e) => e.frame);
+const secondCast = YAE.casts.filter((c) => c.character === 'yaemiko')[1].frame;
+for (const set of [yaeOwn.filter((f) => f < secondCast), yaeOwn.filter((f) => f > secondCast)]) {
+  for (let i = 1; i < set.length; i += 1) {
+    if (Math.abs(set[i] - set[i - 1] - totems.interval * 60) > 1e-3) {
+      failures.push(`Yae: particles ${set[i - 1]} and ${set[i]} are not one interval apart`);
+    }
+  }
+  if (set.length !== 8) failures.push(`Yae: ${set.length} particles for a totem set, not 8`);
+}
+const perSet = (casts) => particlesPerRotation(totems, casts, 1500 / 60);
+if (Math.abs(perSet(3) - perSet(1)) > 1e-12 || Math.abs(perSet(3) - 8) >= 1) {
+  failures.push(`Yae: the per-second form counts ${perSet(1)} and ${perSet(3)} against gcsim's 8`);
+}
+// Plant: totems multiplied by casts (no shared ICD) must miss gcsim's three-totem count.
+if (Math.abs(particlesPerRotation({ ...totems, shared_icd: false }, 3, 25) - 8) < 1) {
+  failures.push('Yae plant: an unshared ICD still matches gcsim');
+}
+for (const e of YAE.particles) {
+  const got = e.count * particleValue(YAE.elements[e.receiver], e.ele)
+    * fieldMultiplier(e.is_active ? 1 : 0, e.party_count) * e.er;
+  if (Math.abs(got - e.amt) > 1e-9 * e.amt) failures.push(`Yae event ${e.frame}/${e.receiver}`);
+}
+
 if (failures.length > 0) {
   console.error(`formula recipe diverges from the GO-cited figures: ${failures.join(', ')}`);
   process.exit(1);
@@ -384,4 +459,9 @@ console.log(
 console.log(
   `summons, Favonius and refunds match gcsim's ${summonChecked} particle events `
     + `(${favoniusChecked} Favonius) and ${refunds.length} Raiden restorations (2 plants miss)`,
+);
+console.log(
+  `Electro resonance matches gcsim's ${resonanceChecked} events and Raiden's ${resTotal.toFixed(4)} `
+    + `(2 plants miss); Yae's totems one per ${(totems.interval * 60).toFixed(0)} frames, `
+    + `${YAE.particles.length} events (1 plant misses)`,
 );

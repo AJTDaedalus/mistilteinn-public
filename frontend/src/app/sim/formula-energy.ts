@@ -49,6 +49,18 @@
  * `× (1 + 0.006 × ⌊(ER − 1) × 100⌋)` (`raiden/asc.go:42`, her A4). When the giver is the
  * optimized character that ER is the candidate's, so the refund moves with it; for a
  * teammate it is their build's, a constant here. Both are non-decreasing, so the bound holds.
+ *
+ * ## Refinements (owner rulings 2026-11-15, `DECISIONS.md` §49)
+ *
+ * - **Electro resonance** is one more particle source (`formula-estimate.service.ts`): one
+ *   Electro particle a qualifying reaction, at most one every 5 s (gcsim `setup.go:185`).
+ * - **An on-field subject** catches every off-field generator's particles on field by default.
+ * - **The subject's own Favonius** is `subjectFavonius`, priced from each candidate's crit rate:
+ *   `energyFactors` takes the candidate's artifact crit beside its ER. Energy is non-decreasing
+ *   in both, so the search's bound — every remaining slot's most of each live quantity — still
+ *   dominates. A requirement is reported at the build's crit; `energyVaries` asks at the base.
+ * - **Yae's totems** share one particle ICD: `particlesPerRotation` does not multiply a
+ *   `shared_icd` source by casts.
  */
 
 /** Which energy model prices ER in a formula recipe. */
@@ -98,6 +110,47 @@ export function flatSourceAt(source: FlatSource, totalEnergyRecharge: number): n
   }
 }
 
+/**
+ * The optimized character's own Favonius weapon, priced per candidate (owner ruling
+ * 2026-11-15, `DECISIONS.md` §49): its procs read the candidate's crit rate, so they are not a
+ * fixed source.
+ *
+ * gcsim `favonius.go:38-59`: a crit by the wielder while active procs with the refinement's
+ * chance, then a cooldown, and drops 3 clear particles. Procs per rotation are
+ * `min(rotation ÷ cooldown, hits × crit rate × chance)` — non-decreasing in crit rate, so a
+ * candidate with more crit banks at least as much energy and the search's bound, which
+ * completes a partial build with every remaining slot's most crit, still dominates.
+ */
+export interface SubjectFavonius {
+  key: string;
+  label: string;
+  /** The subject's crit-eligible hits on field per rotation. */
+  hits: number;
+  chance: number;
+  cooldownSeconds: number;
+  particles: number;
+  /** The share of its particles the subject catches on field, 0..1. */
+  onFieldShare: number;
+  citation: string;
+  /**
+   * The subject's crit rate before artifacts (character, weapon, kit crit buffs on the first
+   * row: `formula-recipe.ts:subjectCritRate`); a candidate's artifact crit is added to it.
+   * Crit converted from another stat (EM, HP) is not included.
+   */
+  baseCritRate: number;
+  /** The build's current crit rate (pass 1): where the requirement is reported. */
+  buildCritRate: number;
+}
+
+/** A subject Favonius's procs per rotation at a total crit rate. */
+export function favoniusProcsAt(
+  fav: Pick<SubjectFavonius, 'hits' | 'chance' | 'cooldownSeconds'>,
+  rotationSeconds: number, totalCritRate: number,
+): number {
+  const crit = Math.min(1, Math.max(0, totalCritRate));
+  return Math.min(rotationSeconds / fav.cooldownSeconds, fav.hits * crit * fav.chance);
+}
+
 /** Everything the closed form reads, for one recipe. */
 export interface FormulaEnergy {
   mode: EnergyMode;
@@ -119,6 +172,13 @@ export interface FormulaEnergy {
   drip: { particlesPerSecond: number; onFieldShare: number } | null;
   /** The subject's total Energy Recharge before artifacts, as a fraction (1.0 is 100 %). */
   baseEnergyRecharge: number;
+  /** The optimized character's own Favonius, priced from each candidate's crit (absent: none). */
+  subjectFavonius?: SubjectFavonius;
+}
+
+/** The crit rate a model is reported at when none is given: the build's own. */
+function reportedCrit(model: FormulaEnergy, totalCritRate: number | undefined): number {
+  return totalCritRate ?? model.subjectFavonius?.buildCritRate ?? 0;
 }
 
 /** gcsim `energy.go:61-71`: own element 3, clear 2, any other 1 (KQM's Energy page agrees). */
@@ -141,12 +201,20 @@ export function fieldMultiplier(onFieldShare: number, partyCount: number): numbe
   return share + (1 - share) * offFieldMultiplier(partyCount);
 }
 
-/** Raw particle energy over a rotation at ER 1: Σ particles × value × field. */
-export function rawParticleEnergy(model: FormulaEnergy): number {
+/**
+ * Raw particle energy over a rotation at ER 1: Σ particles × value × field — and the subject's
+ * own Favonius at a total crit rate (the build's when none is given).
+ */
+export function rawParticleEnergy(model: FormulaEnergy, totalCritRate?: number): number {
   let raw = 0;
   for (const source of model.sources) {
     raw += source.particles * particleValue(model.element, source.element)
       * fieldMultiplier(source.onFieldShare, model.partyCount);
+  }
+  const fav = model.subjectFavonius;
+  if (fav) {
+    raw += favoniusProcsAt(fav, model.rotationSeconds, reportedCrit(model, totalCritRate))
+      * fav.particles * PARTICLE_VALUE.clear * fieldMultiplier(fav.onFieldShare, model.partyCount);
   }
   return raw;
 }
@@ -158,9 +226,15 @@ export function flatEnergyAt(model: FormulaEnergy, totalEnergyRecharge: number):
   return flat;
 }
 
-/** Energy banked over one rotation at a total ER: `ER × raw + flat` (gcsim `energy.go:77`). */
-export function energyAt(model: FormulaEnergy, totalEnergyRecharge: number): number {
-  return totalEnergyRecharge * rawParticleEnergy(model) + flatEnergyAt(model, totalEnergyRecharge);
+/**
+ * Energy banked over one rotation at a total ER (and crit rate, for a subject's Favonius):
+ * `ER × raw + flat` (gcsim `energy.go:77`).
+ */
+export function energyAt(
+  model: FormulaEnergy, totalEnergyRecharge: number, totalCritRate?: number,
+): number {
+  return totalEnergyRecharge * rawParticleEnergy(model, totalCritRate)
+    + flatEnergyAt(model, totalEnergyRecharge);
 }
 
 /** The highest ER the requirement is searched to (10 000 %): beyond it, "no ER answers". */
@@ -168,13 +242,17 @@ const ER_CEILING = 100;
 
 /**
  * The total ER at which one rotation funds one burst — gcsim's own
- * `max((cost − flat) / raw, 1.0)` (`energy_stats.go:85`).
+ * `max((cost − flat) / raw, 1.0)` (`energy_stats.go:85`) — at a total crit rate (the build's
+ * when none is given; it moves only a subject's own Favonius).
  *
  * `null` when no particle is counted and flat energy falls short: no ER answers it, and that is
  * not the same as "no requirement".
  */
-export function requiredEnergyRecharge(model: FormulaEnergy): number | null {
-  const raw = rawParticleEnergy(model);
+export function requiredEnergyRecharge(
+  model: FormulaEnergy, totalCritRate?: number,
+): number | null {
+  const crit = reportedCrit(model, totalCritRate);
+  const raw = rawParticleEnergy(model, crit);
   if (!(model.flatSources ?? []).some((s) => s.scaling !== 'none')) {
     const flat = flatEnergyAt(model, 1);
     if (raw <= 0) return flat >= model.cost ? 1 : null;
@@ -182,28 +260,32 @@ export function requiredEnergyRecharge(model: FormulaEnergy): number | null {
   }
   // A refund that scales with the subject's own ER: energy is still non-decreasing in ER, so
   // the requirement is the least ER whose energy reaches the cost, found by bisection.
-  if (energyAt(model, 1) >= model.cost) return 1;
-  if (energyAt(model, ER_CEILING) < model.cost) return null;
+  if (energyAt(model, 1, crit) >= model.cost) return 1;
+  if (energyAt(model, ER_CEILING, crit) < model.cost) return null;
   let low = 1;
   let high = ER_CEILING;
   for (let i = 0; i < 200 && high - low > 1e-12; i += 1) {
     const mid = (low + high) / 2;
-    if (energyAt(model, mid) >= model.cost) high = mid;
+    if (energyAt(model, mid, crit) >= model.cost) high = mid;
     else low = mid;
   }
   return high;
 }
 
 /** The artifact ER the requirement asks for beyond this recipe's own: 0 when already met. */
-export function artifactEnergyRequirement(model: FormulaEnergy): number | null {
-  const total = requiredEnergyRecharge(model);
+export function artifactEnergyRequirement(
+  model: FormulaEnergy, totalCritRate?: number,
+): number | null {
+  const total = requiredEnergyRecharge(model, totalCritRate);
   return total === null ? null : Math.max(0, total - model.baseEnergyRecharge);
 }
 
 /** Bursts a rotation funds, long run: `min(1, energy / cost)`. */
-export function burstFraction(model: FormulaEnergy, totalEnergyRecharge: number): number {
+export function burstFraction(
+  model: FormulaEnergy, totalEnergyRecharge: number, totalCritRate?: number,
+): number {
   if (model.cost <= 0) return 1;
-  return Math.min(1, energyAt(model, totalEnergyRecharge) / model.cost);
+  return Math.min(1, energyAt(model, totalEnergyRecharge, totalCritRate) / model.cost);
 }
 
 /**
@@ -213,8 +295,10 @@ export function burstFraction(model: FormulaEnergy, totalEnergyRecharge: number)
  * of the time. **Refused without a drip**: gcsim with no drip waits forever (CLAUDE.md, *"gcsim
  * has no watchdog"*), and so would this.
  */
-export function waitSeconds(model: FormulaEnergy, totalEnergyRecharge: number): number {
-  const deficit = model.cost - energyAt(model, totalEnergyRecharge);
+export function waitSeconds(
+  model: FormulaEnergy, totalEnergyRecharge: number, totalCritRate?: number,
+): number {
+  const deficit = model.cost - energyAt(model, totalEnergyRecharge, totalCritRate);
   if (deficit <= 0) return 0;
   if (model.drip === null || model.drip.particlesPerSecond <= 0) {
     throw new Error('the waiting model needs the energy drip: without it the wait never ends');
@@ -225,42 +309,54 @@ export function waitSeconds(model: FormulaEnergy, totalEnergyRecharge: number): 
 }
 
 /**
- * What a candidate's artifact ER does to a formula recipe: a factor on burst rows (`skip`) and a
- * factor on the whole score (`wait`). Both 1 under `off`, and both non-decreasing in ER.
+ * What a candidate's artifact ER (and artifact crit, for a subject's Favonius) does to a formula
+ * recipe: a factor on burst rows (`skip`) and a factor on the whole score (`wait`). Both 1 under
+ * `off`, and both non-decreasing in ER and in crit — so the search's bound, which completes a
+ * partial build with the most of every live quantity, still dominates.
  */
 export function energyFactors(
-  model: FormulaEnergy, artifactEnergyRecharge: number,
+  model: FormulaEnergy, artifactEnergyRecharge: number, artifactCritRate = 0,
 ): { burst: number; all: number } {
   const er = model.baseEnergyRecharge + artifactEnergyRecharge;
+  const crit = (model.subjectFavonius?.baseCritRate ?? 0) + artifactCritRate;
   switch (model.mode) {
     case 'off': return { burst: 1, all: 1 };
-    case 'skip': return { burst: burstFraction(model, er), all: 1 };
+    case 'skip': return { burst: burstFraction(model, er, crit), all: 1 };
     case 'wait': {
       const length = model.rotationSeconds;
-      return { burst: 1, all: length / (length + waitSeconds(model, er)) };
+      return { burst: 1, all: length / (length + waitSeconds(model, er, crit)) };
     }
   }
 }
 
 /**
  * Whether artifact ER can move this recipe's score at all: a priced mode, and a requirement the
- * recipe's own ER does not already meet. The search makes ER live exactly when this holds.
+ * recipe's own ER does not already meet **at the lowest crit a candidate can have** — the base,
+ * no artifact crit — since a subject's Favonius banks less with less crit. The search makes ER
+ * live exactly when this holds.
  */
 export function energyVaries(model: FormulaEnergy | undefined): boolean {
   if (!model || model.mode === 'off') return false;
-  const need = artifactEnergyRequirement(model);
+  const need = artifactEnergyRequirement(model, model.subjectFavonius?.baseCritRate);
   return need === null || need > 0;
 }
 
-/** Particles a source drops in one rotation, from the server's per-cast or per-second form. */
+/**
+ * Particles a source drops in one rotation, from the server's per-cast or per-second form.
+ *
+ * A `shared_icd` source (Yae's totems, gcsim `yaemiko/skill.go:43`) holds its particle ICD on
+ * the character, so totems standing together drop no more than one does: casts switch it on
+ * (any cast at all) but do not multiply it.
+ */
 export function particlesPerRotation(
   source: { per: 'cast' | 'second'; particles: number; interval?: number | null;
-    max_seconds?: number | null },
+    max_seconds?: number | null; shared_icd?: boolean | null },
   casts: number,
   rotationSeconds: number,
 ): number {
-  if (source.per === 'cast') return source.particles * casts;
-  const seconds = Math.min(rotationSeconds, source.max_seconds ?? Infinity) * casts;
+  const times = source.shared_icd ? Math.min(casts, 1) : casts;
+  if (source.per === 'cast') return source.particles * times;
+  const seconds = Math.min(rotationSeconds, source.max_seconds ?? Infinity) * times;
   return source.particles * seconds / (source.interval ?? Infinity);
 }
 
@@ -286,6 +382,15 @@ export function energyAssumptions(model: FormulaEnergy, subject: string): string
   for (const s of model.sources) {
     out.push(`Energy source: ${s.label} — ${s.particles.toFixed(2)} particles a rotation, `
       + `${Math.round(s.onFieldShare * 100)}% caught on field (${s.citation}).`);
+  }
+  const fav = model.subjectFavonius;
+  if (fav) {
+    const procs = favoniusProcsAt(fav, model.rotationSeconds, fav.buildCritRate);
+    out.push(`Energy source: ${fav.label} — procs priced from each candidate's crit rate: `
+      + `min(${model.rotationSeconds}s ÷ ${fav.cooldownSeconds}s, ${fav.hits.toFixed(1)} hits × `
+      + `crit × ${fav.chance}); ${procs.toFixed(2)} a rotation at the build's `
+      + `${(fav.buildCritRate * 100).toFixed(1)}% crit, ${fav.particles} clear particles each, `
+      + `${Math.round(fav.onFieldShare * 100)}% caught on field (${fav.citation}).`);
   }
   for (const s of model.flatSources ?? []) {
     const scaled = s.scaling === 'none' ? ''

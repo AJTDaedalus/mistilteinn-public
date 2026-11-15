@@ -36,6 +36,7 @@ from app.schemas.formula import (
     FormulaProcRead,
     FormulaRaisedTalentRead,
     FormulaRefundRead,
+    FormulaResonanceEnergyRead,
     FormulaResonanceRead,
     FormulaSetEffectsRead,
     FormulaSetTierRead,
@@ -223,7 +224,8 @@ async def energy_route(
 
     Each member's burst cost and cooldown (game data) and Elemental Skill particles per cast
     (curated, each count cited to gcsim at the pin), flat refunds and a Favonius proc with the
-    member's own ER and crit rate, and the drip gcsim's waiting model emits.
+    member's own ER and crit rate, the drip gcsim's waiting model emits, and Electro
+    resonance's particle when the team has the resonance (refinements, DECISIONS §49).
     A member with no curated count is listed as `no_particle_data`, never omitted. The
     browser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.
     """
@@ -252,7 +254,7 @@ async def energy_route(
                         label=s.label, per=s.per, particles=s.particles,
                         collector=s.collector, interval=s.interval,
                         max_seconds=s.max_seconds, note=s.note, citation=s.citation,
-                        on=s.on, chance=s.chance,
+                        on=s.on, chance=s.chance, shared_icd=s.shared_icd,
                     )
                     for s in m.sources
                 ],
@@ -278,4 +280,12 @@ async def energy_route(
             config=drip.config, citation=drip.citation,
         ),
         gcsim_commit=team.gcsim_commit,
+        resonance=FormulaResonanceEnergyRead(
+            name=team.resonance.spec.name, element=team.resonance.spec.element,
+            particles=team.resonance.spec.particles,
+            cooldown_seconds=team.resonance.spec.cooldown_seconds,
+            trigger_elements=list(team.resonance.spec.trigger_elements),
+            team_can_trigger=team.resonance.team_can_trigger,
+            note=team.resonance.spec.note, citation=team.resonance.spec.citation,
+        ) if team.resonance else None,
     )

@@ -309,7 +309,11 @@ export function evaluateRecipe(recipe: Recipe, stats: CandidateStats): number {
  * search's optimistic bound still dominates every completion.
  */
 function formulaEnergyTotal(recipe: Recipe, stats: CandidateStats): number {
-  const { burst, all } = energyFactors(recipe.meta.formulaEnergy!, stats.energyRecharge);
+  // The candidate's artifact crit reaches the subject's own Favonius procs (DECISIONS §49):
+  // non-decreasing in crit, as in ER, so the bound still dominates.
+  const { burst, all } = energyFactors(
+    recipe.meta.formulaEnergy!, stats.energyRecharge, stats.critRate,
+  );
   let total = 0;
   for (const hit of recipe.hits) {
     const damage = evaluateHit(hit, stats);

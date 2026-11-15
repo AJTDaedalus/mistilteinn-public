@@ -170,7 +170,7 @@ RESONANCES: tuple[Resonance, ...] = (
         key="high_voltage", name="High Voltage", element="electro",
         bonus=Bonus(unmodelled=(
             Unmodelled(what="Electro particles on reactions",
-                       reason=f"{NO_DAMAGE}: energy is not modelled in the estimate (G13)"),
+                       reason=f"{NO_DAMAGE}: its particles are priced in the Energy section"),
         )),
         citation=f"GO {GO_RESONANCE}:202-225 (no stat); gcsim {GCSIM_RESONANCE}:181-207",
     ),

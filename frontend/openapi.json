@@ -4923,7 +4923,7 @@
           "formula"
         ],
         "summary": "Energy Route",
-        "description": "The team's energy data for the formula estimate (math-fallback P3, task 14).\n\nEach member's burst cost and cooldown (game data) and Elemental Skill particles per cast\n(curated, each count cited to gcsim at the pin), flat refunds and a Favonius proc with the\nmember's own ER and crit rate, and the drip gcsim's waiting model emits.\nA member with no curated count is listed as `no_particle_data`, never omitted. The\nbrowser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.",
+        "description": "The team's energy data for the formula estimate (math-fallback P3, task 14).\n\nEach member's burst cost and cooldown (game data) and Elemental Skill particles per cast\n(curated, each count cited to gcsim at the pin), flat refunds and a Favonius proc with the\nmember's own ER and crit rate, the drip gcsim's waiting model emits, and Electro\nresonance's particle when the team has the resonance (refinements, DECISIONS \u00a749).\nA member with no curated count is listed as `no_particle_data`, never omitted. The\nbrowser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.",
         "operationId": "energy_route_api_v1_formula_energy_get",
         "security": [
           {
@@ -9047,6 +9047,11 @@
               }
             ],
             "title": "Chance"
+          },
+          "shared_icd": {
+            "type": "boolean",
+            "title": "Shared Icd",
+            "default": false
           }
         },
         "type": "object",
@@ -9290,6 +9295,58 @@
         "title": "FormulaRefundRead",
         "description": "A kit's flat energy (gcsim `AddEnergy`): ER never multiplies it (DESIGN \u00a72.11)."
       },
+      "FormulaResonanceEnergyRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "element": {
+            "type": "string",
+            "title": "Element"
+          },
+          "particles": {
+            "type": "number",
+            "title": "Particles"
+          },
+          "cooldown_seconds": {
+            "type": "number",
+            "title": "Cooldown Seconds"
+          },
+          "trigger_elements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Trigger Elements"
+          },
+          "team_can_trigger": {
+            "type": "boolean",
+            "title": "Team Can Trigger"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "element",
+          "particles",
+          "cooldown_seconds",
+          "trigger_elements",
+          "team_can_trigger",
+          "note",
+          "citation"
+        ],
+        "title": "FormulaResonanceEnergyRead",
+        "description": "Electro resonance's particle (High Voltage), when the team has the resonance."
+      },
       "FormulaResonanceRead": {
         "properties": {
           "key": {
@@ -9473,6 +9530,16 @@
           "gcsim_commit": {
             "type": "string",
             "title": "Gcsim Commit"
+          },
+          "resonance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FormulaResonanceEnergyRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

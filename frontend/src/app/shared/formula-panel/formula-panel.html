@@ -317,6 +317,23 @@
           </span>
         </div>
 
+        <div class="assumptions__condition">
+          <label class="assumptions__value">
+            <span>{{ energy.subject?.name }} on field</span>
+            <select (change)="setSubjectOnField($any($event.target).value)">
+              <option value="default" [selected]="energy.onFieldIsDefault">From the rows ({{ energy.rowsOnField ? 'yes' : 'no' }})</option>
+              <option value="on" [selected]="!energy.onFieldIsDefault && energy.onField">Yes</option>
+              <option value="off" [selected]="!energy.onFieldIsDefault && !energy.onField">No</option>
+            </select>
+          </label>
+          <span class="assumptions__default" [class.assumptions__default--changed]="!energy.onFieldIsDefault">
+            On field, every off-field generator's particles (summons such as Oz, Raiden's Eye, Kuki's
+            ring, Kokomi's jellyfish, Zhongli's stele, Yae's totems, Guoba) and Electro resonance's
+            land on {{ energy.subject?.name }} and default to 100% caught on field. Default: from the
+            rows — on field when one is a normal, charged or plunging attack.
+          </span>
+        </div>
+
         @for (row of energy.members; track row.member.build_id) {
           <div class="energy__member">
             <p class="energy__name">
@@ -363,6 +380,12 @@
                           + ' s a ' + (item.source.on === 'burst' ? 'burst' : 'cast') : '' }}
                     </p>
                   }
+                  @if (item.source.shared_icd) {
+                    <p class="assumptions__static">
+                      One particle ICD shared by every totem: skill casts do not multiply it ·
+                      for up to {{ item.source.max_seconds }} s a rotation
+                    </p>
+                  }
                   @if (item.source.note) {
                     <p class="assumptions__static">{{ item.source.note }}</p>
                   }
@@ -396,6 +419,10 @@
                   <span class="mono">{{ fav.procs.toFixed(2) }}</span> procs a rotation:
                   min(rotation ÷ cooldown, hits × crit rate
                   <span class="mono">{{ percent(fav.critRate) }}</span> × chance).
+                  @if (fav.perCandidate) {
+                    Shown at the build's crit rate; the estimate prices each candidate's own crit
+                    rate, so crit buys energy too.
+                  }
                   @if (fav.hitsIsDefault) {
                     Default hits: {{ row.member.is_subject ? 'the direct-hit rows above'
                       : 'one per skill cast' }}.
@@ -431,6 +458,39 @@
           </div>
         }
 
+        @if (energy.resonance; as res) {
+          <div class="energy__member energy__resonance">
+            <p class="energy__name">Electro resonance ({{ res.res.name }}): one Electro particle a
+              qualifying reaction, at most one every {{ res.res.cooldown_seconds }} s</p>
+            <label class="assumptions__value">
+              <span>Procs per rotation (at most <span class="mono">{{ res.ceiling.toFixed(2) }}</span>)</span>
+              <input type="number" min="0" step="any" [value]="res.procs"
+                (change)="setResonanceProcs($any($event.target), res.procs)" />
+            </label>
+            <span class="assumptions__default" [class.assumptions__default--changed]="!res.procsIsDefault">
+              @if (res.procsIsDefault) {
+                @if (res.res.team_can_trigger) {
+                  Default: the ceiling — a qualifying reaction whenever the cooldown is up. gcsim's
+                  Raiden samples proc 3 times in a 25 s rotation, against 5.
+                } @else {
+                  Default: none — no member can react with Electro
+                  ({{ res.res.trigger_elements.join(', ') }}).
+                }
+              } @else {
+                Changed ·
+                <button type="button" class="linkish" (click)="resetResonanceProcs()">back to the default</button>
+              }
+            </span>
+            <label class="assumptions__value">
+              <span>Caught by {{ energy.subject?.name }} on field (%)</span>
+              <input type="number" min="0" max="100" step="any" [value]="res.onField * 100"
+                (change)="setOnField(res.key, $any($event.target), res.onField)" />
+            </label>
+            <p class="assumptions__static">{{ res.res.note }}</p>
+            <p class="assumptions__cite">Source: {{ res.res.citation }}</p>
+          </div>
+        }
+
         <label class="assumptions__toggle">
           <input type="checkbox" [checked]="energySettings().drip"
             (change)="setDrip($any($event.target).checked)" />
@@ -445,8 +505,8 @@
             (change)="setFlatEnergy($any($event.target), energySettings().flatEnergy)" />
         </label>
         <p class="assumptions__static">
-          Counted above: the team's Favonius procs and the kits' flat refunds the table curates.
-          Not counted unless entered: constellation refunds, Electro resonance's particles,
+          Counted above: the team's Favonius procs, the kits' flat refunds the table curates and
+          Electro resonance's particles. Not counted unless entered: constellation refunds,
           normal attacks' chance of 1 energy. A particle is worth 3 of its own element, 2 clear, 1 other;
           60% off field in a party of four; ER multiplies particles only (gcsim at the pin, KQM's
           Energy page).

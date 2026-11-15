@@ -24,6 +24,15 @@ their amount, recipients and how they scale; and a member holding a **Favonius**
 served with the proc's chance and cooldown from our catalogue's refinement row, and the
 member's own crit rate and ER (pass 1, `kit_buffs.pass_one`) that the proc count and the
 ER-scaled refunds read.
+
+**Refinements (owner rulings 2026-11-15, DESIGN §2.11, DECISIONS §49).** A team with **Electro
+resonance** (four members, two Electro: the tally `resonance.py` applies) is served the
+resonance's particle — one Electro particle a qualifying reaction, a 5 s cooldown, cited to
+gcsim's `SetupResonance` and KQM's resonance table — and whether any member can react with
+Electro at all. **Yae Miko** is curated at gcsim's rate: one particle a totem strike, a 2.5 s
+ICD shared by her totems (`shared_icd`, so skill casts do not multiply it), at a totem's
+176-frame cadence for the totems' 25 s. The browser decides the proc count, the on-field
+shares and the per-candidate Favonius crit rate.
 """
 
 from __future__ import annotations
@@ -35,7 +44,7 @@ from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from app.formula.genshin import sheets, tags
+from app.formula.genshin import resonance, sheets, tags
 from app.models.enums import TalentType
 from app.pando.calculator import Calculator
 from app.services import kit_buffs, talent_scaling
@@ -80,6 +89,33 @@ class ParticleSource:
     #: A summon hit's chance of a particle, the literal on its `Rand` line; `particles` is it
     #: times the particles a hit drops.
     chance: float | None = None
+    #: The particle ICD is the character's, shared by every summon of the source (Yae's
+    #: totems, `yaemiko/skill.go:43`): more casts standing together add no particles, so skill
+    #: casts do not multiply it.
+    shared_icd: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ResonanceSpec:
+    """Electro resonance's particle (High Voltage), as `particles.json` curates it."""
+
+    name: str
+    element: str
+    particles: float
+    cooldown_seconds: float
+    #: Team elements whose reaction with Electro triggers it (gcsim `setup.go:200-207`).
+    trigger_elements: tuple[str, ...]
+    note: str
+    citation: str
+
+
+@dataclass(frozen=True, slots=True)
+class TeamResonance:
+    """A team's High Voltage: the spec, and whether a member can react with Electro at all."""
+
+    spec: ResonanceSpec
+    #: A member of a trigger element is on the team, so a qualifying reaction is possible.
+    team_can_trigger: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,6 +202,8 @@ class TeamEnergy:
     members: list[MemberEnergy] = field(default_factory=list)
     drip: Drip | None = None
     gcsim_commit: str = ""
+    #: Electro resonance's particles, when the team has the resonance (refinements, §49).
+    resonance: TeamResonance | None = None
 
 
 def _citation(lines: list[list[Any]], commit: str) -> str:
@@ -213,6 +251,7 @@ def particle_table() -> dict[str, tuple[ParticleSource, ...]]:
                 collector=s["collector"], citation=_cited(s, commit),
                 interval=s.get("interval"), max_seconds=s.get("max_seconds"),
                 note=s.get("note"), on=s.get("on", "skill"), chance=s.get("chance"),
+                shared_icd=bool(s.get("shared_icd", False)),
             ))
         if sources:
             out[name] = tuple(sources)
@@ -254,6 +293,33 @@ def favonius_spec() -> tuple[frozenset[str], float, str]:
     data = _load()
     fav = data["weapons"]["favonius"]
     return frozenset(fav["names"]), float(fav["particles"]), _cited(fav, data["gcsim_commit"])
+
+
+@cache
+def resonance_spec() -> ResonanceSpec:
+    """Electro resonance's particle, cited to gcsim's `SetupResonance` and KQM's table."""
+    data = _load()
+    entry = data["resonances"]["electro"]
+    return ResonanceSpec(
+        name=str(entry["name"]), element=str(entry["element"]),
+        particles=float(entry["particles"]), cooldown_seconds=float(entry["cooldown_seconds"]),
+        trigger_elements=tuple(entry["trigger_elements"]), note=str(entry["note"]),
+        citation=_cited(entry, str(data["gcsim_commit"])),
+    )
+
+
+def team_resonance(member_elements: Sequence[str | None]) -> TeamResonance | None:
+    """The team's High Voltage, by the same tally `resonance.py` applies to damage.
+
+    Four members with two or more Electro (gcsim `setup.go:108-120`, GO's `Resonance.tsx`).
+    A qualifying reaction needs a member of a trigger element; without one there is nothing
+    for the resonance to fire on, and `team_can_trigger` says so.
+    """
+    if not any(r.key == "high_voltage" for r in resonance.active(member_elements)):
+        return None
+    spec = resonance_spec()
+    elements = {e.lower() for e in member_elements if e}
+    return TeamResonance(spec=spec, team_can_trigger=bool(elements & set(spec.trigger_elements)))
 
 
 @cache
@@ -419,4 +485,7 @@ def team_energy(members: Sequence[Build], subject_build_id: str) -> TeamEnergy:
             energy_recharge=er, crit_rate=cr,
             note=reasons.get(character.name),
         ))
-    return TeamEnergy(members=out, drip=drip(), gcsim_commit=table_commit())
+    return TeamEnergy(
+        members=out, drip=drip(), gcsim_commit=table_commit(),
+        resonance=team_resonance([m.element for m in out]),
+    )

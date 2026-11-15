@@ -248,10 +248,10 @@ describe('energyInput: the server data and the settings', () => {
     members: [
       { build_id: 'xl', name: 'Xiangling', element: 'pyro', burst_energy_cost: 80,
         burst_cooldown: 20, is_subject: true, status: 'curated', refunds: [],
-        sources: [{ label: 'Guoba', per: 'cast', particles: 4, collector: 'active', citation: 'g', on: 'skill' }] },
+        sources: [{ label: 'Guoba', per: 'cast', particles: 4, collector: 'active', citation: 'g', on: 'skill', shared_icd: false }] },
       { build_id: 'bn', name: 'Bennett', element: 'pyro', burst_energy_cost: 60,
         burst_cooldown: 15, is_subject: false, status: 'curated', refunds: [],
-        sources: [{ label: 'Tap', per: 'cast', particles: 2.25, collector: 'caster', citation: 'b', on: 'skill' }] },
+        sources: [{ label: 'Tap', per: 'cast', particles: 2.25, collector: 'caster', citation: 'b', on: 'skill', shared_icd: false }] },
       { build_id: 'rd', name: 'Raiden Shogun', element: 'electro', burst_energy_cost: 90,
         burst_cooldown: 18, is_subject: false, status: 'no_particle_data', refunds: [], sources: [] },
     ],

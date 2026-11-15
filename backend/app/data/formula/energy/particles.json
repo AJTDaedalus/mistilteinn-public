@@ -1,7 +1,7 @@
 {
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "source": "github.com/genshinsim/gcsim at gcsim_commit — internal/characters/<key>/*.go (AGPL-3.0; MIT for code before 2026-09-19)",
- "note": "Elemental Skill particles per cast for the formula estimate's energy model (DESIGN_team_math_fallback.md §2.11, TASKS 14). Each count is read off the QueueParticle call it cites; `lines` names each cited line and a substring it must contain, and tests/unit/test_formula_energy_data.py holds every entry to the committed snapshot of those lines (gcsim_lines.json, scripts/gcsim/snapshot_particle_lines.py). A random count is its expectation (2 + 0.25 for Bennett's tap). `collector` says who catches the particles: `caster` lands them while the caster is still on field (a teammate's are caught off field), `active` is an off-field generator whose particles the on-field character catches. A summon whose particles come with a chance per hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele) carries `chance` (the literal on its `Rand` line) and a hit cadence (`interval`, `max_seconds`), each cited to gcsim and to KQM; `particles` is chance x particles per hit. `on: burst` counts a source once per burst rather than per skill cast (Oz from Fischl's burst). `refunds` are flat energy (gcsim `AddEnergy`, never multiplied by ER): `per` burst or cast, `count` a trigger, `amount` (or `amount_row`, a talent row in our catalogue at the build's level), `recipients` team or self, `scaling` none, per_er (x the giver's ER) or raiden_a4 (x 1 + 0.006 x whole percent of ER above 100%). `weapons.favonius` is the Favonius proc (chance and cooldown from the catalogue's refinement row). `not_curated` names characters left to the user, and why (DESIGN_team_math_fallback.md §2.11, DECISIONS.md §48).",
+ "note": "Elemental Skill particles per cast for the formula estimate's energy model (DESIGN_team_math_fallback.md §2.11, TASKS 14). Each count is read off the QueueParticle call it cites; `lines` names each cited line and a substring it must contain, and tests/unit/test_formula_energy_data.py holds every entry to the committed snapshot of those lines (gcsim_lines.json, scripts/gcsim/snapshot_particle_lines.py). A random count is its expectation (2 + 0.25 for Bennett's tap). `collector` says who catches the particles: `caster` lands them while the caster is still on field (a teammate's are caught off field), `active` is an off-field generator whose particles the on-field character catches. A summon whose particles come with a chance per hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele) carries `chance` (the literal on its `Rand` line) and a hit cadence (`interval`, `max_seconds`), each cited to gcsim and to KQM; `particles` is chance x particles per hit. `on: burst` counts a source once per burst rather than per skill cast (Oz from Fischl's burst). `refunds` are flat energy (gcsim `AddEnergy`, never multiplied by ER): `per` burst or cast, `count` a trigger, `amount` (or `amount_row`, a talent row in our catalogue at the build's level), `recipients` team or self, `scaling` none, per_er (x the giver's ER) or raiden_a4 (x 1 + 0.006 x whole percent of ER above 100%). `weapons.favonius` is the Favonius proc (chance and cooldown from the catalogue's refinement row). `shared_icd: true` says the particle ICD is shared by every summon of the source (Yae's totems), so skill casts do not multiply it. `resonances.electro` is Electro resonance's particle (one a qualifying reaction, a cooldown, the team elements that can react with Electro). `not_curated` names characters left to the user, and why; it is empty since Yae was curated at gcsim's rate (DESIGN_team_math_fallback.md §2.11, DECISIONS.md §48-49).",
  "characters": {
   "Bennett": {
    "gcsim_key": "bennett",
@@ -277,6 +277,24 @@
                ["internal/characters/sara/asc.go", 34, "char.AddEnergy(\"sara-a4\", energyAddAmt)"]]}
    ]
   },
+  "Yae Miko": {
+   "gcsim_key": "yaemiko",
+   "sources": [
+    {"label": "Sesshou Sakura (lightning strikes)", "per": "second", "particles": 1, "interval": 2.933333, "max_seconds": 25,
+     "shared_icd": true, "collector": "active",
+     "note": "gcsim's rate (owner ruling 2026-11-15): one particle on a totem's strike, with a 2.5 s particle ICD shared by all her totems, and each totem strikes every 176 frames (2.93 s). The ICD is shorter than a totem's own cadence, so one totem drops a particle on every strike, and more totems standing together add none: one every 2.93 s while totems stand, however many there are (a native gcsim run at the pin: one totem and three both drop one every 176 frames). Totems last 25 s at the pin (15 s, and 10 s more from Edict of Cleansing, on by default in gcsim and ungated in the game data), so skill casts do not multiply this source. KQM's library disagrees: it says only each totem's first strike drops one (about 3 for a triple cast), against gcsim's 8 for a totem set at full length.",
+     "kqm": "keqingmains.com/yae-miko/ \u2014 Skill Timing Trick: \"the first Sesshou Sakura hit occurs about 2s after you cast the Skill. Every following hit takes 3s.\" Disagreeing: library.keqingmains.com/characters/electro/yae-miko \u2014 \"Each Sesshou Sakura hits up to 5 times, but only the first one generates Particles\".",
+     "lines": [["internal/characters/yaemiko/skill.go", 43, "if c.StatusIsActive(particleICDKey)"],
+               ["internal/characters/yaemiko/skill.go", 46, "AddStatus(particleICDKey, 2.5*60"],
+               ["internal/characters/yaemiko/skill.go", 47, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"],
+               ["internal/characters/yaemiko/kitsune.go", 13, "kitsuneDur = 900"],
+               ["internal/characters/yaemiko/kitsune.go", 39, "kitsuneDur+c.revelationBonusSkillDur()-skillStart"],
+               ["internal/characters/yaemiko/kitsune.go", 147, "c.particleCB,"],
+               ["internal/characters/yaemiko/kitsune.go", 166, "c.Core.Tasks.Add(c.kitsuneTick(totem), 176)"],
+               ["internal/characters/yaemiko/stellar.go", 51, "return 10 * 60"],
+               ["internal/characters/yaemiko/yaemiko.go", 39, "revelation = 1"]]}
+   ]
+  },
   "Venti": {
    "gcsim_key": "venti",
    "sources": [],
@@ -305,15 +323,31 @@
    "kqm": "library.keqingmains.com/combat-mechanics/energy — \"3 Clear Elemental Particles are generated when the passive procs\"; \"Refinements only change the frequency of Particles produced, not the amount of Particles.\""
   }
  },
- "not_curated": {
-  "Yae Miko": {
-   "gcsim_key": "yaemiko",
-   "reason": "Two cited sources disagree. gcsim drops 1 particle on a totem hit with a 2.5 s particle ICD shared by her totems (each totem strikes every 176 frames for 15 s), so up to about one particle every 2.5 to 3 s while totems stand; KQM's library says only each Sesshou Sakura's first hit drops a particle (\"1 Particle on each hit and none on cast\"; \"only the first one generates Particles\"), so one per totem. None is counted until you enter a number.",
-   "kqm": "library.keqingmains.com/characters/electro/yae-miko — Sesshou Sakura notes: \"Each Sesshou Sakura hits up to 5 times, but only the first one generates Particles\".",
-   "lines": [["internal/characters/yaemiko/skill.go", 46, "AddStatus(particleICDKey, 2.5*60"],
-             ["internal/characters/yaemiko/skill.go", 47, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"],
-             ["internal/characters/yaemiko/kitsune.go", 13, "kitsuneDur = 900"],
-             ["internal/characters/yaemiko/kitsune.go", 166, "c.Core.Tasks.Add(c.kitsuneTick(totem), 176)"]]
+ "resonances": {
+  "electro": {
+   "name": "High Voltage",
+   "element": "electro",
+   "particles": 1,
+   "cooldown_seconds": 5,
+   "trigger_elements": ["pyro", "cryo", "hydro", "dendro"],
+   "note": "In a party of four with two or more Electro members, an Electro reaction on an enemy distributes one Electro particle to the team at once (no landing delay), at most once every 300 frames (5 s). gcsim triggers it on Overloaded (Pyro), Superconduct and its Stellar-Conduct form (Cryo), Electro-Charged and Lunar-Charged (Hydro), and Quicken, Aggravate and Hyperbloom (Dendro), so a team can trigger it only with a Pyro, Cryo, Hydro or Dendro member. KQM's resonance table names Superconduct, Overloaded and Electro-Charged, and Swirl onto Electro; gcsim, the oracle here, adds the Dendro reactions and not Swirl.",
+   "kqm": "library.keqingmains.com/combat-mechanics/elemental-effects/elemental-resonance \u2014 High Voltage: \"Superconduct, Overloaded, and Electro-Charged have a 100% chance to generate an Electro Elemental Particle (CD: 5s).\"",
+   "lines": [["pkg/simulation/setup.go", 108, "if len(chars) < 4"],
+             ["pkg/simulation/setup.go", 118, "if v < 2"],
+             ["pkg/simulation/setup.go", 181, "case attributes.Electro:"],
+             ["pkg/simulation/setup.go", 185, "if s.F-last < 300 && last != 0"],
+             ["pkg/simulation/setup.go", 188, "s.Player.DistributeParticle(character.Particle{"],
+             ["pkg/simulation/setup.go", 190, "Num:    1,"],
+             ["pkg/simulation/setup.go", 191, "Ele:    attributes.Electro,"],
+             ["pkg/simulation/setup.go", 200, "event.OnOverload"],
+             ["pkg/simulation/setup.go", 201, "event.OnSuperconduct"],
+             ["pkg/simulation/setup.go", 202, "event.OnStellarConduct"],
+             ["pkg/simulation/setup.go", 203, "event.OnElectroCharged"],
+             ["pkg/simulation/setup.go", 204, "event.OnLunarCharged"],
+             ["pkg/simulation/setup.go", 205, "event.OnQuicken"],
+             ["pkg/simulation/setup.go", 206, "event.OnAggravate"],
+             ["pkg/simulation/setup.go", 207, "event.OnHyperbloom"]]
   }
- }
+ },
+ "not_curated": {}
 }

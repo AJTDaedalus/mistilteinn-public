@@ -320,6 +320,25 @@ class FormulaParticleSourceRead(BaseModel):
     #: A summon hit's chance of a particle (gcsim's `Rand` literal); `particles` is the
     #: expectation per hit.
     chance: float | None = None
+    #: The particle ICD is shared by every summon of the source (Yae's totems): skill casts
+    #: do not multiply it.
+    shared_icd: bool = False
+
+
+class FormulaResonanceEnergyRead(BaseModel):
+    """Electro resonance's particle (High Voltage), when the team has the resonance."""
+
+    name: str
+    element: str
+    #: Particles a proc, at most one proc every `cooldown_seconds` (gcsim `setup.go:185`).
+    particles: float
+    cooldown_seconds: float
+    #: Team elements whose reaction with Electro triggers it.
+    trigger_elements: list[str]
+    #: Whether a member of a trigger element is on the team at all.
+    team_can_trigger: bool
+    note: str
+    citation: str
 
 
 class FormulaRefundRead(BaseModel):
@@ -393,3 +412,5 @@ class FormulaTeamEnergyRead(BaseModel):
     drip: FormulaDripRead
     #: The gcsim commit the particle counts are cited at.
     gcsim_commit: str
+    #: Electro resonance's particles; `None` when the team does not have the resonance.
+    resonance: FormulaResonanceEnergyRead | None = None
