@@ -123,10 +123,23 @@ export class FormulaPanel {
     () => this.groups().some((g) => g.kind === 'weapon' || g.kind === 'no-weapon'),
   );
 
-  /** Groups that carry a control, for the per-row overrides. */
+  /**
+   * Groups that carry a control, for the per-row overrides. A candidate weapon's are not: they
+   * are that candidate's own setting, one per candidate run (§46), not a row's.
+   */
   protected readonly conditional = computed(
-    () => this.groups().filter((g) => g.conditions.length > 0),
+    () => this.groups().filter((g) => g.conditions.length > 0 && !g.candidate),
   );
+  /** Anything to put back to its default, the equipped run's or a candidate's. */
+  protected readonly resettable = computed(
+    () => this.groups().some((g) => g.conditions.length > 0),
+  );
+  /** A candidate group heads the candidates' part of the list (they come last). */
+  protected startsCandidates(index: number): boolean {
+    const groups = this.groups();
+    return !!groups[index]?.candidate && (index === 0 || !groups[index - 1].candidate);
+  }
+  protected readonly candidateState = this.service.candidateConditionals;
 
   /**
    * A hit's identity in the picker. **All three parts**: `index` is the part within one
@@ -240,7 +253,19 @@ export class FormulaPanel {
   }
 
   protected valueOf(group: ConditionGroup, condition: FormulaCondition): ConditionValue {
+    if (group.candidate) {
+      return this.candidateState()[group.candidate.weaponId]?.[condition.key] ?? condition.default;
+    }
     return this.teamState()[this.key(group, condition)] ?? condition.default;
+  }
+
+  /** Write one condition: the team's state, or a candidate weapon's own (§46). */
+  private write(group: ConditionGroup, condition: FormulaCondition, value: ConditionValue): void {
+    if (group.candidate) {
+      this.service.setCandidateCondition(group.candidate.weaponId, condition.key, value);
+    } else {
+      this.service.setCondition(this.key(group, condition), value);
+    }
   }
 
   protected isDefault(group: ConditionGroup, condition: FormulaCondition): boolean {
@@ -263,19 +288,19 @@ export class FormulaPanel {
   }
 
   protected setToggle(group: ConditionGroup, condition: FormulaCondition, on: boolean): void {
-    this.service.setCondition(this.key(group, condition), on ? 1 : 0);
+    this.write(group, condition, on ? 1 : 0);
   }
 
   protected setChoice(group: ConditionGroup, condition: FormulaCondition, raw: string): void {
     const value = condition.kind === 'choice' ? raw : Number(raw);
-    this.service.setCondition(this.key(group, condition), value);
+    this.write(group, condition, value);
   }
 
   protected setNumber(group: ConditionGroup, condition: FormulaCondition, box: HTMLInputElement): void {
     const value = Number(box.value);
     const max = condition.max ?? Infinity;
     if (box.value.trim() !== '' && Number.isFinite(value) && value >= 0 && value <= max) {
-      this.service.setCondition(this.key(group, condition), value);
+      this.write(group, condition, value);
     } else {
       box.value = String(this.valueOf(group, condition));
     }

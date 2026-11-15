@@ -176,8 +176,9 @@ class WeaponEffect(sheets._Strict):  # noqa: SLF001
     per_team_max: int | None = None
     #: GO's `nonStackBuff` name for this buff (`SheetUtil.tsx:102-117`), when GO lets only one
     #: of its kind apply: checked against the generated `weapon_nonstack_go.json`, never typed
-    #: from memory. Two sources holding the same name and both holding: the one whose wielder's
-    #: GO key sorts first applies (GO `uiData.ts:_small`; owner approval 2026-11-14, §45).
+    #: from memory. Two sources holding the same name and both holding: the stronger for the
+    #: receiving row applies (owner ruling 2026-11-15, §46), a tie going to the wielder whose GO
+    #: key sorts first — GO's own rule, whatever the strength (`uiData.ts:_small`).
     non_stack: str | None = None
     #: GO sheet lines (relative to the file's `go`).
     go: str

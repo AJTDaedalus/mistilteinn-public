@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43), and its weapon passives on `feat/formula-weapon-passives` (2026-11-14, §2.8; `DECISIONS.md` §44). Weapon comparison under the estimate, the wielder conversions, GO's non-stacking and weapon proc rows on `feat/formula-weapon-compare` (2026-11-14, §2.9; `DECISIONS.md` §45). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43), and its weapon passives on `feat/formula-weapon-passives` (2026-11-14, §2.8; `DECISIONS.md` §44). Weapon comparison under the estimate, the wielder conversions, GO's non-stacking and weapon proc rows on `feat/formula-weapon-compare` (2026-11-14, §2.9; `DECISIONS.md` §45). The owner's four rulings on that comparison (the stronger non-stacking buff, a refinement per candidate, candidate toggles, owned weapons only) on `feat/formula-weapon-compare-calls` (2026-11-15, §2.10; `DECISIONS.md` §46). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -1035,7 +1035,61 @@ Aquila/Harp/Pride proc rows. All exact but the two amplified ones (2.78 vs 25/9)
 Engulfing Lightning emblem fixture, whose ATK% from ER was a recorded withholding, is now exact.
 `formula:verify` 233/233 (worst 8.5e-8) with new plants: each new conversion frozen at the
 zero-artifact build must fail; the non-stacking names stripped, and the tie-break reversed, must
-each fail; a proc's multiplier 1% off must fail.
+each fail; a proc's multiplier 1% off must fail. *(The tie-break plant changed with §2.10.)*
+
+### 2.10 The owner's four rulings on weapon comparison (built 2026-11-15)
+
+**Owner, 2026-11-15**, answering §45's questions (`DECISIONS.md` §46). Branch
+`feat/formula-weapon-compare-calls`. Supersedes §2.9's "Which one wins", its "refinement and
+level" and "which weapons" rows and its "conditions" row.
+
+#### The stronger non-stacking buff
+
+GO's families are per **name** (`millenialatk`, `millenialelemas`, `millenialncpdmg`, `leafCon`,
+`hakushin<element>`, …), each an independent `input.nonStacking[name]`, and each name grants one
+stat in every weapon file holding it (`test_every_non_stacking_family_is_one_stat`). So
+"stronger" is a comparison of one stat, per name and per receiving row, in
+`formula-recipe.ts:applySources`:
+
+| step | |
+|---|---|
+| scope first | every effect is scoped as before (element, move, row, reaction, weapon class, `when`), so a source whose effect does not reach the row weighs nothing for it |
+| weigh | `strengthOf`: the resolved amount — value × stacks (`per`/`by_stack`) × teammate count — capped by its `cap`; a conversion (`*_from_*`) at the hit owner's zero-artifact stat (`cappedAmount`, `zeroTotals(row.context.base)`), else its per-unit value. A source's effects of one name sum |
+| pick | the largest; within 1e-12 a tie, broken by GO's rule (the `stack_rank` sorting first) |
+| say | the loser's line names the winner and "stronger" (or "as strong", on a tie), and GO's own winner where it differs: *"Genshin Optimizer would apply X's, its wielder's character key sorting first"* |
+
+A conversion is weighed at zero artifacts because the recipe is static per row: the winner
+cannot change per candidate inside the search. The only realistic case is one weapon held both
+by the subject (a conversion of their own stat) and by a teammate (a constant), and it is said
+here rather than hidden. **Fixture**: the Millennial pair now expects Elegy R5's 40% ATK
+(7,486.86) and states GO's Freedom-Sworn 20% (6,840.28) as `go_value`; `formula:verify` checks
+that reversing the GO keys changes nothing and that GO's key-order rule misses.
+
+#### A refinement per candidate, and owned weapons only
+
+| rule | |
+|---|---|
+| which weapons | **owned only** by default (`/weapons/owned`); *Include weapons I don't own* opens the class. Each card says `owned R<n>` or `not owned`. Back to owned only drops unowned picks. A failed load offers nothing and says so. One picker for both modes — OQ-W2 is answered for gcsim and the estimate alike |
+| refinement | per pick, R1–R5 (`weaponRefinements`); default the highest owned copy's (`ownedWeapons`), else R1, said beside it. The equipped weapon keeps the build's own |
+| estimate | `WeaponChoice {id, refinement}` → `/formula/kit-buffs?subject_weapon_refinement=`; `kitKey` already keys on it |
+| gcsim | `calibrateAll(…, weaponRefinement)` → `/calibrate` `weapon_refinement` (refused without `weapon_id`); recipe cache `context` gains `\|refine=N` |
+| ranking | each weapon named with its refinement (`Dragon's Bane R5`); a saved run records `weapon_refinements` |
+
+#### Candidate toggles
+
+A candidate's passive is a `ConditionGroup` with `candidate: {weaponId}` (`candidateGroup`), drawn
+after the equipped run's groups under *Candidate weapons*. The panel reads and writes it in
+`FormulaEstimateService.candidateConditionals[weaponId][conditionKey]`; the candidate's run
+replaces every page-state key under its own source id with those (`candidateConditionState`),
+because in the equipped run a teammate wielding the same weapon can hold that very id. Per-row
+overrides do not offer a candidate's conditions. *Back to defaults* clears both.
+
+#### Found on the way
+
+`RecipeOptimizeService.calibrateAll` keyed its cache on `waitForEnergy` but never sent it to
+`/calibrate`, so the waiting model was never simulated in the browser; and a candidate weapon's
+set-free aggregate was read from and written to the run corpus under the build's context (its
+equipped weapon). Both fixed; the corpus is skipped for a candidate.
 
 ## 3. Phases
 

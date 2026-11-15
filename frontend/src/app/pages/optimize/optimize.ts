@@ -38,7 +38,9 @@ import {
   type ConditionGroup,
   type GcsimRefusal,
 } from '../../sim/formula-calibration';
-import { FormulaEstimateService, type ProcChoice } from './formula-estimate.service';
+import {
+  candidateGroup, FormulaEstimateService, type ProcChoice, type WeaponChoice,
+} from './formula-estimate.service';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
@@ -522,6 +524,10 @@ export class OptimizePage implements OnInit {
         objective: {
           artifact_set_ids: [...this.selectedSets()],
           weapon_ids: [...this.selectedWeapons()],
+          // The refinement each candidate was scored at (§46): part of what the number assumed.
+          weapon_refinements: Object.fromEntries(
+            this.weaponChoices().map((w) => [w.id, w.refinement]),
+          ),
           wait_for_energy: this.waitForEnergy(),
           enemy_level: this.enemyLevel,
           // **A formula result is saved as one, never as a sim run.** `kind` is what the saved
@@ -600,7 +606,11 @@ export class OptimizePage implements OnInit {
    * are compared against.
    */
   protected readonly weaponResults = signal<
-    { weaponId: string | undefined; result: SearchResult; passive?: string | null }[]
+    {
+      weaponId: string | undefined; result: SearchResult; passive?: string | null;
+      /** The refinement this weapon was scored at (owner ruling 2026-11-15, §46). */
+      refinement?: number;
+    }[]
   >([]);
 
   /** The best damage each searched weapon reached, worn weapon first. */
@@ -609,12 +619,15 @@ export class OptimizePage implements OnInit {
     if (!runs.length) return [];
     const worn = runs[0].result.builds[0]?.damage ?? 0;
     const named = this.weapons();
+    const build = this.build();
     return runs.map((run) => {
       const damage = run.result.builds[0]?.damage ?? 0;
+      // The refinement is part of the name: one weapon at two refinements is two answers.
+      const refinement = run.weaponId ? run.refinement : build?.refinement;
       return {
-        name: run.weaponId
+        name: (run.weaponId
           ? named.find((w) => w.id === run.weaponId)?.name ?? 'weapon'
-          : this.build()?.weapon?.name ?? 'equipped',
+          : build?.weapon?.name ?? 'equipped') + (refinement ? ` R${refinement}` : ''),
         equipped: run.weaponId === undefined,
         // Formula mode only (owner approval 2026-11-14, `DECISIONS.md` §45): a weapon whose
         // passive has no data competes on base ATK and substat, and says so.
@@ -673,12 +686,72 @@ export class OptimizePage implements OnInit {
    */
   protected readonly setAdvice = computed(() => statAdvice(this.weaponGuide()));
 
+  // ── Owned weapons and refinements (owner rulings 2026-11-15, `DECISIONS.md` §46) ─────────
+  //
+  // **Owned only, by default (OQ-W2 answered).** The picker offers the weapons the account owns
+  // — `/weapons/owned`, filled by a GOOD import — and "Include weapons I don't own" opens the
+  // whole class, each such card saying so. One picker serves both modes, so the gcsim and the
+  // formula comparison answer OQ-W2 the same way.
+  //
+  // **A refinement per candidate.** Each picked weapon carries one: the user's, else the
+  // highest refinement among the copies they own, else R1 — an unowned weapon has no
+  // refinement to read, so R1 is the assumption and is said beside it. The equipped weapon is
+  // the baseline and keeps the build's own.
+  /**
+   * The account's owned weapons: catalogue id → the highest refinement among its copies.
+   * `null` until loaded, or when loading failed (said, never read as "owns nothing").
+   */
+  protected readonly ownedWeapons = signal<ReadonlyMap<string, number> | null>(null);
+  protected readonly ownedWeaponsFailed = signal(false);
+  protected readonly includeUnowned = signal(false);
+  /** Refinements the user chose, by catalogue id; absent is `defaultRefinement`. */
+  protected readonly weaponRefinements = signal<ReadonlyMap<string, number>>(new Map());
+  protected readonly refinementChoices = [1, 2, 3, 4, 5];
+
+  /** The refinement a candidate is scored at before the user picks one (§46). */
+  protected defaultRefinement(weaponId: string): number {
+    return this.ownedWeapons()?.get(weaponId) ?? 1;
+  }
+
+  protected refinementFor(weaponId: string): number {
+    return this.weaponRefinements().get(weaponId) ?? this.defaultRefinement(weaponId);
+  }
+
+  protected setWeaponRefinement(weaponId: string, raw: string): void {
+    const value = Number(raw);
+    if (!this.refinementChoices.includes(value)) return;
+    this.weaponRefinements.update((all) => new Map(all).set(weaponId, value));
+  }
+
+  /** Each picked candidate with the refinement it is scored at, in the order picked. */
+  protected readonly weaponChoices = computed<WeaponChoice[]>(() => [...this.selectedWeapons()]
+    .map((id) => ({ id, refinement: this.refinementFor(id) })));
+
+  /** The picked candidates as the refinement list draws them. */
+  protected readonly pickedWeapons = computed(() => {
+    const owned = this.ownedWeapons();
+    return this.weaponChoices().map((choice) => ({
+      ...choice,
+      name: this.weapons().find((w) => w.id === choice.id)?.name ?? 'weapon',
+      owned: owned?.get(choice.id) ?? null,
+      /** The user set it: then nothing is assumed, and the note does not say R1 is. */
+      chosen: this.weaponRefinements().has(choice.id),
+    }));
+  });
+
   protected readonly weaponOptions = computed<CardOption[]>(() => {
     const listed = this.recommendedWeapons();
     const equipped = this.build()?.weapon?.id;
+    const owned = this.ownedWeapons();
+    const all = this.includeUnowned();
     const cards = this.weapons()
       .filter((w) => w.id !== equipped)
-      .map((w) => weaponCard(w, listed.get(w.id)));
+      .filter((w) => all || owned?.has(w.id))
+      .map((w) => {
+        const card = weaponCard(w, listed.get(w.id));
+        const mine = owned?.get(w.id);
+        return { ...card, detail: `${card.detail} · ${mine ? `owned R${mine}` : 'not owned'}` };
+      });
     return listedFirst(cards, (card) => listed.get(card.value)?.position);
   });
 
@@ -686,6 +759,14 @@ export class OptimizePage implements OnInit {
 
   protected setWeapons(ids: string[]): void {
     this.selectedWeapons.set(new Set(ids));
+  }
+
+  /** Back to owned only drops the unowned picks rather than hiding them (§46). */
+  protected setIncludeUnowned(on: boolean): void {
+    this.includeUnowned.set(on);
+    if (on) return;
+    const owned = this.ownedWeapons();
+    this.selectedWeapons.update((ids) => new Set([...ids].filter((id) => owned?.has(id))));
   }
 
   protected toggleWeaponComparison(): void {
@@ -966,6 +1047,7 @@ export class OptimizePage implements OnInit {
     weaponType: NonNullable<Parameters<CatalogueService['listWeapons']>[0]>['weapon_type'],
     nanokaId: string,
   ): Promise<void> {
+    void this.loadOwnedWeapons();
     try {
       const page = await allPages((offset, limit) =>
         this.catalogue.listWeapons({ weapon_type: weaponType, offset, limit }),
@@ -976,6 +1058,29 @@ export class OptimizePage implements OnInit {
       this.weaponGuide.set(await this.catalogue.weaponGuide(nanokaId));
     } catch {
       this.actionError.set('Could not load weapons for that character.');
+    }
+  }
+
+  /**
+   * The account's weapons, by catalogue id, with the highest refinement among each one's copies
+   * (§46). A failure is said and leaves the map `null`: "could not tell what you own" is not
+   * "you own nothing", and the page offers the whole class instead of an empty picker.
+   */
+  private async loadOwnedWeapons(): Promise<void> {
+    try {
+      const page = await allPages((offset, limit) =>
+        this.catalogue.listOwnedWeapons({ offset, limit }),
+      );
+      const owned = new Map<string, number>();
+      for (const copy of page.items) {
+        const id = copy.weapon?.id;
+        if (id) owned.set(id, Math.max(owned.get(id) ?? 0, copy.refinement));
+      }
+      this.ownedWeapons.set(owned);
+      this.ownedWeaponsFailed.set(false);
+    } catch {
+      this.ownedWeapons.set(null);
+      this.ownedWeaponsFailed.set(true);
     }
   }
 
@@ -1529,28 +1634,45 @@ export class OptimizePage implements OnInit {
    * another weapon's run, and the estimate says so.
    */
   protected readonly formulaProcs = signal<ProcChoice[]>([]);
+  /**
+   * Each candidate weapon's passive for the assumptions panel, grouped per candidate (owner
+   * ruling 2026-11-15, `DECISIONS.md` §46): its conditions, defaults, reasons and citation,
+   * editable, and read only by that candidate's run.
+   */
+  protected readonly formulaCandidateGroups = signal<ConditionGroup[]>([]);
+  /** What the panel draws: the equipped run's groups, then each candidate's. */
+  protected readonly panelGroups = computed(
+    () => [...this.formulaGroups(), ...this.formulaCandidateGroups()],
+  );
 
-  private readonly refreshFormulaProcs = effect(() => {
+  private readonly refreshFormulaCandidates = effect(() => {
     if (this.objective() !== 'formula') return;
     const team = this.teamBuilds();
     const id = this.buildId();
-    const picked = [...this.selectedWeapons()];
+    const picked = this.weaponChoices();
+    const named = this.weapons();
     if (!team.length || !id) {
       this.formulaProcs.set([]);
+      this.formulaCandidateGroups.set([]);
       return;
     }
-    void Promise.all([undefined, ...picked].map((weaponId) => this.formulaService
-      .kits(team, id, weaponId ? { id: weaponId } : undefined)
-      .then((kits) => kits.procs ?? [])
-      .catch(() => [] as ProcChoice[])))
+    void Promise.all([undefined, ...picked].map((weapon) => this.formulaService
+      .kits(team, id, weapon)
+      .then((kits) => ({ weapon, kits }))
+      .catch(() => null)))
       .then((all) => {
         const seen = new Set<string>();
-        this.formulaProcs.set(all.flat().filter((p) => {
+        this.formulaProcs.set(all.flatMap((r) => r?.kits.procs ?? []).filter((p) => {
           const key = `${p.source}#${p.key}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
         }));
+        this.formulaCandidateGroups.set(all.flatMap((r) => (r?.weapon ? [candidateGroup(
+          r.kits, r.weapon,
+          named.find((w) => w.id === r.weapon?.id)?.name ?? r.kits.subjectWeapon?.name
+            ?? 'weapon',
+        )] : [])));
       });
   });
 
@@ -2341,13 +2463,14 @@ export class OptimizePage implements OnInit {
       // `undefined` is the build as it stands — the search this page has always run — and each
       // selected weapon is calibrated on top of it rather than instead of it, because the
       // comparison is *against* what is being worn.
-      const weaponRuns: (string | undefined)[] = [undefined, ...this.selectedWeapons()];
+      // Each candidate at its own refinement (owner ruling 2026-11-15, `DECISIONS.md` §46).
+      const weaponRuns: (WeaponChoice | undefined)[] = [undefined, ...this.weaponChoices()];
       const calibratedRuns: CalibrationResult[] = [];
-      for (const weaponId of weaponRuns) {
+      for (const weapon of weaponRuns) {
         calibratedRuns.push(await this.recipeOptimize.calibrateAll(
           id, this.rotationId(), snapshot.version, targets,
           (progress) => this.calibrating.set(progress),
-          weaponId, this.waitForEnergy(),
+          weapon?.id, this.waitForEnergy(), undefined, weapon?.refinement,
         ));
       }
       const calibrated = calibratedRuns[0];
@@ -2382,12 +2505,14 @@ export class OptimizePage implements OnInit {
       // against its own objective and walks it with its own recipes — the arrangement
       // `recipe-search.spec.ts` pins, and the one a hoisted Pareto filter would break by
       // discarding a piece that loses under one weapon and wins under another.
-      const perWeapon = [{ weaponId: undefined as string | undefined, result: found }];
+      const perWeapon: { weaponId: string | undefined; result: SearchResult;
+        refinement?: number }[] = [{ weaponId: undefined, result: found }];
       for (let index = 1; index < calibratedRuns.length; index += 1) {
         const run = calibratedRuns[index];
         if (run.noFourPiece === null) continue;
         perWeapon.push({
-          weaponId: weaponRuns[index],
+          weaponId: weaponRuns[index]?.id,
+          refinement: weaponRuns[index]?.refinement,
           result: searchRecipe(
             pieces.map((piece) => ({
               id: piece.id,
@@ -2475,9 +2600,11 @@ export class OptimizePage implements OnInit {
       // passive from `/formula/kit-buffs`, both asked with the weapon's id, and each search
       // filters the inventory against its own recipes: a piece that loses under one weapon and
       // wins under another is never pruned by the first.
-      const weaponRuns: (string | undefined)[] = [undefined, ...this.selectedWeapons()];
+      // Each candidate at its own refinement and with its own passive conditions (owner
+      // rulings 2026-11-15, `DECISIONS.md` §46).
+      const weaponRuns: (WeaponChoice | undefined)[] = [undefined, ...this.weaponChoices()];
       const runs = [];
-      for (const weaponId of weaponRuns) {
+      for (const weapon of weaponRuns) {
         const estimate = await this.formulaService.estimate({
           buildId: id,
           build,
@@ -2486,7 +2613,7 @@ export class OptimizePage implements OnInit {
           scope: this.scope,
           enemyLevel: this.enemyLevel,
           fourPieceSetIds: chosen,
-          ...(weaponId ? { weapon: { id: weaponId } } : {}),
+          ...(weapon ? { weapon } : {}),
         });
         // A 2+2 is the no-set recipe plus both sets' pools, which the search adds — so the
         // pair state is the baseline recipe, keyed as the search expects.
@@ -2510,11 +2637,11 @@ export class OptimizePage implements OnInit {
             twoPiecePairs: pair === null ? [] : [pair],
           },
         );
-        runs.push({ weaponId, estimate, result });
+        runs.push({ weapon, estimate, result });
       }
       const [{ estimate: { calibration, formula }, result: found }] = runs;
       this.weaponResults.set(runs.length > 1 ? runs.map((run) => ({
-        weaponId: run.weaponId, result: run.result,
+        weaponId: run.weapon?.id, result: run.result, refinement: run.weapon?.refinement,
         passive: passiveNote(run.estimate.kits.subjectWeapon?.status),
       })) : []);
       this.resultIsFormula.set(true);

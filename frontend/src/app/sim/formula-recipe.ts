@@ -596,20 +596,52 @@ interface HitScope {
   reactionRow?: boolean;
   /** A proc row (§45): no move and no talent row, so move- and row-scoped effects miss it. */
   procRow?: boolean;
+  /**
+   * The hit owner's zero-artifact totals, for weighing a non-stacking **conversion** against
+   * its rivals (owner ruling 2026-11-15): absent, a conversion is weighed by its per-unit value,
+   * which compares like with like inside one GO family (every family is one stat).
+   */
+  zero?: Partial<Record<ConversionSource | 'er', number>>;
+}
+
+/** The stat a conversion effect reads, for weighing it at the zero-artifact build. */
+const CONVERSION_READS: Record<string, ConversionSource | 'er'> = {
+  dmg_bonus_from_em: 'em', dmg_bonus_from_hp: 'hp', dmg_bonus_from_def: 'def',
+  crit_rate_from_em: 'em', crit_rate_from_hp: 'hp', crit_dmg_from_hp: 'hp',
+  flat_damage_from_atk: 'atk', flat_damage_from_hp: 'hp', flat_damage_from_def: 'def',
+  flat_damage_from_em: 'em', flat_atk_from_def: 'def', flat_atk_from_hp: 'hp',
+  flat_atk_from_em: 'em', em_from_hp: 'hp', atk_pct_from_er: 'er',
+  dmg_bonus_from_energy_recharge: 'er',
+};
+
+/**
+ * How strong one effect is **for this row**, for the non-stacking rule (owner ruling
+ * 2026-11-15, `DECISIONS.md` §46): its resolved amount — the value times its stacks and its
+ * teammate count, capped — and for a conversion, the amount it gives at the hit owner's
+ * zero-artifact stat (`cappedAmount`, the same reading `formula:verify` freezes), or its
+ * per-unit value when that stat is not known.
+ */
+function strengthOf(effect: FormulaEffect, amount: number, scope: HitScope): number {
+  const reads = CONVERSION_READS[effect.stat];
+  const cap = effect.cap ?? undefined;
+  if (reads === undefined) return cap === undefined ? amount : Math.min(amount, cap);
+  const stat = scope.zero?.[reads];
+  if (stat === undefined) return amount;
+  return cappedAmount(amount, stat, effect.threshold ?? undefined, cap);
 }
 
 /**
- * For each GO non-stacking buff name, the one source whose effect of that name applies
- * (owner approval 2026-11-14, `DECISIONS.md` §45: *"Millennial Movement: one"*).
+ * For each GO non-stacking buff name, the source GO itself would apply — kept to say so beside
+ * ours (owner ruling 2026-11-15: the stronger applies, and the divergence is named).
  *
  * GO resolves `input.nonStacking[name]` with its `small` string accumulator over every member
  * whose write condition holds (`SheetUtil.tsx:102-117`, `uiData.ts:266-276`): **the writer whose
- * character key sorts first wins**, whatever its refinement — a deterministic rule, not the
- * stronger buff. A source writes when one of its effects of that name has every `when` holding
- * under this row's state (GO gates the write by the buff's own condition). A source with no
- * rank sorts last; a tie keeps the first.
+ * character key sorts first wins**, whatever its refinement. A source writes when one of its
+ * effects of that name has every `when` holding under this row's state (GO gates the write by
+ * the buff's own condition). A source with no rank sorts last; a tie keeps the first. It is
+ * also the tie-break of our rule.
  */
-function nonStackWinners(
+function goNonStackWinners(
   sources: readonly FormulaSource[], rowState: ConditionState, teamState: ConditionState,
 ): Map<string, FormulaSource> {
   const out = new Map<string, FormulaSource>();
@@ -651,7 +683,14 @@ export function applySources(
 ): { buffs: Buffs; skipped: string[] } {
   const buffs = noBuffs();
   const skipped: string[] = [];
-  const winners = nonStackWinners(sources, rowState, teamState);
+  const goWinners = goNonStackWinners(sources, rowState, teamState);
+  // Every effect that reaches this hit, with its resolved amount, before the non-stacking rule
+  // picks among them: the rule weighs what each would give **this row** (owner ruling
+  // 2026-11-15), so it runs after scoping and before anything is added.
+  const reaching: {
+    source: FormulaSource; effect: FormulaEffect; amount: number;
+    elements: Set<string> | null;
+  }[] = [];
   for (const source of sources) {
     const conditions = conditionsBy(source);
     const state = (key: string): ConditionValue => {
@@ -665,16 +704,6 @@ export function applySources(
       const elements = elementsOf(effect, team, state);
       if (elements !== null && !elements.has(scope.element)) continue;
       if ((scope.reactionRow || scope.procRow) && (effect.moves || effect.rows)) continue;
-      // GO's non-stacking buffs (§45): only the winning source's effect of this name applies.
-      if (effect.non_stack && winners.get(effect.non_stack) !== source) {
-        const winner = winners.get(effect.non_stack);
-        if (winner) {
-          skipped.push(`${source.label}: ${effect.stat} not applied — ${winner.label} holds the `
-            + `same non-stacking buff (${effect.non_stack}); Genshin Optimizer applies one, the `
-            + 'wielder whose character key sorts first');
-        }
-        continue;
-      }
       if (effect.moves) {
         if (scope.move === null) {
           skipped.push(`${source.label}: ${effect.stat} for ${effect.moves.join('/')} not `
@@ -706,6 +735,57 @@ export function applySources(
         amount *= Math.min(teamCount(effect.per_team, team), effect.per_team_max ?? Infinity);
       }
       if (amount === 0 && effect.stat !== 'dmg_bonus_from_energy_recharge') continue;
+      reaching.push({ source, effect, amount, elements });
+    }
+  }
+
+  // GO's non-stacking families (§45), **the stronger one applying** (owner ruling 2026-11-15,
+  // `DECISIONS.md` §46): per family name — GO's families are per name and each is one stat —
+  // the source whose effects of that name give this row the most; a tie falls back to GO's
+  // rule. GO itself applies the wielder whose character key sorts first, whatever the
+  // strength, and where that differs the loser's line says so.
+  const strength = new Map<string, Map<FormulaSource, number>>();
+  for (const { source, effect, amount } of reaching) {
+    if (!effect.non_stack) continue;
+    const bySource = strength.get(effect.non_stack) ?? new Map<FormulaSource, number>();
+    bySource.set(source, (bySource.get(source) ?? 0) + strengthOf(effect, amount, scope));
+    strength.set(effect.non_stack, bySource);
+  }
+  const LAST = String.fromCharCode(0xffff);
+  const winners = new Map<string, { source: FormulaSource; tie: boolean }>();
+  for (const [name, bySource] of strength) {
+    let best: FormulaSource | null = null;
+    let tie = false;
+    for (const [source, value] of bySource) {
+      const held = best === null ? undefined : bySource.get(best);
+      if (best === null || held === undefined || value > held + 1e-12) {
+        best = source;
+        tie = false;
+      } else if (Math.abs(value - held) <= 1e-12) {
+        tie = true;
+        if ((source.stack_rank ?? LAST) < (best.stack_rank ?? LAST)) best = source;
+      }
+    }
+    if (best !== null) winners.set(name, { source: best, tie });
+  }
+
+  for (const { source, effect, amount, elements } of reaching) {
+    {
+      if (effect.non_stack && winners.get(effect.non_stack)?.source !== source) {
+        const { source: winner, tie } = winners.get(effect.non_stack)!;
+        const go = goWinners.get(effect.non_stack);
+        skipped.push(`${source.label}: ${effect.stat} not applied — ${winner.label} holds the `
+          + `same non-stacking buff (${effect.non_stack}) and is `
+          + (tie
+            ? 'as strong; on a tie the wielder whose character key sorts first applies, as in '
+              + 'Genshin Optimizer'
+            : 'stronger; the stronger applies (owner ruling 2026-11-15)')
+          + (go && go !== winner
+            ? `. Genshin Optimizer would apply ${go.label}'s, its wielder's character key `
+              + 'sorting first'
+            : ''));
+        continue;
+      }
       if ((effect.stat === 'dmg_bonus_from_em' || effect.stat === 'dmg_bonus_from_hp'
         || effect.stat === 'dmg_bonus_from_def')
         && elements === null && !effect.moves && !effect.rows) {
@@ -785,6 +865,19 @@ export function applySources(
 
 const elementOfQuantity = (quantity: string): string => quantity.replace(/_dmg_bonus$/, '');
 
+/** The hit owner's totals at zero artifacts, for weighing a non-stacking conversion. */
+function zeroTotals(
+  base: Record<string, number | undefined>,
+): Record<ConversionSource | 'er', number> {
+  const b = (q: string): number => base[q] ?? 0;
+  const total = (s: 'atk' | 'hp' | 'def'): number =>
+    b(`base_${s}`) * (1 + b(`${s}_pct`)) + b(`flat_${s}`);
+  return {
+    atk: total('atk'), hp: total('hp'), def: total('def'),
+    em: b('elemental_mastery'), er: b('energy_recharge'),
+  };
+}
+
 /**
  * The recipe entries for one row under one set of sources.
  *
@@ -809,6 +902,7 @@ export function rowHits(
     sources, {
       element, move: row.move, amplifying: hit.amplifying, hit: row.hit ?? null,
       reaction: hit.amplifying ?? additive?.reaction ?? null, procRow,
+      zero: zeroTotals(base),
     }, team, row.conditionals ?? {}, teamState,
   );
   const flatSources = (Object.keys(buffs.flatFrom) as ConversionSource[])

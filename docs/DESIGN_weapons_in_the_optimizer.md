@@ -319,9 +319,13 @@ screenshot pasted into chat.
 same KQM pages, read by the same anchored capture. What remains is work, not a question —
 `capture_kqm_weapons.py` grows a second table reader and the snapshot grows a `sets` key.
 
-**OQ-W2 — should an unowned weapon be selectable?** The comparison is meaningful for a weapon
-the user does not have (*"is the signature worth pulling?"*), and `owned_weapons` is what the
-picker would otherwise filter to. Leaning yes, marked, and off by default.
+~~**OQ-W2 — should an unowned weapon be selectable?**~~ **Answered 2026-11-15 (owner,
+`DECISIONS.md` §46): owned weapons only by default, with an explicit "Include weapons I don't
+own".** The picker reads `/weapons/owned` (a GOOD import's weapons) and offers those; the box
+opens the whole class, each card saying `owned R<n>` or `not owned`. It is one picker for the
+gcsim and the formula comparison, so both answer the same way. A candidate is scored at the
+refinement the user sets, else the highest owned copy's, else R1 (said beside it). A failed
+owned-weapons load offers nothing and says so.
 
 **OQ-W3 — how are cross-weapon results presented?** One list of `(weapon, artifacts, damage)`
 rows, or a winner per weapon with the artifact detail behind an expander. The second is closer
@@ -336,5 +340,8 @@ also on the formula objective (owner approval 2026-11-14, `DECISIONS.md` §45;
 `subject_weapon_id` (its passive), so a weapon costs requests, not minutes. **H1 holds** (the
 Pareto filter stays inside each `searchRecipe` call); **H2 does not arise** (no energy ladder in
 the estimate). The kit cache is keyed by weapon — #240's lesson — and a weapon with no passive
-file is ranked on base stats and labelled "passive not modelled". OQ-W2 and OQ-W3 are unchanged:
-the formula path follows the gcsim path's answers.
+file is ranked on base stats and labelled "passive not modelled". OQ-W3 is unchanged: the
+formula path follows the gcsim path's answers. **OQ-W2 is answered (2026-11-15, above)**, for
+both paths at once, and with it each candidate carries its own refinement (both paths) and its
+own passive toggles in the assumptions panel (the estimate; `DESIGN_team_math_fallback.md`
+§2.10).

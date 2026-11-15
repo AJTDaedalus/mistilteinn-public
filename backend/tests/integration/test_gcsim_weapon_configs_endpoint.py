@@ -151,6 +151,27 @@ async def test_each_candidates_config_names_that_candidate(
     assert first["config"] != second["config"]
 
 
+async def test_each_candidate_takes_the_refinement_asked_for(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Owner ruling 2026-11-15 (`docs/DECISIONS.md` §46): a refinement per candidate. Unnamed
+    stays R1, this endpoint's stated assumption for a weapon it knows nothing about."""
+    body = (await _ask(authed_client, scene, [scene.candidate_id, scene.other_id],
+                       weapon_refinements={scene.candidate_id: 3})).json()
+    first, second = body["candidates"]
+
+    assert "refine=3;" in first["config"]
+    assert "refine=1;" in second["config"]
+
+
+async def test_a_refinement_for_a_weapon_not_asked_about_is_refused(
+    authed_client: AsyncClient, scene: Scene,
+):
+    response = await _ask(authed_client, scene, [scene.candidate_id],
+                          weapon_refinements={scene.other_id: 2})
+    assert response.status_code == 422, response.text
+
+
 async def test_the_baseline_wears_what_the_build_wears(
     authed_client: AsyncClient, scene: Scene,
 ):

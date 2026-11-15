@@ -49,25 +49,68 @@ function millennial(id: string, rank: string, atk: number): FormulaSource {
 const score = (sources: FormulaSource[], state = {}, rows = [row()]) =>
   evaluateRecipe(synthesizeRecipe(rows, sources, TEAM, state), NO_STATS);
 
-describe('GO non-stacking buffs (Millennial Movement: one)', () => {
+describe('GO non-stacking buffs: the stronger applies (owner ruling 2026-11-15)', () => {
   const elegy = millennial('weapon:elegy_for_the_end', 'Venti', 0.4);
   const sworn = millennial('weapon:freedom_sworn', 'KaedeharaKazuha', 0.2);
 
-  it('applies one — the wielder whose GO key sorts first, not the larger buff', () => {
-    expect(score([elegy, sworn])).toBeCloseTo(score([sworn]), 9);
-    expect(score([sworn, elegy])).toBeCloseTo(score([sworn]), 9);
-    expect(score([elegy, sworn])).toBeLessThan(score([elegy]));
+  it('applies one — the larger for the receiving row, whatever GO\'s key order says', () => {
+    expect(score([elegy, sworn])).toBeCloseTo(score([elegy]), 9);
+    expect(score([sworn, elegy])).toBeCloseTo(score([elegy]), 9);
+    expect(score([elegy, sworn])).toBeGreaterThan(score([sworn]));
+    // One, never the sum.
+    const both = millennial('weapon:elegy_for_the_end', 'Venti', 0.6);
+    expect(score([elegy, sworn])).toBeLessThan(score([both]));
   });
 
-  it('a winner whose condition is off writes nothing, so the other applies', () => {
-    const off = { 'weapon:freedom_sworn/on': 0 };
-    expect(score([elegy, sworn], off)).toBeCloseTo(score([elegy], off), 9);
-  });
-
-  it('says which source was not applied and why', () => {
-    const recipe = synthesizeRecipe([row()], [elegy, sworn], TEAM);
+  it('a tie falls back to GO\'s rule, the wielder whose GO key sorts first', () => {
+    const pines = millennial('weapon:song_of_broken_pines', 'Diluc', 0.2);
+    const recipe = synthesizeRecipe([row()], [sworn, pines], TEAM);
     expect(recipe.meta.formula!.assumptions.join('\n'))
-      .toMatch(/weapon:elegy_for_the_end: atk_pct not applied — weapon:freedom_sworn holds the same non-stacking buff/);
+      .toMatch(/weapon:freedom_sworn: atk_pct not applied — weapon:song_of_broken_pines/);
+  });
+
+  it('a stronger source whose condition is off writes nothing, so the weaker applies', () => {
+    const off = { 'weapon:elegy_for_the_end/on': 0 };
+    expect(score([elegy, sworn], off)).toBeCloseTo(score([sworn], off), 9);
+  });
+
+  it('weighs the resolved amount (stacks included), not the per-stack value', () => {
+    const stacked: FormulaSource = {
+      id: 'weapon:stacked', label: 'weapon:stacked', citation: 'GO', stack_rank: 'Albedo',
+      bonus: {
+        conditions: [{ key: 'n', label: 'n', kind: 'stacks', default: 1, max: 3,
+          default_reason: 'teammate' as const }],
+        unmodelled: [],
+        effects: [{ stat: 'atk_pct', value: 0.1, per: 'n', when: [],
+          non_stack: 'millenialatk' }],
+      },
+    };
+    // One stack (10%) loses to Freedom-Sworn's 20%; three (30%) beat it.
+    expect(score([stacked, sworn], { 'weapon:stacked/n': 1 }))
+      .toBeCloseTo(score([sworn], { 'weapon:stacked/n': 1 }), 9);
+    expect(score([stacked, sworn], { 'weapon:stacked/n': 3 }))
+      .toBeCloseTo(score([stacked], { 'weapon:stacked/n': 3 }), 9);
+  });
+
+  it('decides per family name, as GO\'s families are: a name with no rival applies', () => {
+    const elegyEm: FormulaSource = {
+      ...elegy,
+      bonus: { ...elegy.bonus, effects: [...elegy.bonus.effects,
+        { stat: 'elemental_mastery', value: 100, when: [{ condition: 'on', values: [1] }],
+          non_stack: 'millenialelemas' }] },
+    };
+    const swornHigh = millennial('weapon:freedom_sworn', 'KaedeharaKazuha', 0.5);
+    const text = synthesizeRecipe([row()], [elegyEm, swornHigh], TEAM)
+      .meta.formula!.assumptions.join('\n');
+    expect(text).toMatch(/weapon:elegy_for_the_end: atk_pct not applied — weapon:freedom_sworn/);
+    expect(text).not.toMatch(/elemental_mastery not applied/);
+  });
+
+  it('names the loser, the winner, and what Genshin Optimizer would apply instead', () => {
+    const text = synthesizeRecipe([row()], [elegy, sworn], TEAM)
+      .meta.formula!.assumptions.join('\n');
+    expect(text).toMatch(/weapon:freedom_sworn: atk_pct not applied — weapon:elegy_for_the_end holds the same non-stacking buff \(millenialatk\) and is stronger/);
+    expect(text).toMatch(/Genshin Optimizer would apply weapon:freedom_sworn's/);
   });
 });
 

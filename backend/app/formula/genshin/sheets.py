@@ -960,7 +960,8 @@ class ResolvedKit:
     #: (`weapon_passives`, §45): each a proc row the target may count. Empty for a kit.
     procs: tuple[Proc, ...] = ()
     #: GO's tie-break for a non-stacking buff (`Effect.non_stack`): the wielder's GO character
-    #: key; of two sources holding the same buff, the one sorting first applies. Weapons only.
+    #: key; of two sources holding the same buff equally strong, the one sorting first applies
+    #: (the stronger applies otherwise: owner ruling 2026-11-15, §46). Weapons only.
     stack_rank: str | None = None
 
 
