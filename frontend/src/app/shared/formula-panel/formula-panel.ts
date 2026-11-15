@@ -10,11 +10,16 @@ import {
   ADDITIVE, type Additive, type Lunar, SWIRL_ELEMENTS, type Transformative,
 } from '../../sim/damage';
 import {
+  defaultFavoniusHits,
   defaultOnField,
   energyInput,
+  favoniusKey,
+  favoniusProcs,
   FormulaEstimateService,
+  refundKey,
   rotationSecondsOf,
   sourceKey,
+  subjectHitsOf,
   type EnergySettings,
   type ProcChoice,
   type TargetRow,
@@ -42,7 +47,7 @@ const REACTIONS: { value: Transformative | Lunar; label: string }[] = [
   { value: 'lunar_crystallize', label: 'Lunar-Crystallize' },
 ];
 
-/** The energy model's modes (task 14). `off` is the default until the owner rules. */
+/** The energy model's modes (task 14). `wait` is the default (owner, 2026-11-15, §48). */
 const ENERGY_MODES: { value: EnergyMode; label: string }[] = [
   { value: 'off', label: 'Report only' },
   { value: 'skip', label: 'Skip an unfunded burst' },
@@ -125,8 +130,10 @@ export class FormulaPanel {
     if (!data) return null;
     const settings = this.service.energy();
     const subject = data.members.find((m) => m.is_subject) ?? null;
-    const input = energyInput(data, settings);
+    const subjectHits = subjectHitsOf(this.service.rows());
+    const input = energyInput(data, settings, subjectHits);
     const model = input ? { ...input, baseEnergyRecharge: 0 } : null;
+    const seconds = rotationSecondsOf(data, settings);
     return {
       subject,
       rotationSeconds: rotationSecondsOf(data, settings),
@@ -137,7 +144,32 @@ export class FormulaPanel {
       members: data.members.map((member) => ({
         member,
         casts: settings.casts[member.build_id] ?? 1,
+        bursts: settings.bursts[member.build_id] ?? 1,
+        countsBursts: member.sources.some((s) => s.on === 'burst')
+          || (member.refunds ?? []).some((r) => r.per === 'burst'),
         manual: settings.manual[member.build_id] ?? 0,
+        refunds: (member.refunds ?? []).map((refund, i) => {
+          const key = refundKey(member.build_id, i);
+          return {
+            key, refund,
+            count: settings.refundCounts[key] ?? refund.count,
+            reaches: refund.recipients === 'team' || member.is_subject,
+          };
+        }),
+        favonius: member.favonius ? (() => {
+          const key = favoniusKey(member.build_id);
+          const hits = settings.favoniusHits[member.build_id]
+            ?? defaultFavoniusHits(member, settings, subjectHits);
+          return {
+            fav: member.favonius,
+            hits,
+            hitsIsDefault: settings.favoniusHits[member.build_id] === undefined,
+            critRate: member.crit_rate ?? 0,
+            procs: favoniusProcs(member, hits, seconds),
+            onField: settings.onField[key] ?? (member.is_subject ? 1 : 0),
+            key,
+          };
+        })() : null,
         sources: member.sources.map((source, i) => {
           const key = sourceKey(member.build_id, i);
           return {
@@ -425,7 +457,9 @@ export class FormulaPanel {
   }
 
   private patchMap(
-    field: 'casts' | 'particles' | 'onField' | 'manual', key: string, value: number,
+    field: 'casts' | 'particles' | 'onField' | 'manual' | 'bursts' | 'favoniusHits'
+      | 'refundCounts',
+    key: string, value: number,
   ): void {
     const current: EnergySettings = this.service.energy();
     this.service.setEnergy({ [field]: { ...current[field], [key]: value } });
@@ -450,6 +484,21 @@ export class FormulaPanel {
       return;
     }
     this.patchMap('onField', key, value / 100);
+  }
+
+  protected setBursts(buildId: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.patchMap('bursts', buildId, value);
+  }
+
+  protected setFavoniusHits(buildId: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.patchMap('favoniusHits', buildId, value);
+  }
+
+  protected setRefundCount(key: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.patchMap('refundCounts', key, value);
   }
 
   protected setManual(buildId: string, box: HTMLInputElement, shown: number): void {

@@ -52,7 +52,15 @@ def test_a_fixed_count_is_the_number_on_its_queue_particle_line(name: str, sourc
     calls = [_line(p, n) for p, n, _ in source["lines"] if "QueueParticle" in _line(p, n)]
     assert calls, f"{name}: no QueueParticle line cited"
     literal = re.search(r"QueueParticle\([^,]+, (\d+(?:\.\d+)?),", calls[0])
-    if literal and len(calls) == 1:
+    if "chance" in source:
+        # A summon's hit: `if Rand < p { QueueParticle(n) }` — the expectation per hit.
+        text = " ".join(_line(p, n) for p, n, _ in source["lines"])
+        chance = re.search(r"Rand\.Float64\(\) < (\d*\.\d+)", text)
+        assert chance, f"{name}: a chance source cites its Rand line"
+        assert literal, f"{name}: a chance source cites its QueueParticle line"
+        assert source["chance"] == float(chance.group(1))
+        assert source["particles"] == pytest.approx(source["chance"] * float(literal.group(1)))
+    elif literal and len(calls) == 1:
         # Guoba drops one per hit and hits four times (`hits`, from skill.go:49).
         assert source["particles"] == float(literal.group(1)) * source.get("hits", 1)
     elif name == "Jean":
@@ -114,7 +122,8 @@ def test_the_drip_is_the_mean_of_gcsims_energy_every() -> None:
 
 def test_every_source_parses_with_its_citation() -> None:
     table = formula_energy.particle_table()
-    assert set(table) == set(TABLE["characters"])
+    # A character carried only for a refund (Venti) has no particle sources.
+    assert set(table) == {n for n, e in TABLE["characters"].items() if e["sources"]}
     for name, sources in table.items():
         for source in sources:
             assert source.citation.startswith(f"gcsim {declared_pin()[:8]} internal/characters/")
@@ -137,3 +146,100 @@ def test_cooldown_reads_the_first_value_of_the_cd_row() -> None:
     assert cooldown(["Skill DMG|{param1:P}"], [1.0]) is None
     with pytest.raises(TalentScalingError):
         cooldown(["CD|no param"], [1.0])
+
+
+# ── Follow-ups (owner rulings 2026-11-15, DECISIONS §48) ─────────────────────────────────────
+
+REFUNDS = [
+    (name, refund)
+    for name, entry in TABLE["characters"].items()
+    for refund in entry.get("refunds", ())
+]
+
+
+@pytest.mark.parametrize(("name", "refund"), REFUNDS, ids=[n for n, _ in REFUNDS])
+def test_every_refund_cites_an_add_energy_line_that_says_what_it_claims(
+    name: str, refund: dict,
+) -> None:
+    for path, line, needle in refund["lines"]:
+        assert needle in _line(path, line), f"{name}: {path}:{line} does not contain {needle!r}"
+    adds = [_line(p, n) for p, n, _ in refund["lines"] if "AddEnergy(" in _line(p, n)]
+    assert adds, f"{name}: a refund with no AddEnergy line"
+    text = " ".join(_line(p, n) for p, n, _ in refund["lines"])
+    if "amount" in refund:
+        # The amount is the literal on the cited line (Sara's `1.2 *`, Jean's 16, Venti's 15).
+        assert re.search(rf"\b{refund['amount']:g}\b", text), name
+    if refund["scaling"] == "per_er":
+        assert "* c.NonExtraStat(attributes.ER)" in text
+    if refund["scaling"] == "raiden_a4":
+        assert "a4Energy(max(c.NonExtraStat(attributes.ER)-1, 0))" in text
+        assert "excess := int(er * 100)" in text
+    if refund["recipients"] == "team":
+        # gcsim adds a team refund inside `for _, char := range c.Core.Player.Chars()`.
+        assert "char.AddEnergy(" in text, name
+    else:
+        assert "c.AddEnergy(" in text, name
+    assert refund["per"] in ("burst", "cast")
+    assert refund["count"] >= 1
+
+
+def test_raidens_refund_is_five_a_burst_once_a_second() -> None:
+    raiden = TABLE["characters"]["Raiden Shogun"]["refunds"][0]
+    assert raiden["count"] == 5
+    assert "c.restoreCount < 5" in _line("internal/characters/raiden/burst.go", 96)
+    assert raiden["amount_row"]["label"] == "Musou Isshin Energy Restoration"
+
+
+def test_the_favonius_proc_is_gcsims() -> None:
+    fav = TABLE["weapons"]["favonius"]
+    for path, line, needle in fav["lines"]:
+        assert needle in _line(path, line)
+    assert fav["particles"] == 3
+    assert "3, attributes.NoElement" in _line("internal/weapons/common/favonius.go", 56)
+    # Only while the wielder is the active character: who catches the particles follows.
+    assert "c.Player.Active() != char.Index()" in _line("internal/weapons/common/favonius.go", 44)
+
+
+#: Every Favonius weapon's refinement `param_list` in the seeded catalogue (nanoka 7.2.51),
+#: verbatim: all five weapons carry the same five rows.
+FAVONIUS_ROWS = {
+    1: [0.6, 12, 0, 0, 0, 0, 0, 0], 2: [0.7, 10.5, 0, 0, 0, 0, 0, 0],
+    3: [0.8, 9, 0, 0, 0, 0, 0, 0], 4: [0.9, 7.5, 0, 0, 0, 0, 0, 0], 5: [1, 6, 0, 0, 0, 0, 0, 0],
+}
+
+
+@pytest.mark.parametrize("refine", [1, 2, 3, 4, 5])
+def test_favonius_chance_and_cooldown_by_refinement_match_gcsims_formula(refine: int) -> None:
+    """Our catalogue's row, read the way the endpoint reads it, is gcsim's formula."""
+    chance, cooldown_s = formula_energy.favonius_proc(FAVONIUS_ROWS[refine])
+    assert chance == pytest.approx(0.50 + refine * 0.1)
+    assert cooldown_s == pytest.approx((810 - refine * 90) / 60)
+
+
+def test_summon_cadences_are_their_citations() -> None:
+    chars = TABLE["characters"]
+    oz = chars["Fischl"]["sources"][0]
+    assert "dur := 600" in _line("internal/characters/fischl/skill.go", 128)
+    assert oz["max_seconds"] == 600 / 60
+    assert chars["Fischl"]["sources"][1]["on"] == "burst"
+    ring = chars["Kuki Shinobu"]["sources"][0]
+    assert ring["interval"] == 90 / 60
+    assert ring["max_seconds"] == 720 / 60
+    ticks = chars["Sangonomiya Kokomi"]["sources"][1]
+    assert ticks["interval"] == 120 / 60
+    stele = chars["Zhongli"]["sources"][1]
+    assert stele["interval"] == 120 / 60
+    eye = chars["Raiden Shogun"]["sources"][0]
+    assert eye["max_seconds"] == 1500 / 60
+    # KQM's realistic rate: one strike a second, half of them a particle — 30 a minute.
+    assert 60 / eye["interval"] * eye["particles"] == 30
+    assert "30P/M when triggered once per second" in eye["kqm"]
+
+
+def test_yae_is_left_to_the_user_with_both_sources_named() -> None:
+    yae = TABLE["not_curated"]["Yae Miko"]
+    assert "Yae Miko" not in TABLE["characters"]
+    for path, line, needle in yae["lines"]:
+        assert needle in _line(path, line)
+    assert "only the first one generates Particles" in yae["kqm"]
+    assert formula_energy.not_curated()["Yae Miko"].startswith("Two cited sources disagree")

@@ -29,11 +29,13 @@ from app.schemas.formula import (
     FormulaBonusRead,
     FormulaDripRead,
     FormulaEnergyMemberRead,
+    FormulaFavoniusRead,
     FormulaKitMemberRead,
     FormulaKitSourceRead,
     FormulaParticleSourceRead,
     FormulaProcRead,
     FormulaRaisedTalentRead,
+    FormulaRefundRead,
     FormulaResonanceRead,
     FormulaSetEffectsRead,
     FormulaSetTierRead,
@@ -220,7 +222,8 @@ async def energy_route(
     """The team's energy data for the formula estimate (math-fallback P3, task 14).
 
     Each member's burst cost and cooldown (game data) and Elemental Skill particles per cast
-    (curated, each count cited to gcsim at the pin), and the drip gcsim's waiting model emits.
+    (curated, each count cited to gcsim at the pin), flat refunds and a Favonius proc with the
+    member's own ER and crit rate, and the drip gcsim's waiting model emits.
     A member with no curated count is listed as `no_particle_data`, never omitted. The
     browser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.
     """
@@ -228,7 +231,8 @@ async def energy_route(
         raise HTTPException(status_code=422, detail="a build appears in a team once")
     members = []
     for build_id in member_build_id:
-        build = await builds.get_full(build_id)
+        # The kit loader: a Favonius proc reads the weapon's refinement rows.
+        build = await builds.get_with_kit(build_id)
         if build is None:
             raise HTTPException(status_code=404, detail=f"No build {build_id!r}")
         members.append(build)
@@ -248,9 +252,24 @@ async def energy_route(
                         label=s.label, per=s.per, particles=s.particles,
                         collector=s.collector, interval=s.interval,
                         max_seconds=s.max_seconds, note=s.note, citation=s.citation,
+                        on=s.on, chance=s.chance,
                     )
                     for s in m.sources
                 ],
+                refunds=[
+                    FormulaRefundRead(
+                        label=r.label, per=r.per, count=r.count, recipients=r.recipients,
+                        scaling=r.scaling, amount=r.amount, unavailable=r.unavailable,
+                        note=r.note, citation=r.citation,
+                    )
+                    for r in m.refunds
+                ],
+                favonius=FormulaFavoniusRead(
+                    weapon=m.favonius.weapon, refinement=m.favonius.refinement,
+                    chance=m.favonius.chance, cooldown_seconds=m.favonius.cooldown_seconds,
+                    particles=m.favonius.particles, citation=m.favonius.citation,
+                ) if m.favonius else None,
+                energy_recharge=m.energy_recharge, crit_rate=m.crit_rate, note=m.note,
             )
             for m in team.members
         ],

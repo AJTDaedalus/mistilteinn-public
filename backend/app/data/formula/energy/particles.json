@@ -1,7 +1,7 @@
 {
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "source": "github.com/genshinsim/gcsim at gcsim_commit — internal/characters/<key>/*.go (AGPL-3.0; MIT for code before 2026-09-19)",
- "note": "Elemental Skill particles per cast for the formula estimate's energy model (DESIGN_team_math_fallback.md §2.11, TASKS 14). Each count is read off the QueueParticle call it cites; `lines` names each cited line and a substring it must contain, and tests/unit/test_formula_energy_data.py holds every entry to the committed snapshot of those lines (gcsim_lines.json, scripts/gcsim/snapshot_particle_lines.py). A random count is its expectation (2 + 0.25 for Bennett's tap). `collector` says who catches the particles: `caster` lands them while the caster is still on field (a teammate's are caught off field), `active` is an off-field generator whose particles the on-field character catches. Characters whose particles come from a summon's hits with a chance per hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele, Yae's totems) are not here: their count per cast is how many hits land, which nothing cited states. The estimate names them and takes the user's number.",
+ "note": "Elemental Skill particles per cast for the formula estimate's energy model (DESIGN_team_math_fallback.md §2.11, TASKS 14). Each count is read off the QueueParticle call it cites; `lines` names each cited line and a substring it must contain, and tests/unit/test_formula_energy_data.py holds every entry to the committed snapshot of those lines (gcsim_lines.json, scripts/gcsim/snapshot_particle_lines.py). A random count is its expectation (2 + 0.25 for Bennett's tap). `collector` says who catches the particles: `caster` lands them while the caster is still on field (a teammate's are caught off field), `active` is an off-field generator whose particles the on-field character catches. A summon whose particles come with a chance per hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele) carries `chance` (the literal on its `Rand` line) and a hit cadence (`interval`, `max_seconds`), each cited to gcsim and to KQM; `particles` is chance x particles per hit. `on: burst` counts a source once per burst rather than per skill cast (Oz from Fischl's burst). `refunds` are flat energy (gcsim `AddEnergy`, never multiplied by ER): `per` burst or cast, `count` a trigger, `amount` (or `amount_row`, a talent row in our catalogue at the build's level), `recipients` team or self, `scaling` none, per_er (x the giver's ER) or raiden_a4 (x 1 + 0.006 x whole percent of ER above 100%). `weapons.favonius` is the Favonius proc (chance and cooldown from the catalogue's refinement row). `not_curated` names characters left to the user, and why (DESIGN_team_math_fallback.md §2.11, DECISIONS.md §48).",
  "characters": {
   "Bennett": {
    "gcsim_key": "bennett",
@@ -97,6 +97,14 @@
      "lines": [["internal/characters/jean/skill.go", 76, "QueueParticle(c.Base.Key.String(), 2, attributes.Anemo"],
                ["internal/characters/jean/skill.go", 87, "< 0.67"],
                ["internal/characters/jean/skill.go", 88, "QueueParticle(c.Base.Key.String(), 1, attributes.Anemo"]]}
+   ],
+   "refunds": [
+    {"label": "Let the Wind Lead (A4): 16 energy back", "per": "burst", "count": 1, "recipients": "self",
+     "amount": 16, "scaling": "none", "requires_ascension": 4,
+     "note": "Using her burst gives her back 16 flat energy (20% of 80).",
+     "lines": [["internal/characters/jean/asc.go", 38, "c.Base.Ascension < 4"],
+               ["internal/characters/jean/asc.go", 41, "c.AddEnergy(\"jean-a4\", 16)"],
+               ["internal/characters/jean/burst.go", 132, "c.a4()"]]}
    ]
   },
   "Chevreuse": {
@@ -153,6 +161,159 @@
                ["internal/characters/furina/skill.go", 331, "AddStatus(particleICDKey, 2.5*60"],
                ["internal/characters/furina/skill.go", 332, "QueueParticle(c.Base.Key.String(), 1, attributes.Hydro"]]}
    ]
+  },
+  "Raiden Shogun": {
+   "gcsim_key": "raiden",
+   "sources": [
+    {"label": "Eye of Stormy Judgment (coordinated attacks)", "per": "second", "particles": 0.5, "chance": 0.5, "interval": 1, "max_seconds": 25, "collector": "active",
+     "note": "Each coordinated attack has a 50% chance of one particle; the Eye strikes at most every 0.9 s (54 frames), only when the active character hits, and lasts 25 s. KQM's realistic rate, one strike a second, is used: 30 particles a minute.",
+     "kqm": "keqingmains.com/raiden/ — Mechanics: \"The realistic amount can go lower to 30P/M when triggered once per second, or 27P/M when triggered every 1.1 seconds.\"",
+     "lines": [["internal/characters/raiden/skill.go", 62, "NewBaseWithHitlag(skillKey, 1500)"],
+               ["internal/characters/raiden/skill.go", 92, "AddStatus(particleICDKey, 0.8*60"],
+               ["internal/characters/raiden/skill.go", 93, "< 0.5"],
+               ["internal/characters/raiden/skill.go", 94, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"],
+               ["internal/characters/raiden/skill.go", 148, "c.particleCB"],
+               ["internal/characters/raiden/skill.go", 150, "c.eyeICD = c.Core.F + 54"]]}
+   ],
+   "refunds": [
+    {"label": "Musou Isshin (burst): energy to every member", "per": "burst", "count": 5, "recipients": "team",
+     "amount_row": {"talent": "elemental_burst", "label": "Musou Isshin Energy Restoration"},
+     "scaling": "raiden_a4", "requires_ascension": 4,
+     "note": "Up to 5 restorations a burst, once a second, each to every member as flat energy. Her A4 raises each by 0.6% per whole 1% of her ER above 100% (needs ascension 4; without it the amount is the row's).",
+     "lines": [["internal/characters/raiden/burst.go", 96, "c.restoreCount < 5"],
+               ["internal/characters/raiden/burst.go", 98, "c.restoreICD = c.Core.F + 60"],
+               ["internal/characters/raiden/burst.go", 99, "burstRestore[c.TalentLvlBurst()] * (1 + c.a4Energy(max(c.NonExtraStat(attributes.ER)-1, 0)))"],
+               ["internal/characters/raiden/burst.go", 101, "char.AddEnergy(\"raiden-burst\", energy)"],
+               ["internal/characters/raiden/asc.go", 39, "c.Base.Ascension < 4"],
+               ["internal/characters/raiden/asc.go", 42, "excess := int(er * 100)"]]}
+   ]
+  },
+  "Fischl": {
+   "gcsim_key": "fischl",
+   "sources": [
+    {"label": "Oz (from Nightrider)", "per": "second", "particles": 0.67, "chance": 0.67, "interval": 1, "max_seconds": 10, "collector": "active",
+     "note": "Oz attacks about once a second for 10 s (gcsim: every 59 frames, 10 attacks in 600 frames; KQM: 10 hits in 10 s), each with a 67% chance of one particle. The summoning hit drops none.",
+     "kqm": "library.keqingmains.com/characters/electro/fischl — Nightrider: Oz \"Particles 0~1 (1:2)\", \"Duration 10s\", \"Total Hits 10\".",
+     "lines": [["internal/characters/fischl/skill.go", 24, "ozTickInterval   = 59"],
+               ["internal/characters/fischl/skill.go", 103, "< .67"],
+               ["internal/characters/fischl/skill.go", 105, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"],
+               ["internal/characters/fischl/skill.go", 128, "dur := 600"],
+               ["internal/characters/fischl/skill.go", 160, "c.ozSnapshot.Callbacks = append(c.ozSnapshot.Callbacks, c.particleCB)"]]},
+    {"label": "Oz (from Midnight Phantasmagoria)", "per": "second", "on": "burst", "particles": 0.67, "chance": 0.67, "interval": 1, "max_seconds": 10, "collector": "active",
+     "note": "The burst summons Oz too, with the same particles: counted once per burst. Each Oz is counted for up to 10 s of the rotation; a rotation shorter than both summons together counts more Oz time than it has.",
+     "kqm": "library.keqingmains.com/characters/electro/fischl — Nightrider: Oz \"Particles 0~1 (1:2)\", \"Duration 10s\", \"Total Hits 10\".",
+     "lines": [["internal/characters/fischl/burst.go", 115, "c.queueOz(\"Burst\", ozSpawn, firstTick)"],
+               ["internal/characters/fischl/skill.go", 103, "< .67"],
+               ["internal/characters/fischl/skill.go", 105, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"],
+               ["internal/characters/fischl/skill.go", 128, "dur := 600"]]}
+   ]
+  },
+  "Kuki Shinobu": {
+   "gcsim_key": "kuki",
+   "sources": [
+    {"label": "Grass Ring of Sanctification", "per": "second", "particles": 0.45, "chance": 0.45, "interval": 1.5, "max_seconds": 12, "collector": "active",
+     "note": "The ring ticks every 1.5 s for 12 s (8 ticks), each with a 45% chance of one particle.",
+     "kqm": "library.keqingmains.com/characters/electro/kuki-shinobu — Sanctifying Ring: \"45% chance to generate 1 Particle on hit.\"; \"C0: 8 ticks, 12s duration\"; \"DoT interval: 1.5s\".",
+     "lines": [["internal/characters/kuki/skill.go", 63, "skilldur := 720"],
+               ["internal/characters/kuki/skill.go", 74, "c.Core.Tasks.Add(c.bellTick(c.Core.F), 90)"],
+               ["internal/characters/kuki/skill.go", 98, "< .45"],
+               ["internal/characters/kuki/skill.go", 99, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"]]}
+   ]
+  },
+  "Sangonomiya Kokomi": {
+   "gcsim_key": "kokomi",
+   "sources": [
+    {"label": "Bake-Kurage (first tick)", "per": "cast", "particles": 0.67, "chance": 0.67, "collector": "active",
+     "note": "One tick on cast, with a 67% chance of one particle.",
+     "kqm": "library.keqingmains.com/characters/hydro/sangonomiya-kokomi — Kurage's Oath: \"Does a 0~1 (1:2) check once on every instance of damage Bake-Kurage does\"; \"Tick Rate 2s\", \"Duration 12s\".",
+     "lines": [["internal/characters/kokomi/skill.go", 40, "c.Core.Tasks.Add(func() { c.skillTick(d) }, skillHitmark)"],
+               ["internal/characters/kokomi/skill.go", 61, "< 0.67"],
+               ["internal/characters/kokomi/skill.go", 62, "QueueParticle(c.Base.Key.String(), 1, attributes.Hydro"]]},
+    {"label": "Bake-Kurage (ticks)", "per": "second", "particles": 0.67, "chance": 0.67, "interval": 2, "max_seconds": 12, "collector": "active",
+     "note": "Then a tick every 2 s for 12 s (seven ticks in all), each with a 67% chance of one particle. Her burst refreshes the jellyfish, which is not counted.",
+     "kqm": "library.keqingmains.com/characters/hydro/sangonomiya-kokomi — Kurage's Oath: \"Does a 0~1 (1:2) check once on every instance of damage Bake-Kurage does\"; \"Tick Rate 2s\", \"Duration 12s\".",
+     "lines": [["internal/characters/kokomi/skill.go", 31, "c.Core.Status.Add(\"kokomiskill\", 12*60+30+1)"],
+               ["internal/characters/kokomi/skill.go", 150, "c.Core.Tasks.Add(c.skillTickTask(originalSnapshot, src), 120)"],
+               ["internal/characters/kokomi/skill.go", 61, "< 0.67"],
+               ["internal/characters/kokomi/skill.go", 62, "QueueParticle(c.Base.Key.String(), 1, attributes.Hydro"]]}
+   ]
+  },
+  "Zhongli": {
+   "gcsim_key": "zhongli",
+   "sources": [
+    {"label": "Stone Stele (on cast)", "per": "cast", "particles": 0.5, "chance": 0.5, "collector": "caster",
+     "note": "The stele's first hit, with a 50% chance of one particle (1.5 s particle ICD: a recast within 1.5 s of the old stele's last tick drops none).",
+     "kqm": "library.keqingmains.com/characters/geo/zhongli — Dominus Lapidis: \"one or no Geo Particles will be generated with equal probability (50%:50%)\"; \"an Internal Cooldown (ICD) of 1.5s\"; \"the Resonance frequency is 2s\".",
+     "lines": [["internal/characters/zhongli/stele.go", 32, "c.particleCB()"],
+               ["internal/characters/zhongli/stele.go", 147, "AddStatus(particleICDKey, 1.5*60"],
+               ["internal/characters/zhongli/stele.go", 148, "< 0.5"],
+               ["internal/characters/zhongli/stele.go", 149, "QueueParticle(c.Base.Key.String(), 1, attributes.Geo"]]},
+    {"label": "Stone Stele (resonance)", "per": "second", "particles": 0.5, "chance": 0.5, "interval": 2, "max_seconds": 30, "collector": "active",
+     "note": "Then a resonance every 2 s while the stele stands (30 s), each with a 50% chance of one particle.",
+     "kqm": "library.keqingmains.com/characters/geo/zhongli — Dominus Lapidis: \"one or no Geo Particles will be generated with equal probability (50%:50%)\"; \"an Internal Cooldown (ICD) of 1.5s\"; \"the Resonance frequency is 2s\".",
+     "lines": [["internal/characters/zhongli/skill.go", 48, "c.newStele(1860)"],
+               ["internal/characters/zhongli/stele.go", 127, "particleCB)"],
+               ["internal/characters/zhongli/stele.go", 135, "c.Core.Tasks.Add(c.resonance(src), 120)"],
+               ["internal/characters/zhongli/stele.go", 148, "< 0.5"],
+               ["internal/characters/zhongli/stele.go", 149, "QueueParticle(c.Base.Key.String(), 1, attributes.Geo"]]}
+   ]
+  },
+  "Kujou Sara": {
+   "gcsim_key": "sara",
+   "sources": [
+    {"label": "Tengu Stormcall (its aimed shot's Ambush)", "per": "cast", "particles": 3, "collector": "caster",
+     "note": "3 particles when the Ambush hits, and the Ambush comes from the fully charged aimed shot she fires in Crowfeather Cover after the skill: one per cast if that shot is fired.",
+     "lines": [["internal/characters/sara/skill.go", 78, "QueueParticle(c.Base.Key.String(), 3, attributes.Electro"],
+               ["internal/characters/sara/aimed.go", 122, "if skillActive && hold == attacks.AimParamLv1"],
+               ["internal/characters/sara/aimed.go", 138, "c.makeA4CB(), c.particleCB)"]]}
+   ],
+   "refunds": [
+    {"label": "Decorum (A4): energy to every member", "per": "cast", "count": 1, "recipients": "team",
+     "amount": 1.2, "scaling": "per_er", "requires_ascension": 4,
+     "note": "When the Ambush hits, 1.2 energy for every 100% of her ER to every member, once every 3 s: one per cast with the aimed shot.",
+     "kqm": "library.keqingmains.com/characters/electro/kujou-sara — Decorum: \"Kujou Sara will restore 1.2 Energy to all party members for every 100% Energy Recharge she has.\"",
+     "lines": [["internal/characters/sara/asc.go", 30, "c.AddStatus(a4ICDKey, 180, true)"],
+               ["internal/characters/sara/asc.go", 32, "energyAddAmt := 1.2 * c.NonExtraStat(attributes.ER)"],
+               ["internal/characters/sara/asc.go", 34, "char.AddEnergy(\"sara-a4\", energyAddAmt)"]]}
+   ]
+  },
+  "Venti": {
+   "gcsim_key": "venti",
+   "sources": [],
+   "refunds": [
+    {"label": "Stairway to Heaven (A4): 15 energy back", "per": "burst", "count": 1, "recipients": "self",
+     "amount": 15, "scaling": "none", "requires_ascension": 4,
+     "note": "15 flat energy when his burst ends. The 15 it also gives every member of the element it absorbed is not counted: which element is absorbed depends on the fight, so enter it as flat energy.",
+     "lines": [["internal/characters/venti/asc.go", 13, "c.AddEnergy(\"venti-a4\", 15)"],
+               ["internal/characters/venti/burst.go", 69, "c.Base.Ascension >= 4"],
+               ["internal/characters/venti/burst.go", 70, "c.Core.Tasks.Add(c.a4, 480+burstStart)"]]}
+   ]
+  }
+ },
+ "weapons": {
+  "favonius": {
+   "names": ["Favonius Sword", "Favonius Greatsword", "Favonius Lance", "Favonius Codex", "Favonius Warbow"],
+   "particles": 3,
+   "note": "On a crit by the wielder while the wielder is the active character, a chance (refinement param 0) to drop 3 clear particles, then a cooldown (refinement param 1, seconds). Chance and cooldown are read from the weapon's refinement row in our catalogue; gcsim computes the same from the refinement (0.5 + 0.1 R, 810 - 90 R frames).",
+   "lines": [["internal/weapons/common/favonius.go", 28, "prob := 0.50 + float64(p.Refine)*0.1"],
+             ["internal/weapons/common/favonius.go", 29, "cd := 810 - p.Refine*90"],
+             ["internal/weapons/common/favonius.go", 38, "if !crit"],
+             ["internal/weapons/common/favonius.go", 41, "if atk.Info.ActorIndex != char.Index()"],
+             ["internal/weapons/common/favonius.go", 44, "if c.Player.Active() != char.Index()"],
+             ["internal/weapons/common/favonius.go", 56, "QueueParticle(\"favonius-\"+char.Base.Key.String(), 3, attributes.NoElement"],
+             ["internal/weapons/common/favonius.go", 59, "char.AddStatus(icdKey, cd, true)"]],
+   "kqm": "library.keqingmains.com/combat-mechanics/energy — \"3 Clear Elemental Particles are generated when the passive procs\"; \"Refinements only change the frequency of Particles produced, not the amount of Particles.\""
+  }
+ },
+ "not_curated": {
+  "Yae Miko": {
+   "gcsim_key": "yaemiko",
+   "reason": "Two cited sources disagree. gcsim drops 1 particle on a totem hit with a 2.5 s particle ICD shared by her totems (each totem strikes every 176 frames for 15 s), so up to about one particle every 2.5 to 3 s while totems stand; KQM's library says only each Sesshou Sakura's first hit drops a particle (\"1 Particle on each hit and none on cast\"; \"only the first one generates Particles\"), so one per totem. None is counted until you enter a number.",
+   "kqm": "library.keqingmains.com/characters/electro/yae-miko — Sesshou Sakura notes: \"Each Sesshou Sakura hits up to 5 times, but only the first one generates Particles\".",
+   "lines": [["internal/characters/yaemiko/skill.go", 46, "AddStatus(particleICDKey, 2.5*60"],
+             ["internal/characters/yaemiko/skill.go", 47, "QueueParticle(c.Base.Key.String(), 1, attributes.Electro"],
+             ["internal/characters/yaemiko/kitsune.go", 13, "kitsuneDur = 900"],
+             ["internal/characters/yaemiko/kitsune.go", 166, "c.Core.Tasks.Add(c.kitsuneTick(totem), 176)"]]
   }
  }
 }

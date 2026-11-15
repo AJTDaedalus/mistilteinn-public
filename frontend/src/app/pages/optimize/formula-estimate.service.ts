@@ -24,8 +24,10 @@ import {
 } from '../../sim/formula-recipe';
 import {
   particlesPerRotation,
+  raidenA4Multiplier,
   type EnergyMode,
   type EnergySource,
+  type FlatSource,
   type FormulaEnergy,
 } from '../../sim/formula-energy';
 import type { FormulaMove } from '../../sim/recipe';
@@ -145,8 +147,9 @@ export type TeamEnergyData = components['schemas']['FormulaTeamEnergyRead'];
  */
 export interface EnergySettings {
   /**
-   * `off` (the default until the owner rules, DESIGN §2.11): the requirement is reported and ER
-   * is still worth nothing. `skip` and `wait` are the gcsim path's two models.
+   * `wait`, the default (owner, 2026-11-15, DECISIONS §48): every row scaled by
+   * rotation ÷ (rotation + wait), the drip paying the shortfall — and `skip` when the drip is
+   * off. `skip` and `off` (report only, ER worth nothing) are the other choices.
    */
   mode: EnergyMode;
   /** Seconds; `null` is the subject's burst cooldown (game data). */
@@ -159,6 +162,15 @@ export interface EnergySettings {
   onField: Record<string, number>;
   /** Particles per rotation for a member with no curated count, by build id. */
   manual: Record<string, number>;
+  /** Bursts per rotation by member build id; absent is 1 (one burst a rotation). */
+  bursts: Record<string, number>;
+  /**
+   * A Favonius holder's crits-eligible hits on field per rotation, by build id. Absent: the
+   * optimized character's own direct-hit rows, a teammate's skill casts (one hit a cast).
+   */
+  favoniusHits: Record<string, number>;
+  /** A refund's triggers per burst or cast, by refund key, replacing the table's (0: off). */
+  refundCounts: Record<string, number>;
   /** Energy per rotation ER does not multiply. */
   flatEnergy: number;
   /** Whether the enemy-particle drip (gcsim's `ENERGY_DRIP`) counts. */
@@ -166,9 +178,78 @@ export interface EnergySettings {
 }
 
 export const DEFAULT_ENERGY: EnergySettings = {
-  mode: 'off', rotationSeconds: null, casts: {}, particles: {}, onField: {}, manual: {},
-  flatEnergy: 0, drip: true,
+  mode: 'wait', rotationSeconds: null, casts: {}, particles: {}, onField: {}, manual: {},
+  bursts: {}, favoniusHits: {}, refundCounts: {}, flatEnergy: 0, drip: true,
 };
+
+/** A refund's key in `EnergySettings`: the giver's build and its position. */
+export const refundKey = (buildId: string, index: number): string => `${buildId}:refund:${index}`;
+
+/** A Favonius holder's source key. */
+export const favoniusKey = (buildId: string): string => `${buildId}:favonius`;
+
+type EnergyMember = TeamEnergyData['members'][number];
+
+/**
+ * Favonius procs per rotation: `min(rotation ÷ cooldown, crits × chance)`, crits being the
+ * holder's on-field hits × their crit rate. The cooldown bounds it from above (gcsim
+ * `favonius.go:47`, the proc's ICD); below it, each crit procs with the refinement's chance
+ * (`:50`). An upper bound on the expectation — a crit landing during the cooldown is spent.
+ */
+export function favoniusProcs(
+  member: EnergyMember, hits: number, rotationSeconds: number,
+): number {
+  const fav = member.favonius;
+  if (!fav) return 0;
+  const crits = hits * Math.min(1, Math.max(0, member.crit_rate ?? 0));
+  return Math.min(rotationSeconds / fav.cooldown_seconds, crits * fav.chance);
+}
+
+/** The default on-field hits for a Favonius holder: the subject's rows, a teammate's casts. */
+export function defaultFavoniusHits(
+  member: EnergyMember, settings: EnergySettings, subjectHits: number,
+): number {
+  return member.is_subject ? subjectHits : settings.casts[member.build_id] ?? 1;
+}
+
+/**
+ * A refund over one rotation as the subject receives it, or `null` when it does not reach
+ * them (another member's `self` refund) or cannot be counted (`unavailable`).
+ */
+export function refundSource(
+  member: EnergyMember, index: number, settings: EnergySettings,
+): FlatSource | null {
+  const refund = member.refunds?.[index];
+  if (!refund || refund.amount === null || refund.amount === undefined || refund.unavailable) {
+    return null;
+  }
+  if (refund.recipients === 'self' && !member.is_subject) return null;
+  const key = refundKey(member.build_id, index);
+  const triggers = refund.per === 'burst'
+    ? settings.bursts[member.build_id] ?? 1 : settings.casts[member.build_id] ?? 1;
+  const energy = refund.amount * (settings.refundCounts[key] ?? refund.count) * triggers;
+  if (member.is_subject) {
+    return { key, label: `${member.name}: ${refund.label}`, energy,
+      scaling: refund.scaling, citation: refund.citation };
+  }
+  // A teammate's ER is their build's: applied here, a constant to the search.
+  const er = member.energy_recharge ?? 1;
+  const scaled = refund.scaling === 'per_er' ? energy * er
+    : refund.scaling === 'raiden_a4' ? energy * raidenA4Multiplier(er) : energy;
+  return { key, label: `${member.name}: ${refund.label}`, energy: scaled, scaling: 'none',
+    citation: refund.citation };
+}
+
+/**
+ * The optimized character's crit-eligible hits per rotation: the count of every direct-hit row
+ * (a transformative reaction or a weapon proc row does not crit through Favonius's check —
+ * it is not the wielder's crit, or does not crit at all). The default Favonius hit count.
+ */
+export function subjectHitsOf(
+  rows: readonly { count: number; reaction?: unknown; proc?: unknown }[],
+): number {
+  return rows.filter((r) => !r.reaction && !r.proc).reduce((sum, r) => sum + r.count, 0);
+}
 
 /** A source's key in `EnergySettings`: the member's build and its position. */
 export const sourceKey = (buildId: string, index: number): string => `${buildId}:${index}`;
@@ -191,14 +272,36 @@ export function rotationSecondsOf(data: TeamEnergyData, settings: EnergySettings
  * `null` when the subject has no burst cost to fund (nothing to price).
  */
 export function energyInput(
-  data: TeamEnergyData, settings: EnergySettings,
+  data: TeamEnergyData, settings: EnergySettings, subjectHits = 0,
 ): Omit<FormulaEnergy, 'baseEnergyRecharge'> | null {
   const subject = data.members.find((m) => m.is_subject);
   if (!subject?.burst_energy_cost || !subject.element) return null;
   const seconds = rotationSecondsOf(data, settings);
   const sources: EnergySource[] = [];
+  const flatSources: FlatSource[] = [];
   for (const member of data.members) {
     const casts = settings.casts[member.build_id] ?? 1;
+    const bursts = settings.bursts[member.build_id] ?? 1;
+    (member.refunds ?? []).forEach((_, i) => {
+      const flat = refundSource(member, i, settings);
+      if (flat && flat.energy > 0) flatSources.push(flat);
+    });
+    if (member.favonius) {
+      // gcsim `favonius.go:44`: a proc needs the holder active, so the subject catches its
+      // own on field and a teammate's off field (each landing 100 frames later: editable).
+      const key = favoniusKey(member.build_id);
+      const hits = settings.favoniusHits[member.build_id]
+        ?? defaultFavoniusHits(member, settings, subjectHits);
+      const procs = favoniusProcs(member, hits, seconds);
+      if (procs > 0) {
+        sources.push({
+          key, label: `${member.name}: ${member.favonius.weapon} R${member.favonius.refinement}`,
+          element: null, particles: procs * member.favonius.particles,
+          onFieldShare: settings.onField[key] ?? (member.is_subject ? 1 : 0),
+          citation: member.favonius.citation,
+        });
+      }
+    }
     if (member.status === 'no_particle_data') {
       const manual = settings.manual[member.build_id] ?? 0;
       if (manual > 0) {
@@ -216,7 +319,8 @@ export function energyInput(
       const each = settings.particles[key] ?? source.particles;
       sources.push({
         key, label: `${member.name}: ${source.label}`, element: member.element ?? null,
-        particles: particlesPerRotation({ ...source, particles: each }, casts, seconds),
+        particles: particlesPerRotation(
+          { ...source, particles: each }, source.on === 'burst' ? bursts : casts, seconds),
         onFieldShare: settings.onField[key] ?? defaultOnField(member, source),
         citation: source.citation,
       });
@@ -240,6 +344,7 @@ export function energyInput(
     partyCount: data.members.length,
     rotationSeconds: seconds,
     flatEnergy: settings.flatEnergy,
+    flatSources,
     sources,
     drip,
   };
@@ -653,7 +758,7 @@ export class FormulaEstimateService {
       })),
       fourPieceSetIds: request.fourPieceSetIds,
       ...(energy ? (() => {
-        const input = energyInput(energy, this.energy());
+        const input = energyInput(energy, this.energy(), subjectHitsOf(rows));
         return input ? { energy: input } : {};
       })() : {}),
       conditionals: teamState as ConditionState,

@@ -42,6 +42,27 @@ describe('PreviousRuns', () => {
     expect(fixture.nativeElement.textContent).toContain('Skirk melt');
   });
 
+  it('names the energy mode a saved formula estimate was priced with', async () => {
+    // Wait became the estimate's default (owner, 2026-11-15): the row says so, not implies it.
+    mine.mockResolvedValue([row({
+      summary: { formula_estimate: true, energy_model: 'waiting' },
+    } as Partial<OptimizationRunSummary>)]);
+    await build();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Formula estimate');
+    expect(text).toContain('energy: waiting');
+  });
+
+  it('says nothing of energy for a formula estimate saved before it was kept', async () => {
+    mine.mockResolvedValue([row({
+      summary: { formula_estimate: true, energy_model: null },
+    } as Partial<OptimizationRunSummary>)]);
+    await build();
+
+    expect(fixture.nativeElement.textContent).not.toContain('energy:');
+  });
+
   it('formats a score for reading rather than comparing', async () => {
     await build();
 

@@ -4923,7 +4923,7 @@
           "formula"
         ],
         "summary": "Energy Route",
-        "description": "The team's energy data for the formula estimate (math-fallback P3, task 14).\n\nEach member's burst cost and cooldown (game data) and Elemental Skill particles per cast\n(curated, each count cited to gcsim at the pin), and the drip gcsim's waiting model emits.\nA member with no curated count is listed as `no_particle_data`, never omitted. The\nbrowser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.",
+        "description": "The team's energy data for the formula estimate (math-fallback P3, task 14).\n\nEach member's burst cost and cooldown (game data) and Elemental Skill particles per cast\n(curated, each count cited to gcsim at the pin), flat refunds and a Favonius proc with the\nmember's own ER and crit rate, and the drip gcsim's waiting model emits.\nA member with no curated count is listed as `no_particle_data`, never omitted. The\nbrowser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.",
         "operationId": "energy_route_api_v1_formula_energy_get",
         "security": [
           {
@@ -8732,6 +8732,57 @@
             "type": "array",
             "title": "Sources",
             "default": []
+          },
+          "refunds": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaRefundRead"
+            },
+            "type": "array",
+            "title": "Refunds",
+            "default": []
+          },
+          "favonius": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FormulaFavoniusRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "energy_recharge": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy Recharge"
+          },
+          "crit_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crit Rate"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           }
         },
         "type": "object",
@@ -8743,6 +8794,45 @@
         ],
         "title": "FormulaEnergyMemberRead",
         "description": "One member's energy data: burst cost and cooldown (game data), skill particles."
+      },
+      "FormulaFavoniusRead": {
+        "properties": {
+          "weapon": {
+            "type": "string",
+            "title": "Weapon"
+          },
+          "refinement": {
+            "type": "integer",
+            "title": "Refinement"
+          },
+          "chance": {
+            "type": "number",
+            "title": "Chance"
+          },
+          "cooldown_seconds": {
+            "type": "number",
+            "title": "Cooldown Seconds"
+          },
+          "particles": {
+            "type": "number",
+            "title": "Particles"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weapon",
+          "refinement",
+          "chance",
+          "cooldown_seconds",
+          "particles",
+          "citation"
+        ],
+        "title": "FormulaFavoniusRead",
+        "description": "A member's Favonius weapon: 3 clear particles on a crit while the wielder is active."
       },
       "FormulaKitMemberRead": {
         "properties": {
@@ -8937,6 +9027,26 @@
           "citation": {
             "type": "string",
             "title": "Citation"
+          },
+          "on": {
+            "type": "string",
+            "enum": [
+              "skill",
+              "burst"
+            ],
+            "title": "On",
+            "default": "skill"
+          },
+          "chance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
           }
         },
         "type": "object",
@@ -9094,6 +9204,91 @@
         ],
         "title": "FormulaRaisedUnavailableRead",
         "description": "A raise that reads no row (past the table's last level), and why."
+      },
+      "FormulaRefundRead": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "per": {
+            "type": "string",
+            "enum": [
+              "burst",
+              "cast"
+            ],
+            "title": "Per"
+          },
+          "count": {
+            "type": "number",
+            "title": "Count"
+          },
+          "recipients": {
+            "type": "string",
+            "enum": [
+              "team",
+              "self"
+            ],
+            "title": "Recipients"
+          },
+          "scaling": {
+            "type": "string",
+            "enum": [
+              "none",
+              "per_er",
+              "raiden_a4"
+            ],
+            "title": "Scaling"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "per",
+          "count",
+          "recipients",
+          "scaling",
+          "citation"
+        ],
+        "title": "FormulaRefundRead",
+        "description": "A kit's flat energy (gcsim `AddEnergy`): ER never multiplies it (DESIGN \u00a72.11)."
       },
       "FormulaResonanceRead": {
         "properties": {
