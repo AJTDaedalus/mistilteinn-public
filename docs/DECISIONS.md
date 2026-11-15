@@ -1838,4 +1838,55 @@ Both are built, mirroring the gcsim path's ruling (2026-09-02, skip default, wai
 gcsim's skipping is); **wait** scales every row by `L / (L + wait)`, the drip paying the deficit
 (the model DESIGN §2.10 argues is the honest one for this estimate). The default is **off**:
 the requirement is reported and ER is worth nothing, so no existing score changes until the
-owner says. *Owner question: default off, skip or wait?*
+owner says. *Owner question: default off, skip or wait?* **Answered 2026-11-15: wait (§48).**
+
+## 48. ER follow-ups: Wait by default, summons from a cited rate, Favonius procs and flat refunds (2026-11-15)
+
+**Owner, 2026-11-15**, three rulings on #392 (§47). Built on `feat/formula-er-followups`
+(DESIGN §2.11 "Follow-ups", TASKS 14).
+
+1. **The default energy mode is Wait.** Every row × `L / (L + wait)`, the drip paying the
+   shortfall; skip when the drip is off (as built). It answers §47's question. Each place that
+   defaults it was checked: `DEFAULT_ENERGY` (the only default), the saved run (now keeps its
+   `energy` settings; the list row names the mode, and a run saved before says nothing rather
+   than a guess), and the fixtures — the GO fixtures carry no energy model and `formula:verify`
+   now asserts that per fixture, so the default cannot move them; the specs that build an
+   estimate reject the energy data explicitly. The gcsim path's skip-by-default
+   (2026-09-02) is a different surface and is unchanged.
+2. **Summon particle rates are curated from a cited chance and cadence.** gcsim's chance-per-hit
+   literal at the pin (snapshotted and held to its `Rand` line) × a hit cadence cited to gcsim
+   and KQM's library, capped at the summon's duration: Raiden's Eye 0.5 a strike at KQM's
+   realistic one strike a second (not gcsim's 0.9 s ceiling), Oz 0.67 × 10 hits from the skill
+   and again from the burst, Kuki's ring 0.45 × 8, Kokomi's jellyfish 0.67 × 7, Zhongli's stele
+   0.5 × (1 + one every 2 s for 30 s). Sara's Ambush (3 a cast) added. Choices made on the way,
+   each reversible:
+   - **Yae is not curated**: gcsim (one per totem hit, 2.5 s shared ICD) and KQM's library (only
+     a totem's first hit) disagree by a factor; the panel names both and takes the user's number.
+   - **Raiden's Eye uses KQM's realistic rate**, as Furina's Salon does (§47), because gcsim's
+     ICD is a ceiling the Eye reaches only when the team hits continuously.
+   - **Oz from the burst is counted per burst**, each Oz up to 10 s of the rotation: a rotation
+     shorter than both summons together over-counts Oz time; the panel's notes say so.
+3. **Favonius procs and flat refunds are modelled.**
+   - **Favonius**: 3 clear particles on a crit while the wielder is active (gcsim
+     `favonius.go:38-56`), chance and cooldown from our catalogue's refinement row (a test holds
+     every row to gcsim's formula). **Who catches them: whoever is active when they land**,
+     100 frames after the proc — the wielder unless they swapped out. Default 100 % on field for
+     the optimized character's own Favonius, 0 % for a teammate's; editable. **Procs per
+     rotation = `min(rotation ÷ cooldown, hits × crit rate × chance)`**: the cooldown is a hard
+     bound, each crit below it procs with the refinement's chance; an upper bound on the
+     expectation. Crit rate is the holder's build's (pass 1); hits default to the optimized
+     character's direct-hit rows and to one per skill cast for a teammate. Rejected: a
+     geometric expectation with the cooldown (it needs a hit timeline the estimate does not
+     have), and the subject's per-candidate crit rate (it would make energy depend on CRIT and
+     ER together for a second-order effect; the build's current crit rate is stated instead).
+   - **Flat refunds** (gcsim `AddEnergy`, never times ER): Raiden's burst (5 × the burst row ×
+     her A4 on her own ER, to every member), Sara's A4 (1.2 × her ER, every member, once a
+     cast), Jean's A4 (16, herself), Venti's A4 (15, himself; the absorbed-element part is left
+     to the flat-energy box). An A4 needs ascension 4. When the giver is the optimized
+     character the ER-scaled refunds move with the candidate's ER (the requirement is then
+     found by bisection; energy stays monotone, so the search's bound holds). Not counted:
+     constellation refunds and fight-conditional ones (Dori's connector, Tartaglia's ranged
+     burst, Ayato's below-40 regen).
+
+**Verified against gcsim**, a native sample and two 3000-iteration runs at the pin (DESIGN
+§2.11): every particle and refund event exact; the chances per hit within four standard errors.

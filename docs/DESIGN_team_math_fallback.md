@@ -1129,9 +1129,9 @@ Neuvillette 4, Jean 2.67, Chevreuse 4, Mavuika 5, Skirk 4, Sucrose 4, Navia 3.5,
 expectation. **Every cited line is snapshotted** (`gcsim_lines.json`,
 `scripts/gcsim/snapshot_particle_lines.py`) and `test_formula_energy_data.py` holds each count to
 the literal on its line. Characters whose particles come from a summon's hits with a chance per
-hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele, Yae's totems) are **not
-curated**: their count per cast is how many hits land, which nothing cited states. The panel names
-them and takes the user's number; none are counted until then.
+hit were left out at first — their count per cast is how many hits land — and **five of the six
+are now curated** from gcsim's chance and a cited hit cadence (owner, 2026-11-15; "Follow-ups"
+below). Yae's totems stay with the user: the two sources disagree.
 
 #### The assumptions, all in the panel
 
@@ -1150,8 +1150,9 @@ its default and citation:
   subject is assumed off field when others' particles land. Editable per source, as a share
   (Guoba in the gcsim sample: two of four on field).
 - **Enemy particles**: on, at the drip's rate, caught off field.
-- **Flat energy**: 0. Not counted unless entered: Favonius procs, a kit's flat refund (Raiden's
-  burst), normal attacks' chance of 1 energy (`pkg/core/energy.go:30-90`).
+- **Flat energy**: the kits' refunds and the team's Favonius procs are counted since the
+  follow-ups (below). Still not counted unless entered: constellation refunds, Electro
+  resonance's particles, normal attacks' chance of 1 energy (`pkg/core/energy.go:30-90`).
 
 The requirement also fills the recipe's `minimumEnergyRecharge` — the field the page's existing
 "This build has X Energy Recharge and the rotation needs Y" warning reads — so the ER floor UI is
@@ -1180,10 +1181,9 @@ closed form can price either, and they mean different things:
 The honest model is **wait** for the question this estimate answers — damage of the chosen
 sequence, which a player performs by waiting rather than by silently dropping the burst — and it
 carries the delay to every row, as the gcsim ladder's DPS does. **But which one the score uses
-by default changes what every formula score means**, so it is not picked here: the default is a
-third mode, **off** (report the requirement; ER still worth nothing), which leaves today's scores
-unchanged, and both priced modes are a choice in the panel. *Owner question (TASKS 14): default
-to off, skip or wait?*
+by default changes what every formula score means**, so #392 did not pick it: it shipped a third
+mode, **off** (report the requirement; ER still worth nothing), as the default and asked.
+**Answered 2026-11-15: Wait is the default** (`DECISIONS.md` §48; "Follow-ups" below).
 
 Both priced factors are non-decreasing in ER, so the search's optimistic bound stays admissible;
 `liveQuantitiesFor` makes ER live exactly when a priced mode leaves the requirement unmet (the
@@ -1191,6 +1191,82 @@ same rule the gcsim ladder follows, so an ER sands is no longer Pareto-pruned be
 scored). The model lives in `sim/formula-energy.ts`, read by `recipe-eval.ts:formulaEnergyTotal`
 and attached per recipe in `formula-calibration.ts`; nothing in `formula-recipe.ts` changes but
 one added function (`subjectEnergyRecharge`).
+
+#### Follow-ups: the owner's three rulings (2026-11-15, `DECISIONS.md` §48)
+
+Branch `feat/formula-er-followups` (off `dev`; no direct commits to `dev`).
+
+**1. Wait is the default.** `DEFAULT_ENERGY.mode` is `wait`: every row × `L / (L + wait)`, the
+drip paying the shortfall; with the drip off the input steps back to skip, as built. **Blast
+radius**: every formula estimate whose subject has a burst cost and whose energy data loads now
+prices ER; a team whose particles already fund the burst scores exactly as before (factor 1),
+one that does not scores lower, and ER becomes live in its search. Nothing else defaults the
+mode: the gcsim path's own skip/wait (`wait_for_energy`) is untouched; the GO fixtures carry no
+energy model (`synthesizeRecipe` never attaches one, and `formula:verify` now asserts it per
+fixture), so the default cannot move them; the specs that build estimates without energy data
+(`formula-routing`, `formula-weapon-compare`) reject `energyData` explicitly. A saved estimate
+now keeps its `energy` settings in its objective and its list row names the mode ("energy:
+waiting"); one saved before keeps saying nothing rather than having a mode guessed for it.
+
+**2. Summons, curated from a cited chance and cadence.** Each is gcsim's chance-per-hit literal
+(snapshotted, held by a test to its `Rand` line) times a hit cadence cited to gcsim and to KQM's
+library, as a per-second source capped at the summon's duration, so a rotation shorter than the
+summon counts only the hits it holds:
+
+| summon | chance a hit | cadence | per cast at full length | sources |
+|---|---|---|---|---|
+| Raiden's Eye | 0.5 (`raiden/skill.go:93`) | one coordinated attack a second for 25 s | 12.5 | gcsim's ceiling is one per 0.9 s (`:150`); **KQM's realistic "30P/M when triggered once per second"** is used. It also needs the active character to hit |
+| Oz (skill) | 0.67 (`fischl/skill.go:103`) | one a second for 10 s | 6.7 | gcsim 59-frame ticks over 600 frames; KQM "Total Hits 10", "Duration 10s" |
+| Oz (burst) | 0.67 | the same, counted **per burst** (`on: burst`) | 6.7 | `fischl/burst.go:115` summons Oz too |
+| Kuki's ring | 0.45 (`kuki/skill.go:98`) | every 1.5 s for 12 s | 3.6 | KQM "45% chance", "C0: 8 ticks, 12s duration" |
+| Kokomi's jellyfish | 0.67 (`kokomi/skill.go:61`) | one tick on cast, then every 2 s for 12 s | 4.69 | seven ticks in gcsim; KQM "Tick Rate 2s", "Duration 12s". The burst's refresh is not counted |
+| Zhongli's stele | 0.5 (`zhongli/stele.go:148`) | the first hit, then every 2 s for 30 s | 8.0 | KQM "50%:50%", "1.5s" ICD, "Resonance frequency is 2s" |
+
+Sara's Ambush is added too: 3 a cast (`sara/skill.go:78`), from the charged shot she fires in
+Cover. **Yae Miko stays with the user**, because the two sources disagree: gcsim drops one on a
+totem hit with a 2.5 s ICD shared by her totems (about one every 2.5-3 s while they stand), and
+KQM's library says only each totem's first hit drops one. Her panel row says so. The panel shows
+each summon's chance, cadence, citation and the per-cast field, all editable.
+
+**3. Favonius procs and flat refunds.**
+
+- **Favonius**: gcsim procs on a crit **by the wielder while the wielder is active**
+  (`internal/weapons/common/favonius.go:38-44`), drops 3 clear particles (`:56`), then a
+  cooldown (`:59`). Chance and cooldown are read from the weapon's refinement row in our
+  catalogue (`[0.6, 12, …]` at R1); a test holds all five rows to gcsim's `0.5 + 0.1 R` and
+  `810 − 90 R` frames. **Who catches them**: the active character when they land, 100 frames
+  after the proc (gcsim's default particle delay). Since the wielder is active at the proc, the
+  default is 100 % on field when the optimized character wields it and 0 % for a teammate's;
+  a swap inside the delay changes that, and the share is editable. The gcsim sample shows both:
+  five of six procs land on Raiden, one on Zhongli, who had taken the field inside the delay.
+  **Procs per rotation** = `min(rotation ÷ cooldown, hits × crit rate × chance)` — the cooldown
+  bounds it, below that each crit procs with the refinement's chance. It is an upper bound on the
+  expectation (a crit during the cooldown is spent). The crit rate is the holder's build's own
+  (pass 1); the hits default to the optimized character's direct-hit rows (reaction and proc rows
+  excluded) and to one a skill cast for a teammate, and are editable. The community ER
+  calculator takes the same quantity as an input ("Favonius triggers per burst rotation").
+  Holders are read from every teammate's build (`/formula/energy` now loads weapon refinements).
+- **Flat refunds** (gcsim `AddEnergy`; never multiplied by ER, `energy.go:35-43`): Raiden's
+  burst, 5 restorations a burst to every member, each the burst row "Musou Isshin Energy
+  Restoration" at the build's level × `1 + 0.006 × ⌊(ER − 1) × 100⌋` of **her** ER (her A4,
+  `raiden/asc.go:42`); Sara's A4, `1.2 × her ER` to every member once a cast; Jean's A4, 16 to
+  herself a burst; Venti's A4, 15 to himself a burst (the 15 to the absorbed element's members is
+  not counted: which element is absorbed depends on the fight). An A4 needs ascension 4, and a
+  build below it is told so. When the giver is the optimized character, the ER-scaled refunds
+  move with the candidate's ER, and the requirement is found by bisection (energy is still
+  non-decreasing in ER, so the search's bound holds); a teammate's is applied at their build's
+  ER. Other `AddEnergy` lines at the pin are constellation effects or conditional on the fight
+  (Dori's connector, Tartaglia's ranged burst, Ayato's below-40 regen) and are not counted.
+
+**Verified against gcsim** (`backend/tests/fixtures/formula/energy/`, PROVENANCE beside it): a
+sample of Raiden (Favonius Lance R3), Fischl, Kokomi and Zhongli — all 464 particle events exact,
+the 24 Favonius particle events 3 clear each and landing 100 frames after their proc, the 80
+Raiden restorations each `2.4 × (1 + 0.006 × 132)` = 4.3008, Oz 10 hits a summon, the jellyfish
+7 a cast; and two 3000-iteration runs read by a member who never takes the field, where the
+particles per hit come back 0.67 (Oz), 0.45 (ring) and 0.67 (jellyfish) within four standard
+errors and Sara's A4 is exactly `1.2 × 1.5` a cast. The stele sits a little under 0.5 a hit,
+because its 1.5 s ICD eats a recast's first hit; its note says so. `formula:verify` holds the
+browser's module to the same events, with plants (a continuous A4, a refund times ER).
 
 #### Verification
 
