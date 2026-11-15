@@ -269,6 +269,11 @@
             </select>
           </label>
           <span class="assumptions__default" [class.assumptions__default--changed]="energySettings().mode !== 'off'">
+            @switch (energySettings().mode) {
+              @case ('skip') { Skip: a burst the energy cannot fund is not cast; burst rows land min(1, energy ÷ cost) as often. }
+              @case ('wait') { Wait: the team holds the rotation until the drip funds the burst; every row is scaled by rotation ÷ (rotation + wait). }
+              @default { Report only: ER does not change the score. }
+            }
             Default: report only, until the owner chooses between skipping and waiting (the gcsim
             path offers both).
           </span>

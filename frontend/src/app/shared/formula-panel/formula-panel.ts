@@ -44,9 +44,9 @@ const REACTIONS: { value: Transformative | Lunar; label: string }[] = [
 
 /** The energy model's modes (task 14). `off` is the default until the owner rules. */
 const ENERGY_MODES: { value: EnergyMode; label: string }[] = [
-  { value: 'off', label: 'Report only — ER does not change the score' },
-  { value: 'skip', label: 'Skip — a burst the energy cannot fund is not cast' },
-  { value: 'wait', label: 'Wait — the team holds the rotation until the burst is funded' },
+  { value: 'off', label: 'Report only' },
+  { value: 'skip', label: 'Skip an unfunded burst' },
+  { value: 'wait', label: 'Wait for the energy' },
 ];
 
 const MOVES: { value: FormulaMove; label: string }[] = [

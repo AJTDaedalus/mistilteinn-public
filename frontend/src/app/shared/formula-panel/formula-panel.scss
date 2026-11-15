@@ -235,6 +235,21 @@
 
 // ── Energy (task 14) ─────────────────────────────────────────────────────────────────────
 
+// A fieldset sizes to its min-content by default, and a gcsim path in a citation is one long
+// word: at 390 px the section pushed the page to 648. Let it shrink and let the paths break.
+.energy {
+  min-width: 0;
+
+  select {
+    max-width: 100%;
+  }
+
+  .assumptions__cite,
+  .assumptions__static {
+    overflow-wrap: anywhere;
+  }
+}
+
 .energy__requirement {
   margin: 0;
   font-size: var(--text-sm);
