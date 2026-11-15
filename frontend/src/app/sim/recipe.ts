@@ -33,6 +33,7 @@
 /** Which stat an ability scales off. gcsim states this; it is not inferred. */
 import type { Additive, Amplifying, Lunar, Transformative } from './damage';
 import type { EnergyCost } from './energy-delay';
+import type { FormulaEnergy } from './formula-energy';
 import type { EnergyObservation } from './recipe-energy';
 
 /**
@@ -499,6 +500,11 @@ export interface RecipeMeta {
    * gcsim run. Absent means gcsim. `sim/formula-recipe.ts`.
    */
   formula?: FormulaProvenance;
+  /**
+   * A formula recipe's closed-form energy model (math-fallback P3, task 14;
+   * `sim/formula-energy.ts`). Absent on gcsim recipes, which price ER off `energySweep`.
+   */
+  formulaEnergy?: FormulaEnergy;
 }
 
 export interface Recipe {

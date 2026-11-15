@@ -113,6 +113,8 @@ function harness() {
       status: weapon?.id === 'w2' ? 'no_passive_data' : 'modelled',
     },
   }));
+  // The energy model's data (task 14): none here, so the estimate runs without one.
+  vi.spyOn(formula, 'energyData').mockRejectedValue(new Error('no energy data in this spec'));
   const page = TestBed.runInInjectionContext(() => new OptimizePage());
   return { page: page as unknown as Record<string, never>, formula, contextFn, kits };
 }

@@ -232,3 +232,30 @@
     margin-top: var(--space-1);
   }
 }
+
+// ── Energy (task 14) ─────────────────────────────────────────────────────────────────────
+
+.energy__requirement {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.energy__member {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--surface-rule);
+}
+
+.energy__name {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.energy__source {
+  display: grid;
+  gap: var(--space-1);
+  padding-left: var(--space-3);
+  min-width: 0;
+}

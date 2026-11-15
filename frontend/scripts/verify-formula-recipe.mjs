@@ -15,6 +15,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  energyAt, fieldMultiplier, particleValue, requiredEnergyRecharge,
+} from '../src/app/sim/formula-energy.ts';
 import { synthesizeRecipe } from '../src/app/sim/formula-recipe.ts';
 import { cappedAmount } from '../src/app/sim/recipe.ts';
 import { evaluateRecipe } from '../src/app/sim/recipe-eval.ts';
@@ -241,6 +244,68 @@ for (const f of data.fixtures) {
   }
 }
 
+// ── Energy (math-fallback P3, task 14) ────────────────────────────────────────────────────
+//
+// GO has no energy model (ER is a user-set floor there), so the oracle is gcsim's own energy
+// events: a native sample of the owner's National team at the pin
+// (`backend/tests/fixtures/formula/energy/PROVENANCE.md`). Every particle event must be what
+// `formula-energy.ts` says one is worth, and Xiangling's steady rotation — built from the
+// particle table, not from the log — must bank exactly what her fourth drain reads.
+const ENERGY = join(FRONTEND, '..', 'backend', 'tests', 'fixtures', 'formula', 'energy',
+  'national_energy_sample.json');
+const TABLE = join(FRONTEND, '..', 'backend', 'app', 'data', 'formula', 'energy', 'particles.json');
+const sample = JSON.parse(readFileSync(ENERGY, 'utf8'));
+const table = JSON.parse(readFileSync(TABLE, 'utf8')).characters;
+let energyChecked = 0;
+for (const e of sample.particles) {
+  const ele = e.ele === 'none' ? null : e.ele;
+  const got = e.count * particleValue(sample.elements[e.receiver], ele)
+    * fieldMultiplier(e.is_active ? 1 : 0, e.party_count) * e.er;
+  if (Math.abs(got - e.amt) > 1e-9 * e.amt) {
+    failures.push(`energy event ${e.frame}/${e.receiver} (${got} against gcsim's ${e.amt})`);
+  }
+  energyChecked += 1;
+}
+const drains = sample.drains.filter((d) => d.character === 'xiangling');
+const er = sample.particles.find((e) => e.receiver === 'xiangling').er;
+const national = (overrides = {}) => ({
+  mode: 'off', cost: 80, element: 'pyro', partyCount: 4, rotationSeconds: 20, flatEnergy: 0,
+  drip: null, baseEnergyRecharge: er,
+  sources: [
+    // The config holds Bennett's skill at level 1: 3 (skill.go:242), not the tap's 2.25.
+    { key: 'b', label: 'Bennett', element: 'pyro', particles: 3, onFieldShare: 0, citation: '' },
+    // Guoba: the table's 4, two of them caught on field in this rotation (PROVENANCE.md).
+    { key: 'g', label: 'Guoba', element: 'pyro', particles: table.Xiangling.sources[0].particles,
+      onFieldShare: 0.5, citation: '' },
+    { key: 'x', label: 'Xingqiu', element: 'hydro', particles: table.Xingqiu.sources[0].particles,
+      onFieldShare: 0, citation: '' },
+    { key: 'y', label: 'Yelan', element: 'hydro', particles: table.Yelan.sources[0].particles,
+      onFieldShare: 0, citation: '' },
+  ],
+  ...overrides,
+});
+const banked = energyAt(national(), er);
+if (Math.abs(banked - drains[3].pre_drain) > 1e-9) {
+  failures.push(`energy: the closed form banks ${banked}, gcsim's drain reads ${drains[3].pre_drain}`);
+}
+// gcsim's requirement for that rotation (energy_stats.go:85) is the module's.
+if (Math.abs(requiredEnergyRecharge(national()) - 80 / (drains[3].pre_drain / er)) > 1e-12) {
+  failures.push('energy: the requirement is not gcsim\'s (cost − flat) / raw');
+}
+// Plants: each rule broken on its own must miss the drain.
+const plants = {
+  'every particle caught on field': national({
+    sources: national().sources.map((s) => ({ ...s, onFieldShare: 1 })) }),
+  'an off-element particle worth a same-element one': national({ element: 'hydro' }),
+  'Guoba all off field': national({
+    sources: national().sources.map((s) => (s.key === 'g' ? { ...s, onFieldShare: 0 } : s)) }),
+};
+for (const [name, model] of Object.entries(plants)) {
+  if (Math.abs(energyAt(model, er) - drains[3].pre_drain) <= 1e-6) {
+    failures.push(`energy plant "${name}" still matches gcsim`);
+  }
+}
+
 if (failures.length > 0) {
   console.error(`formula recipe diverges from the GO-cited figures: ${failures.join(', ')}`);
   process.exit(1);
@@ -248,4 +313,8 @@ if (failures.length > 0) {
 console.log(
   `formula recipe matches all ${data.fixtures.length} GO-cited fixtures `
     + `(worst ${worst.toExponential(3)}, tolerance ${TOLERANCE.toExponential(0)})`,
+);
+console.log(
+  `energy model matches gcsim's ${energyChecked} particle events and Xiangling's drain `
+    + `(${banked.toFixed(5)} banked; 3 plants miss)`,
 );

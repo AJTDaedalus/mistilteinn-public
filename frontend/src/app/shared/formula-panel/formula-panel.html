@@ -253,6 +253,124 @@
       </fieldset>
     }
 
+    @if (energyView(); as energy) {
+      <!-- Task 14 (DESIGN §2.10): the closed-form energy model. Every number here is an
+           assumption with its default and citation; the mode is the owner's open fork. -->
+      <fieldset class="assumptions__group energy" aria-describedby="energy-requirement">
+        <legend>Energy</legend>
+        <div class="assumptions__condition">
+          <label class="assumptions__value">
+            <span>How ER is priced</span>
+            <select (change)="setEnergyMode($any($event.target).value)">
+              @for (mode of energyModes; track mode.value) {
+                <option [value]="mode.value" [selected]="energySettings().mode === mode.value"
+                  [disabled]="mode.value === 'wait' && !energySettings().drip">{{ mode.label }}</option>
+              }
+            </select>
+          </label>
+          <span class="assumptions__default" [class.assumptions__default--changed]="energySettings().mode !== 'off'">
+            Default: report only, until the owner chooses between skipping and waiting (the gcsim
+            path offers both).
+          </span>
+        </div>
+
+        <p id="energy-requirement" class="energy__requirement">
+          @if (!energy.subject?.burst_energy_cost) {
+            The optimized character has no burst cost to fund.
+          } @else if (energy.requirement === null) {
+            No particle is counted for {{ energy.subject?.name }}'s team, so no ER requirement can be computed.
+          } @else {
+            {{ energy.subject?.name }} needs
+            <span class="mono">{{ percent(energy.requirement) }}</span> Energy Recharge to burst
+            every rotation: <span class="mono">{{ energy.subject?.burst_energy_cost }}</span> energy
+            against <span class="mono">{{ energy.raw.toFixed(2) }}</span> particle energy a
+            rotation at 100% ER.
+          }
+        </p>
+
+        <div class="assumptions__condition">
+          <label class="assumptions__value">
+            <span>Rotation length (s)</span>
+            <input type="number" min="1" step="any" [value]="energy.rotationSeconds"
+              (change)="setRotation($any($event.target), energy.rotationSeconds)" />
+          </label>
+          <span class="assumptions__default" [class.assumptions__default--changed]="!energy.rotationIsDefault">
+            @if (energy.rotationIsDefault) {
+              Default: {{ energy.subject?.name }}'s burst cooldown (game data).
+            } @else {
+              Changed ·
+              <button type="button" class="linkish" (click)="resetRotation()">back to the burst cooldown</button>
+            }
+          </span>
+        </div>
+
+        @for (row of energy.members; track row.member.build_id) {
+          <div class="energy__member">
+            <p class="energy__name">
+              {{ row.member.name }}@if (row.member.is_subject) {<span> (optimized)</span>}
+            </p>
+            @if (row.member.status === 'no_particle_data') {
+              <label class="assumptions__value">
+                <span>Particles per rotation</span>
+                <input type="number" min="0" step="any" [value]="row.manual"
+                  (change)="setManual(row.member.build_id, $any($event.target), row.manual)" />
+              </label>
+              <p class="assumptions__unmodelled">
+                No particle count is curated for {{ row.member.name }}: none are counted unless you
+                enter them.
+              </p>
+            } @else {
+              <label class="assumptions__value">
+                <span>Skill casts per rotation</span>
+                <input type="number" min="0" step="any" [value]="row.casts"
+                  (change)="setCasts(row.member.build_id, $any($event.target), row.casts)" />
+              </label>
+              @for (item of row.sources; track item.key) {
+                <div class="energy__source">
+                  <label class="assumptions__value">
+                    <span>{{ item.source.label }}:
+                      {{ item.source.per === 'cast' ? 'particles per cast'
+                        : 'particles every ' + item.source.interval + ' s' }}</span>
+                    <input type="number" min="0" step="any" [value]="item.particles"
+                      (change)="setParticles(item.key, $any($event.target), item.particles)" />
+                  </label>
+                  <label class="assumptions__value">
+                    <span>Caught by {{ energy.subject?.name }} on field (%)</span>
+                    <input type="number" min="0" max="100" step="any" [value]="item.onField * 100"
+                      (change)="setOnField(item.key, $any($event.target), item.onField)" />
+                  </label>
+                  @if (item.source.note) {
+                    <p class="assumptions__static">{{ item.source.note }}</p>
+                  }
+                  <p class="assumptions__cite">Source: {{ item.source.citation }}</p>
+                </div>
+              }
+            }
+          </div>
+        }
+
+        <label class="assumptions__toggle">
+          <input type="checkbox" [checked]="energySettings().drip"
+            (change)="setDrip($any($event.target).checked)" />
+          <span>Enemy particles: one clear particle every
+            {{ energy.drip.interval_seconds.toFixed(1) }} s</span>
+        </label>
+        <p class="assumptions__cite">Source: {{ energy.drip.citation }}</p>
+
+        <label class="assumptions__value">
+          <span>Flat energy per rotation</span>
+          <input type="number" min="0" step="any" [value]="energySettings().flatEnergy"
+            (change)="setFlatEnergy($any($event.target), energySettings().flatEnergy)" />
+        </label>
+        <p class="assumptions__static">
+          Not counted unless entered: Favonius procs, a kit's flat refund (Raiden's burst), normal
+          attacks' chance of 1 energy. A particle is worth 3 of its own element, 2 clear, 1 other;
+          60% off field in a party of four; ER multiplies particles only (gcsim at the pin, KQM's
+          Energy page).
+        </p>
+      </fieldset>
+    }
+
     @if (withheld().length) {
       <p class="warn">Not scored as a 4-piece (data withheld): {{ withheld().join(', ') }}.</p>
     }

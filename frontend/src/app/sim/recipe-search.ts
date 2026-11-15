@@ -17,6 +17,7 @@
 
 import type { FormulaMove, Recipe } from './recipe';
 import { evaluateRecipe, NO_STATS, type CandidateStats } from './recipe-eval';
+import { energyVaries } from './formula-energy';
 import { dpsAt } from './recipe-energy';
 import {
   SLOTS,
@@ -259,6 +260,8 @@ function energyLadderVaries(recipe: Recipe): boolean {
 export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
   const live = new Set<string>(['crit_rate', 'crit_dmg']);
   if (recipes.some(energyLadderVaries)) live.add('energy_recharge');
+  // A formula recipe's energy model (task 14): live exactly when ER can move its score.
+  if (recipes.some((r) => energyVaries(r.meta.formulaEnergy))) live.add('energy_recharge');
   const parts: Record<string, string[]> = {
     atk: ['base_atk', 'atk_pct', 'flat_atk'],
     hp: ['base_hp', 'hp_pct', 'flat_hp'],

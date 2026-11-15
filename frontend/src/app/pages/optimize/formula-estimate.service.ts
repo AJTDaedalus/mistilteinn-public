@@ -22,6 +22,12 @@ import {
   type FormulaRow,
   type FormulaSetTier,
 } from '../../sim/formula-recipe';
+import {
+  particlesPerRotation,
+  type EnergyMode,
+  type EnergySource,
+  type FormulaEnergy,
+} from '../../sim/formula-energy';
 import type { FormulaMove } from '../../sim/recipe';
 import type { SearchContext as KernelContext } from '../../sim/search';
 import type { BuildRead } from '../builds/builds.service';
@@ -126,6 +132,115 @@ export function kitKey(
     + `|${weapon?.refinement ?? ''}`;
 }
 
+/** `/formula/energy`: each member's burst cost, cooldown and cited skill particles (task 14). */
+export type TeamEnergyData = components['schemas']['FormulaTeamEnergyRead'];
+
+/**
+ * The energy model's assumptions, every one the user's to change (task 14, DESIGN §2.10).
+ * An absent key takes its default, said in the panel.
+ */
+export interface EnergySettings {
+  /**
+   * `off` (the default until the owner rules, DESIGN §2.10): the requirement is reported and ER
+   * is still worth nothing. `skip` and `wait` are the gcsim path's two models.
+   */
+  mode: EnergyMode;
+  /** Seconds; `null` is the subject's burst cooldown (game data). */
+  rotationSeconds: number | null;
+  /** Skill casts per rotation by member build id; absent is 1 (KQM's "1 E per Q" baseline). */
+  casts: Record<string, number>;
+  /** Particles per cast (or per interval) by source key, replacing the table's: a hold. */
+  particles: Record<string, number>;
+  /** The share of a source the subject catches on field, 0..1, by source key. */
+  onField: Record<string, number>;
+  /** Particles per rotation for a member with no curated count, by build id. */
+  manual: Record<string, number>;
+  /** Energy per rotation ER does not multiply. */
+  flatEnergy: number;
+  /** Whether the enemy-particle drip (gcsim's `ENERGY_DRIP`) counts. */
+  drip: boolean;
+}
+
+export const DEFAULT_ENERGY: EnergySettings = {
+  mode: 'off', rotationSeconds: null, casts: {}, particles: {}, onField: {}, manual: {},
+  flatEnergy: 0, drip: true,
+};
+
+/** A source's key in `EnergySettings`: the member's build and its position. */
+export const sourceKey = (buildId: string, index: number): string => `${buildId}:${index}`;
+
+/** The default on-field share: 1 for the subject's own particles caught while still casting. */
+export function defaultOnField(
+  member: TeamEnergyData['members'][number], source: { collector: string },
+): number {
+  return member.is_subject && source.collector === 'caster' ? 1 : 0;
+}
+
+/** The rotation length in force: the user's, else the subject's burst cooldown, else 20 s. */
+export function rotationSecondsOf(data: TeamEnergyData, settings: EnergySettings): number {
+  const subject = data.members.find((m) => m.is_subject);
+  return settings.rotationSeconds ?? subject?.burst_cooldown ?? 20;
+}
+
+/**
+ * The energy model's team-level inputs from the server's data and the user's settings, or
+ * `null` when the subject has no burst cost to fund (nothing to price).
+ */
+export function energyInput(
+  data: TeamEnergyData, settings: EnergySettings,
+): Omit<FormulaEnergy, 'baseEnergyRecharge'> | null {
+  const subject = data.members.find((m) => m.is_subject);
+  if (!subject?.burst_energy_cost || !subject.element) return null;
+  const seconds = rotationSecondsOf(data, settings);
+  const sources: EnergySource[] = [];
+  for (const member of data.members) {
+    const casts = settings.casts[member.build_id] ?? 1;
+    if (member.status === 'no_particle_data') {
+      const manual = settings.manual[member.build_id] ?? 0;
+      if (manual > 0) {
+        const key = `${member.build_id}:manual`;
+        sources.push({
+          key, label: `${member.name} (entered)`, element: member.element ?? null,
+          particles: manual, onFieldShare: settings.onField[key] ?? 0,
+          citation: 'entered by the user',
+        });
+      }
+      continue;
+    }
+    member.sources.forEach((source, i) => {
+      const key = sourceKey(member.build_id, i);
+      const each = settings.particles[key] ?? source.particles;
+      sources.push({
+        key, label: `${member.name}: ${source.label}`, element: member.element ?? null,
+        particles: particlesPerRotation({ ...source, particles: each }, casts, seconds),
+        onFieldShare: settings.onField[key] ?? defaultOnField(member, source),
+        citation: source.citation,
+      });
+    });
+  }
+  const drip = settings.drip ? {
+    particlesPerSecond: data.drip.particles / data.drip.interval_seconds,
+    onFieldShare: settings.onField['drip'] ?? 0,
+  } : null;
+  if (drip) {
+    sources.push({
+      key: 'drip', label: 'Enemy particles (drip)', element: null,
+      particles: drip.particlesPerSecond * seconds, onFieldShare: drip.onFieldShare,
+      citation: data.drip.citation,
+    });
+  }
+  return {
+    mode: settings.mode === 'wait' && !drip ? 'skip' : settings.mode,
+    cost: subject.burst_energy_cost,
+    element: subject.element,
+    partyCount: data.members.length,
+    rotationSeconds: seconds,
+    flatEnergy: settings.flatEnergy,
+    sources,
+    drip,
+  };
+}
+
 /** The API's search context in the kernel's spelling — the same mapping single-hit uses. */
 export function kernelContext(context: SearchContext): KernelContext {
   return {
@@ -217,6 +332,11 @@ export class FormulaEstimateService {
   /** Team-level conditionals the user changed. An absent key takes the source's default. */
   readonly conditionals = signal<Record<string, ConditionValue>>({});
 
+  /** The energy model's assumptions (task 14). */
+  readonly energy = signal<EnergySettings>(DEFAULT_ENERGY);
+  /** The current team's energy data, refreshed with the panel's groups; null before. */
+  readonly teamEnergy = signal<TeamEnergyData | null>(null);
+
   private tiers: Promise<FormulaSetTier[]> | null = null;
   /**
    * Kit resolutions by subject, team **and weapon**: the panel and the estimate ask alike, and a
@@ -265,6 +385,25 @@ export class FormulaEstimateService {
       else overrides[key] = value;
       return { ...r, overrides };
     }));
+  }
+
+  /** Change some of the energy assumptions; the rest stand. */
+  setEnergy(patch: Partial<EnergySettings>): void {
+    this.energy.update((state) => ({ ...state, ...patch }));
+  }
+
+  /**
+   * The team's energy data for the optimized build (task 14): burst costs and cooldowns, each
+   * member's cited skill particles, the drip. Fetched per team; a member with no curated count
+   * comes back named.
+   */
+  async energyData(team: readonly BuildRead[], subjectBuildId: string): Promise<TeamEnergyData> {
+    const ids = [...new Set([subjectBuildId, ...team.map((b) => b.id)])].slice(0, 4);
+    const { data, error } = await this.api.GET('/api/v1/formula/energy', {
+      params: { query: { subject_build_id: subjectBuildId, member_build_id: ids } },
+    });
+    if (error) throw new Error('Could not load the team\'s energy data');
+    return data;
   }
 
   setCondition(key: string, value: ConditionValue): void {
@@ -366,6 +505,12 @@ export class FormulaEstimateService {
       this.setTiers(),
       subjectBuildId ? this.kits(team, subjectBuildId) : Promise.resolve(undefined),
     ]);
+    if (subjectBuildId) {
+      // The energy section reads the same team; a failure leaves it saying nothing is known.
+      this.energyData(team, subjectBuildId)
+        .then((data) => this.teamEnergy.set(data))
+        .catch(() => this.teamEnergy.set(null));
+    }
     return conditionGroups(resonances, tiers, new Set(setIds), kits);
   }
 
@@ -378,7 +523,7 @@ export class FormulaEstimateService {
     if (this.forBuild() !== request.buildId || !rows.length) {
       throw new Error('Choose at least one ability for the formula target.');
     }
-    const [contexts, resonances, tiers, statics, kits] = await Promise.all([
+    const [contexts, resonances, tiers, statics, kits, energy] = await Promise.all([
       // **The scope follows the row's move** where it is known: it decides which scoped stats
       // the server folds into the base (a normal-attack DMG bonus reaches a normal attack), so
       // one page-level scope would read a burst row as a normal attack.
@@ -390,6 +535,9 @@ export class FormulaEstimateService {
       this.setTiers(),
       this.optimize.setBonuses(),
       this.kits(request.team, request.buildId, request.weapon),
+      // The energy model (task 14). A failure leaves the estimate without one — ER worth
+      // nothing, as before — rather than failing the estimate.
+      this.energyData(request.team, request.buildId).catch(() => null),
     ]);
     const formulaRows: FormulaRow[] = rows.map((row, i) => ({
       id: row.id,
@@ -419,6 +567,10 @@ export class FormulaEstimateService {
         setId: b.set_id, piecesRequired: b.pieces_required, stats: b.stats,
       })),
       fourPieceSetIds: request.fourPieceSetIds,
+      ...(energy ? (() => {
+        const input = energyInput(energy, this.energy());
+        return input ? { energy: input } : {};
+      })() : {}),
       conditionals: this.conditionals() as ConditionState,
       kits,
       characters: [character?.name ?? 'Build', ...request.team

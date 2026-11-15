@@ -1510,3 +1510,30 @@ export function synthesizeRecipeSet(input: FormulaInput): FormulaRecipeSet {
 
   return { recipes: { noFourPiece: recipe([]), byFourPieceSet }, setBonuses, withheld };
 }
+
+// ── Energy (math-fallback P3, task 14) ────────────────────────────────────────────────────
+
+/**
+ * The subject's total Energy Recharge before artifacts under these sources: the first row's
+ * base (character, weapon, ascension, and any set statics folded into it) plus every kit ER
+ * buff that reaches that row. The energy model (`formula-energy.ts`) adds a candidate's
+ * artifact ER to this, the same `b('energy_recharge') + buffs.er` an ER conversion reads.
+ */
+export function subjectEnergyRecharge(
+  rows: readonly FormulaRow[],
+  sources: readonly FormulaSource[],
+  team: FormulaTeam,
+  teamState: ConditionState = {},
+): number {
+  const row = rows[0];
+  if (!row) throw new Error('a formula target needs at least one row');
+  const { base, hit, dmgBonusQuantity } = row.context;
+  const { buffs } = applySources(
+    sources, {
+      element: elementOfQuantity(dmgBonusQuantity), move: row.move, amplifying: hit.amplifying,
+      hit: row.hit ?? null, reaction: hit.amplifying ?? null,
+      reactionRow: !!row.reaction, procRow: !!row.proc,
+    }, team, row.conditionals ?? {}, teamState,
+  );
+  return (base['energy_recharge'] ?? 0) + buffs.er;
+}

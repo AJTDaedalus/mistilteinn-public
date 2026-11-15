@@ -115,6 +115,8 @@ function harness(calibrateAll = vi.fn().mockRejectedValue({ detail: LOHEN_REFUSA
   vi.spyOn(formula, 'setTiers').mockResolvedValue([]);
   vi.spyOn(formula, 'resonances').mockResolvedValue([]);
   vi.spyOn(formula, 'kits').mockResolvedValue({ sources: [], missing: [] });
+  // The energy model's data (task 14): none here, so the estimate runs without one.
+  vi.spyOn(formula, 'energyData').mockRejectedValue(new Error('no energy data in this spec'));
   const page = TestBed.runInInjectionContext(() => new OptimizePage());
   return { page: page as unknown as Record<string, never>, calibrateAll, store, save, formula };
 }
