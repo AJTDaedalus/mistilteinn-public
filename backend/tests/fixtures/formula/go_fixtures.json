@@ -45461,8 +45461,8 @@
       "relative_divergence_from_go": 0.0
     },
     {
-      "name": "millennial_movement_one_freedom_sworn_over_elegy_on_xiangling_vape",
-      "covers": "two Millennial Movement wielders, both on: one shared ATK% applies \u2014 Kazuha's R1 Freedom-Sworn 20%, his GO key sorting before Venti's \u2014 not Venti's larger R5 Elegy 40%; Elegy's EM, which nothing else shares, applies",
+      "name": "millennial_movement_one_the_stronger_elegy_over_freedom_sworn_on_xiangling_vape",
+      "covers": "two Millennial Movement wielders, both on: one shared ATK% applies \u2014 the stronger, Venti's R5 Elegy 40% (owner ruling 2026-11-15), where GO applies Kazuha's R1 Freedom-Sworn 20% by key order; Elegy's EM, which nothing else shares, applies",
       "go": [
         "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
         "libs/gi/sheets/src/Weapons/Bow/ElegyForTheEnd/index.tsx:8-43",
@@ -45702,11 +45702,12 @@
         "weapon:elegy_for_the_end/farewell": 1,
         "weapon:freedom_sworn/song": 1
       },
-      "expected": 6842.307794667049,
+      "expected": 7486.857135145137,
       "go_value": 6840.281364007683,
-      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9; non-stacking: the stronger buff applies (owner ruling 2026-11-15) \u2014 Venti's R5 Elegy 40% ATK; GO applies Kazuha's R1 Freedom-Sworn 20%, his character key sorting first (uiData.ts:266-276); `go_value` is GO's figure under GO's rule",
       "non_stack": "millenialatk",
-      "relative_divergence_from_go": 0.0002962496060511457
+      "non_stack_rule": "stronger",
+      "relative_divergence_from_go": 0.0945247332280246
     },
     {
       "name": "aquila_favonia_r1_falcon_proc_row_on_kaeya",

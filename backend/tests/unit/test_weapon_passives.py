@@ -227,6 +227,24 @@ def test_non_stacking_families_come_from_gos_sheets():
     assert families["leafCon"] == {"Forest Regalia", "Sapwood Blade"}
 
 
+def test_every_non_stacking_family_is_one_stat():
+    """The precondition of "the stronger applies" (owner ruling 2026-11-15, `DECISIONS.md` §46):
+    GO's families are per name, and each name grants one stat across every weapon holding it, so
+    "stronger" is the larger amount of that stat for the receiving row (`applySources`) — never a
+    comparison of ATK% against EM. A family that grew a second stat would need a score-based
+    comparison instead, and this fails first."""
+    stats: dict[str, set[str]] = {}
+    for passive in weapon_passives.all_passives().values():
+        for effect in passive.effects:
+            if effect.non_stack:
+                stats.setdefault(effect.non_stack, set()).add(effect.stat)
+    assert stats, "no non-stacking family at all"
+    assert {n: s for n, s in stats.items() if len(s) != 1} == {}
+    # The Millennial Movement series as GO splits it: three names, three stats.
+    assert stats["millenialatk"] == {"atk_pct"}
+    assert stats["millenialelemas"] == {"elemental_mastery"}
+
+
 def test_a_non_stack_name_go_does_not_declare_is_refused():
     passive = weapon_passives.passive_for("15503")
     assert passive is not None
