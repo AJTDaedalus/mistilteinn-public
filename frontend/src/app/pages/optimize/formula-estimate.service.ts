@@ -29,6 +29,7 @@ import {
   type EnergySource,
   type FlatSource,
   type FormulaEnergy,
+  type SubjectFavonius,
 } from '../../sim/formula-energy';
 import type { FormulaMove } from '../../sim/recipe';
 import type { SearchContext as KernelContext } from '../../sim/search';
@@ -175,12 +176,67 @@ export interface EnergySettings {
   flatEnergy: number;
   /** Whether the enemy-particle drip (gcsim's `ENERGY_DRIP`) counts. */
   drip: boolean;
+  /**
+   * Whether the optimized character is on field (owner ruling 2026-11-15, DECISIONS §49).
+   * `null`: from the rows — on field when one is a normal, charged or plunging attack
+   * (`subjectOnFieldOf`). On field, every `active` generator's particles default to 100 %
+   * caught on field.
+   */
+  subjectOnField: boolean | null;
+  /**
+   * Electro resonance's procs per rotation, bounded by its cooldown. `null`: the ceiling,
+   * one every cooldown, when a member can react with Electro; none otherwise.
+   */
+  resonanceProcs: number | null;
 }
 
 export const DEFAULT_ENERGY: EnergySettings = {
   mode: 'wait', rotationSeconds: null, casts: {}, particles: {}, onField: {}, manual: {},
   bursts: {}, favoniusHits: {}, refundCounts: {}, flatEnergy: 0, drip: true,
+  subjectOnField: null, resonanceProcs: null,
 };
+
+/** The team's Electro resonance as `/formula/energy` serves it. */
+type TeamResonanceEnergy = NonNullable<TeamEnergyData['resonance']>;
+
+/** Electro resonance's source key. */
+export const RESONANCE_KEY = 'resonance:electro';
+
+/**
+ * Electro resonance's procs per rotation: the user's count, else one every cooldown when a
+ * member can react with Electro — the ceiling, a reaction ready whenever the cooldown is —
+ * and either way at most `rotation ÷ cooldown` (gcsim `setup.go:185`, 300 frames; KQM
+ * "CD: 5s"). The ceiling is stated as one: two gcsim samples of Raiden teams proc 3 times in
+ * a 25 s rotation against the 5 it allows (DESIGN §2.11).
+ */
+export function resonanceProcs(
+  resonance: TeamResonanceEnergy, settings: EnergySettings, rotationSeconds: number,
+): number {
+  const ceiling = rotationSeconds / resonance.cooldown_seconds;
+  const asked = settings.resonanceProcs ?? (resonance.team_can_trigger ? ceiling : 0);
+  return Math.max(0, Math.min(ceiling, asked));
+}
+
+/**
+ * A normal, charged or plunging attack, whichever talent's table publishes it: the move the
+ * row declares, or a label that names one — Raiden's Musou Isshin attacks are burst-talent rows
+ * labelled `1-Hit DMG`, `Charged Attack DMG`, `Plunge DMG`.
+ */
+const ATTACK_LABEL = /^(\d+-hit dmg|charged attack|plunge dmg|low\/high plunge dmg|normal attack)/i;
+
+/**
+ * Whether the optimized character is on field, from the rows: a normal, charged or plunging
+ * attack is made by the character on field (gcsim acts only for the active character), so a
+ * row of one says so. Reaction and proc rows are not the subject's attacks. A sequence of skills
+ * and bursts alone — Xiangling's Guoba and Pyronado — reads as off field: cast and left.
+ */
+export function subjectOnFieldOf(
+  rows: readonly Pick<FormulaRow, 'move' | 'hit' | 'reaction' | 'proc'>[],
+): boolean {
+  return rows.some((r) => !r.reaction && !r.proc && (
+    r.move === 'normal' || r.move === 'charged' || r.move === 'plunge'
+    || ATTACK_LABEL.test(r.hit?.label ?? '')));
+}
 
 /** A refund's key in `EnergySettings`: the giver's build and its position. */
 export const refundKey = (buildId: string, index: number): string => `${buildId}:refund:${index}`;
@@ -254,10 +310,23 @@ export function subjectHitsOf(
 /** A source's key in `EnergySettings`: the member's build and its position. */
 export const sourceKey = (buildId: string, index: number): string => `${buildId}:${index}`;
 
-/** The default on-field share: 1 for the subject's own particles caught while still casting. */
+/**
+ * The default on-field share of a skill source.
+ *
+ * - The subject's own `caster` particles: 1 — caught while still casting.
+ * - An `active` generator — an off-field summon whose particles land on whoever is on field:
+ *   Guoba, Furina's Salon, Nahida's Tri-Karma, Raiden's Eye, Oz, Kuki's ring, Kokomi's
+ *   jellyfish, Zhongli's stele, Yae's totems — **1 when the subject is on field** (owner ruling
+ *   2026-11-15, DECISIONS §49), whoever's it is; 0 otherwise. The gcsim sample's on-field Raiden
+ *   caught all 24 of Oz's particles and 28 of her own Eye's 36 on field: 100 % is the default,
+ *   the rest of the rotation's swaps are the user's to enter.
+ * - A teammate's `caster` particles: 0 — they land while that teammate is on field.
+ */
 export function defaultOnField(
   member: TeamEnergyData['members'][number], source: { collector: string },
+  subjectOnField = false,
 ): number {
+  if (source.collector === 'active') return subjectOnField ? 1 : 0;
   return member.is_subject && source.collector === 'caster' ? 1 : 0;
 }
 
@@ -272,13 +341,15 @@ export function rotationSecondsOf(data: TeamEnergyData, settings: EnergySettings
  * `null` when the subject has no burst cost to fund (nothing to price).
  */
 export function energyInput(
-  data: TeamEnergyData, settings: EnergySettings, subjectHits = 0,
+  data: TeamEnergyData, settings: EnergySettings, subjectHits = 0, rowsOnField = false,
 ): Omit<FormulaEnergy, 'baseEnergyRecharge'> | null {
   const subject = data.members.find((m) => m.is_subject);
   if (!subject?.burst_energy_cost || !subject.element) return null;
   const seconds = rotationSecondsOf(data, settings);
+  const onField = settings.subjectOnField ?? rowsOnField;
   const sources: EnergySource[] = [];
   const flatSources: FlatSource[] = [];
+  let subjectFavonius: SubjectFavonius | undefined;
   for (const member of data.members) {
     const casts = settings.casts[member.build_id] ?? 1;
     const bursts = settings.bursts[member.build_id] ?? 1;
@@ -293,11 +364,22 @@ export function energyInput(
       const hits = settings.favoniusHits[member.build_id]
         ?? defaultFavoniusHits(member, settings, subjectHits);
       const procs = favoniusProcs(member, hits, seconds);
-      if (procs > 0) {
+      if (member.is_subject) {
+        // The optimized character's own: priced from each candidate's crit (DECISIONS §49).
+        // `baseCritRate` is the build's here; the calibration replaces it with the recipe's
+        // own pre-artifact crit.
+        const crit = member.crit_rate ?? 0;
+        subjectFavonius = {
+          key, label: `${member.name}: ${member.favonius.weapon} R${member.favonius.refinement}`,
+          hits, chance: member.favonius.chance, cooldownSeconds: member.favonius.cooldown_seconds,
+          particles: member.favonius.particles, onFieldShare: settings.onField[key] ?? 1,
+          citation: member.favonius.citation, baseCritRate: crit, buildCritRate: crit,
+        };
+      } else if (procs > 0) {
         sources.push({
           key, label: `${member.name}: ${member.favonius.weapon} R${member.favonius.refinement}`,
           element: null, particles: procs * member.favonius.particles,
-          onFieldShare: settings.onField[key] ?? (member.is_subject ? 1 : 0),
+          onFieldShare: settings.onField[key] ?? 0,
           citation: member.favonius.citation,
         });
       }
@@ -321,10 +403,23 @@ export function energyInput(
         key, label: `${member.name}: ${source.label}`, element: member.element ?? null,
         particles: particlesPerRotation(
           { ...source, particles: each }, source.on === 'burst' ? bursts : casts, seconds),
-        onFieldShare: settings.onField[key] ?? defaultOnField(member, source),
+        onFieldShare: settings.onField[key] ?? defaultOnField(member, source, onField),
         citation: source.citation,
       });
     });
+  }
+  if (data.resonance) {
+    // Electro resonance (DECISIONS §49): one Electro particle a proc, distributed at once to
+    // whoever is on field — an on-field subject's by default — at most one per cooldown.
+    const procs = resonanceProcs(data.resonance, settings, seconds);
+    if (procs > 0) {
+      sources.push({
+        key: RESONANCE_KEY, label: `Electro resonance (${data.resonance.name})`,
+        element: data.resonance.element, particles: procs * data.resonance.particles,
+        onFieldShare: settings.onField[RESONANCE_KEY] ?? (onField ? 1 : 0),
+        citation: data.resonance.citation,
+      });
+    }
   }
   const drip = settings.drip ? {
     particlesPerSecond: data.drip.particles / data.drip.interval_seconds,
@@ -347,6 +442,7 @@ export function energyInput(
     flatSources,
     sources,
     drip,
+    ...(subjectFavonius ? { subjectFavonius } : {}),
   };
 }
 
@@ -758,7 +854,7 @@ export class FormulaEstimateService {
       })),
       fourPieceSetIds: request.fourPieceSetIds,
       ...(energy ? (() => {
-        const input = energyInput(energy, this.energy(), subjectHitsOf(rows));
+        const input = energyInput(energy, this.energy(), subjectHitsOf(rows), subjectOnFieldOf(rows));
         return input ? { energy: input } : {};
       })() : {}),
       conditionals: teamState as ConditionState,

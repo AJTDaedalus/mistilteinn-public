@@ -42,6 +42,7 @@ import {
   type FormulaSetTier,
   type FormulaSource,
   type FormulaTeam,
+  subjectCritRate,
   subjectEnergyRecharge,
 } from './formula-recipe';
 import {
@@ -222,9 +223,15 @@ function attachEnergy(
   subject: string,
 ): void {
   if (!input.energy) return;
+  const fav = input.energy.subjectFavonius;
   const model: FormulaEnergy = {
     ...input.energy,
     baseEnergyRecharge: subjectEnergyRecharge(rows, sources, input.team, teamState),
+    // A subject's own Favonius reads each candidate's crit: this recipe's own pre-artifact
+    // crit is the base a candidate's artifact crit adds to (DECISIONS §49).
+    ...(fav ? {
+      subjectFavonius: { ...fav, baseCritRate: subjectCritRate(rows, sources, input.team, teamState) },
+    } : {}),
   };
   recipe.meta.formulaEnergy = model;
   recipe.meta.minimumEnergyRecharge = artifactEnergyRequirement(model);

@@ -17,14 +17,18 @@ import {
   favoniusProcs,
   FormulaEstimateService,
   refundKey,
+  RESONANCE_KEY,
+  resonanceProcs,
   rotationSecondsOf,
   sourceKey,
   subjectHitsOf,
+  subjectOnFieldOf,
   type EnergySettings,
   type ProcChoice,
   type TargetRow,
 } from '../../pages/optimize/formula-estimate.service';
 import {
+  favoniusProcsAt,
   rawParticleEnergy,
   requiredEnergyRecharge,
   type EnergyMode,
@@ -131,9 +135,12 @@ export class FormulaPanel {
     const settings = this.service.energy();
     const subject = data.members.find((m) => m.is_subject) ?? null;
     const subjectHits = subjectHitsOf(this.service.rows());
-    const input = energyInput(data, settings, subjectHits);
+    const rowsOnField = subjectOnFieldOf(this.service.rows());
+    const onField = settings.subjectOnField ?? rowsOnField;
+    const input = energyInput(data, settings, subjectHits, rowsOnField);
     const model = input ? { ...input, baseEnergyRecharge: 0 } : null;
     const seconds = rotationSecondsOf(data, settings);
+    const resonance = data.resonance ?? null;
     return {
       subject,
       rotationSeconds: rotationSecondsOf(data, settings),
@@ -141,6 +148,17 @@ export class FormulaPanel {
       drip: data.drip,
       requirement: model ? requiredEnergyRecharge(model) : null,
       raw: model ? rawParticleEnergy(model) : 0,
+      onField,
+      onFieldIsDefault: settings.subjectOnField === null,
+      rowsOnField,
+      resonance: resonance ? {
+        res: resonance,
+        procs: resonanceProcs(resonance, settings, seconds),
+        ceiling: seconds / resonance.cooldown_seconds,
+        procsIsDefault: settings.resonanceProcs === null,
+        onField: settings.onField[RESONANCE_KEY] ?? (onField ? 1 : 0),
+        key: RESONANCE_KEY,
+      } : null,
       members: data.members.map((member) => ({
         member,
         casts: settings.casts[member.build_id] ?? 1,
@@ -165,7 +183,12 @@ export class FormulaPanel {
             hits,
             hitsIsDefault: settings.favoniusHits[member.build_id] === undefined,
             critRate: member.crit_rate ?? 0,
-            procs: favoniusProcs(member, hits, seconds),
+            // The optimized holder's procs move with each candidate's crit (§49); shown here
+            // at the build's.
+            procs: member.is_subject && input?.subjectFavonius
+              ? favoniusProcsAt(input.subjectFavonius, seconds, member.crit_rate ?? 0)
+              : favoniusProcs(member, hits, seconds),
+            perCandidate: member.is_subject,
             onField: settings.onField[key] ?? (member.is_subject ? 1 : 0),
             key,
           };
@@ -175,7 +198,7 @@ export class FormulaPanel {
           return {
             key, source,
             particles: settings.particles[key] ?? source.particles,
-            onField: settings.onField[key] ?? defaultOnField(member, source),
+            onField: settings.onField[key] ?? defaultOnField(member, source, onField),
           };
         }),
       })),
@@ -504,6 +527,20 @@ export class FormulaPanel {
   protected setManual(buildId: string, box: HTMLInputElement, shown: number): void {
     const value = this.numberFrom(box, shown);
     if (value !== null) this.patchMap('manual', buildId, value);
+  }
+
+  /** `on`/`off` states it; `default` hands it back to the rows. */
+  protected setSubjectOnField(value: string): void {
+    this.service.setEnergy({ subjectOnField: value === 'default' ? null : value === 'on' });
+  }
+
+  protected setResonanceProcs(box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.service.setEnergy({ resonanceProcs: value });
+  }
+
+  protected resetResonanceProcs(): void {
+    this.service.setEnergy({ resonanceProcs: null });
   }
 
   protected setFlatEnergy(box: HTMLInputElement, shown: number): void {

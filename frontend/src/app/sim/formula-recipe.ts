@@ -1619,6 +1619,31 @@ export function subjectEnergyRecharge(
   team: FormulaTeam,
   teamState: ConditionState = {},
 ): number {
+  return subjectBase(rows, sources, team, teamState).er;
+}
+
+/**
+ * The subject's crit rate before artifacts under these sources, read the way
+ * `subjectEnergyRecharge` reads ER: the first row's base plus every flat kit crit buff that
+ * reaches it. A subject's own Favonius procs add a candidate's artifact crit to this
+ * (owner ruling 2026-11-15, `DECISIONS.md` §49). Crit converted from another stat (EM, HP) is
+ * not included — a stated simplification that can only under-count the procs.
+ */
+export function subjectCritRate(
+  rows: readonly FormulaRow[],
+  sources: readonly FormulaSource[],
+  team: FormulaTeam,
+  teamState: ConditionState = {},
+): number {
+  return subjectBase(rows, sources, team, teamState).critRate;
+}
+
+function subjectBase(
+  rows: readonly FormulaRow[],
+  sources: readonly FormulaSource[],
+  team: FormulaTeam,
+  teamState: ConditionState,
+): { er: number; critRate: number } {
   const row = rows[0];
   if (!row) throw new Error('a formula target needs at least one row');
   const { base, hit, dmgBonusQuantity } = row.context;
@@ -1629,5 +1654,8 @@ export function subjectEnergyRecharge(
       reactionRow: !!row.reaction, procRow: !!row.proc,
     }, team, row.conditionals ?? {}, teamState,
   );
-  return (base['energy_recharge'] ?? 0) + buffs.er;
+  return {
+    er: (base['energy_recharge'] ?? 0) + buffs.er,
+    critRate: (base['crit_rate'] ?? 0) + buffs.critRate,
+  };
 }

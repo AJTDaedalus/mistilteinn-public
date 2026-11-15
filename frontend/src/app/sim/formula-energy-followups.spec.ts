@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   energyAt,
   energyFactors,
+  favoniusProcsAt,
   flatEnergyAt,
   flatSourceAt,
   raidenA4Multiplier,
@@ -33,7 +34,7 @@ const raiden = (over: Partial<Member> = {}): Member => ({
   build_id: 'rd', name: 'Raiden Shogun', element: 'electro', burst_energy_cost: 90,
   burst_cooldown: 18, is_subject: true, status: 'curated',
   sources: [{ label: 'Eye', per: 'second', particles: 0.5, chance: 0.5, interval: 1,
-    max_seconds: 25, collector: 'active', citation: 'eye', on: 'skill' }],
+    max_seconds: 25, collector: 'active', citation: 'eye', on: 'skill', shared_icd: false }],
   refunds: [{ label: 'Musou Isshin', per: 'burst', count: 5, recipients: 'team',
     scaling: 'raiden_a4', amount: 2.4, citation: 'burst.go' }],
   favonius: { weapon: 'Favonius Lance', refinement: 3, chance: 0.8, cooldown_seconds: 9,
@@ -47,9 +48,9 @@ const fischl = (over: Partial<Member> = {}): Member => ({
   burst_cooldown: 15, is_subject: false, status: 'curated',
   sources: [
     { label: 'Oz (skill)', per: 'second', particles: 0.67, chance: 0.67, interval: 1,
-      max_seconds: 10, collector: 'active', citation: 'oz', on: 'skill' },
+      max_seconds: 10, collector: 'active', citation: 'oz', on: 'skill', shared_icd: false },
     { label: 'Oz (burst)', per: 'second', particles: 0.67, chance: 0.67, interval: 1,
-      max_seconds: 10, collector: 'active', citation: 'oz', on: 'burst' },
+      max_seconds: 10, collector: 'active', citation: 'oz', on: 'burst', shared_icd: false },
   ],
   refunds: [], favonius: null, energy_recharge: 1.3, crit_rate: 0.6,
   ...over,
@@ -58,7 +59,7 @@ const fischl = (over: Partial<Member> = {}): Member => ({
 const sara = (over: Partial<Member> = {}): Member => ({
   build_id: 'sr', name: 'Kujou Sara', element: 'electro', burst_energy_cost: 80,
   burst_cooldown: 20, is_subject: false, status: 'curated',
-  sources: [{ label: 'Ambush', per: 'cast', particles: 3, collector: 'caster', citation: 's', on: 'skill' }],
+  sources: [{ label: 'Ambush', per: 'cast', particles: 3, collector: 'caster', citation: 's', on: 'skill', shared_icd: false }],
   refunds: [{ label: 'Decorum', per: 'cast', count: 1, recipients: 'team', scaling: 'per_er',
     amount: 1.2, citation: 'asc.go' }],
   favonius: { weapon: 'Favonius Warbow', refinement: 5, chance: 1, cooldown_seconds: 6,
@@ -152,9 +153,11 @@ describe('summons, refunds and Favonius through energyInput', () => {
     const sub = raiden({ refunds: [] });
     const input = energyInput(data([sub, sara()]), DEFAULT_ENERGY, 20)!;
     const by = Object.fromEntries(input.sources.map((s) => [s.key, s]));
-    expect(by['rd:favonius'].element).toBeNull();
-    expect(by['rd:favonius'].onFieldShare).toBe(1);
-    expect(by['rd:favonius'].particles).toBeCloseTo(3 * 2, 12);
+    // The subject's own is priced per candidate since DECISIONS §49: carried apart, caught on
+    // field, its procs at the build's crit here the same cooldown-bound 2.
+    expect(by['rd:favonius']).toBeUndefined();
+    expect(input.subjectFavonius!.onFieldShare).toBe(1);
+    expect(favoniusProcsAt(input.subjectFavonius!, 18, 0.35)).toBeCloseTo(2, 12);
     expect(by['sr:favonius'].onFieldShare).toBe(0);
     expect(by['sr:favonius'].particles).toBeCloseTo(3 * 1 * 0.2 * 1, 12);
   });
