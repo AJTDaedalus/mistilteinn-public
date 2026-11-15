@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43), and its weapon passives on `feat/formula-weapon-passives` (2026-11-14, §2.8; `DECISIONS.md` §44). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -732,7 +732,7 @@ be his own skill only.*
 ### 2.7 Reactions (P3, task 13; built 2026-11-14)
 
 **Owner, 2026-11-14: "Start P3: reactions."** Branch `feat/formula-reactions`; rulings and choices
-in `DECISIONS.md` §43. Weapon passives (task 12) and ER from particles (task 14) are not started.
+in `DECISIONS.md` §43. Weapon passives (task 12) are §2.8; ER from particles (task 14) is not started.
 
 **Where it lives.** `backend/app/formula/genshin/reactions.py` (the chain),
 `app/data/yuanshen/snapshot/reaction_level_multipliers.json` (the level table), `damage.ts`
@@ -789,7 +789,7 @@ owner's P3 list).
 | reaction row | `count` instances triggered by **the optimized character**: their EM (calibrated + candidate) and level apply. A teammate's reactions are constants to every candidate and are not rows, as a teammate's hits are not |
 | what reaches it | EM, a `reaction_bonus` naming the reaction, an `enemy_res` on its element, `reaction_crit_rate`/`_dmg` (transformative, crittable only), the character's CRIT and `lunar_base_dmg_bonus` (Lunar). ATK%, DMG% and move/row-scoped effects are computed and ignored, silently (a reaction row is not a move) |
 | additive | a talent row's `additive` (spread for a Dendro hit, aggravate for an Electro one; a mismatch and an amplified hit are refused); the flat term rides on the first scaling term, × count |
-| Lunar weight | GO's whole contribution by default (1); `weight` in (0, 1] states gcsim's ranked share. The panel does not offer it yet |
+| Lunar weight | **gcsim's solo-contributor weight, 0.6, by default** (owner ruling 2026-11-14, `DECISIONS.md` §44; it was GO's whole contribution, 1, until then): gcsim ranks every contributor 0.6/0.3/0.05/0.05 (`pkg/reactable/lunarcharged.go:22,171-184`, `lunarcrystallize.go:27,220-230`) and the subject is the only one priced. `weight` in (0, 1] overrides; the panel does not offer it yet. Each Lunar GO fixture records ours at 0.6 of GO's |
 | bound | a reaction row makes EM live and nothing else; every reaction term is monotone in EM (and CRIT), so the optimistic completion still dominates |
 | assumptions | each reaction row's count and trigger, and the two divergences, in the estimate's list |
 
@@ -798,8 +798,8 @@ superconduct/hyperbloom +40%, aggravate and Lunar-Charged +20%; Crimson Witch ov
 burgeon +40% (now `modelled`); Flower of Paradise Lost +40% and +10% per stack; Disenchantment
 superconduct +80%; Night of the Sky's Unveiling and Silken Moon's Serenade Lunar +10% under their
 Gleaming Moon choice; Aubade's Lunar +20%/+40% (two new situational conditions); Nahida C2's
-bloom-family CRIT 20%/100% (new `c2_bloom` condition); Mona C1's EC/Lunar-Charged/swirl/
-Lunar-Crystallize +15%; Baizhu A4's reaction bonus from his Max HP to 50,000 (a teammate's
+bloom-family CRIT 20%/100% (new `c2_bloom` condition); Mona C1's EC/Lunar-Charged/Hydro swirl/
+Lunar-Crystallize +15% (**a Hydro swirl only** since the owner's ruling of 2026-11-14, `DECISIONS.md` §44, as gcsim `mona/cons.go:71-80` and her text have it; GO adds it to every swirl, recorded by `mona_c1_hydro_swirl_on_kazuha`); Baizhu A4's reaction bonus from his Max HP to 50,000 (a teammate's
 number; withheld by name when he is the subject).
 
 **Not wired, named:** every kit's direct Lunar or Stellar hit and Lunar base-damage bonus from a
@@ -810,6 +810,122 @@ reactions, and contributors other than the subject.
 
 **Found driving it:** none in the chain. The panel's two actions ran together ("ADD ABILITYADD
 REACTION"); `.formula__actions` now spaces them.
+
+### 2.8 Weapon passives (P3, task 12; built 2026-11-14)
+
+**Owner, 2026-11-14: "Weapon passives".** Branch `feat/formula-weapon-passives`; the go-ahead and
+the two P3 changes that came with it are `DECISIONS.md` §44.
+
+**Where it lives.** `backend/app/formula/genshin/weapon_passives.py` (schema, pins, resolution),
+`backend/app/data/formula/weapons/<slug>.json` (one per weapon), `services/kit_buffs.py:
+team_weapons` (after the kits, the same two passes), `/formula/kit-buffs` (`sources[].kind`,
+`weapons[]`), and in the browser `formula-calibration.ts` (weapon sources ride with the kits;
+`missingWeapons`), `formula-recipe.ts:weaponAssumptions`, the panel.
+
+#### The format, and why it is not a kit sheet
+
+A weapon is a giver whose numbers index **its refinement's** `param_list`. A sheet's `ValueRef`
+names a talent row, a constellation or an ascension passive, its pins are those lists and its
+sources gate on ascension and constellation; none of that exists for a weapon, and a refinement
+index exists in none of it. Adding a fifth kind to `ValueRef` would put a weapon branch into every
+sheet validator. So the file has its own small value type, and **everything else is the sheet's**:
+
+| shared with sheets | |
+|---|---|
+| conditions | `sheets.SheetCondition`: the §41 default rule (curated `usual`, `self` at its maximum, a teammate's buff on at its maximum, a `situational` one off only with a reason) is the one already written |
+| team gates, receivers | `sheets.TeamGate`, `sheets.Receivers`, `sheets._reaches` |
+| giver stats, per-candidate conversions | `sheets.GIVER_STATS`, `STATIC_STATS`, `SELF_CONVERSIONS`: a wielder who is the subject turns a value reading an artifact-moved stat into the recipe's per-candidate term, or it is withheld by name |
+| evaluation | the Pando DAG in the wielder's **pass-1** registry, under `formula_tag("weapon:<slug>", effect)` so it cannot collide with the wielder's own sheet |
+| output | `sheets.ResolvedKit` in the P1 `Bonus` vocabulary: the browser applies a weapon exactly as a kit |
+
+| weapon-only field | why |
+|---|---|
+| `{"param": i}` | the wielder's refinement list, entry `i` (or a cited `constant`) |
+| `pins` | all five refinements' lists as seeded at curation (nanoka 7.2.51); a wielder whose list differs withholds the whole passive by name |
+| `times_param` | one refinement entry times another (Makhaira Aquamarine's 30% share, A Thousand Blazing Suns' +75%) |
+| `threshold`, `cap`, `stat_cap` | a refinement entry or a cited constant (Engulfing Lightning's ER above 100%; Finale of the Deep's 150 ATK; Peak Patrol Song's 3,200 DEF) |
+| `own_element` | a DMG bonus for the wielder's own element (Mistsplitter's Emblem), resolved to the receiver's element on a `self` effect |
+| `per_team` | times a teammate count, as Gilded Dreams (A Thousand Floating Dreams) |
+| `negate` | a decrease the list publishes positive (Rust's Charged Attack -10%) |
+
+**The wielder's own unconditional stats enter what its values read.** Key of Khaj-Nisut's party
+EM is 0.2% of the wielder's Max HP **with** its own +20% HP (GO `input.total.hp`). Pass 1 carries
+no weapon passive (§2.6 rule 1) — that rule is about other sources' buffs; a weapon reading a stat
+it raises itself is GO's arithmetic, not a cycle — so each resolution registers its own
+unconditional `self` stat bonuses into a registry built for it alone before evaluating.
+Conditional ones are not, and the one passive this changes says so (Peak Patrol Song's Ode DEF%).
+
+**Two wielders of one weapon** get two sources, `weapon:<slug>` and `weapon:<slug>:2`, so their
+conditions stay apart. GO's `nonStackBuff` (two Millennial Movement weapons apply one) is **not**
+modelled: both apply, and each such file says so.
+
+**A condition no effect reads is refused** by the schema. Found curating: Thrilling Tales' ATK%
+had lost its gate, so its toggle switched nothing and the buff was always on; its GO fixture stated
+the toggle on, so the figure could not tell.
+
+#### Receivers
+
+As a sheet's: the receiver is the optimized character. `self` reaches them only when they wield
+it; `others` only when a teammate does (Thrilling Tales, Makhaira Aquamarine's share, A Thousand
+Floating Dreams' party EM); `team`, `active` and `enemy` always. A teammate's weapon's self buffs
+(their Homa, their Mistsplitter) are the teammate's own stats, which enter no number the estimate
+reads, so they are simply not this receiver's.
+
+#### The subject's weapon, and the weapons-in-optimizer search
+
+The formula estimate scores **the build's equipped weapon**: `/search-context` puts its base ATK
+and substat in each row's base, and `/formula/kit-buffs` resolves its passive. The weapon picker
+(`DESIGN_weapons_in_the_optimizer.md`) is offered on the rotation objective only; a formula search
+runs one weapon, as before. Comparing weapons under the estimate would need `/search-context` and
+`/formula/kit-buffs` to take a candidate weapon id — an owner question, not built.
+
+**Staff of Homa beside Hu Tao's Paramita.** Both are flat ATK from her Max HP; hers is capped at
+400% of her base ATK, Homa's is not, and summed before the cap they would be the wrong number. The
+recipe used to refuse a second conversion into flat ATK; it now prices each apart
+(`ResolvedConversion.extra`, each `cappedAmount` on its own and summed — monotone, so the bound
+holds; `capped-conversions.spec.ts`).
+
+#### Coverage (catalogue: 253 released weapons at nanoka 7.2.51, beta and crossbow rows excluded)
+
+| status | count | |
+|---|---|---|
+| modelled | 46 | every damage part applied |
+| partial | 16 | a part named and not applied, below |
+| no damage effect | 9 | Favonius ×5, Sacrificial Sword/Bow/Greatsword/Fragments: energy only, said |
+| unmodelled | 1 | Crescent Pike: its only effect is a damage instance of its own |
+| **no file** | **181** | named in the panel as "no weapon passive modelled": base ATK and substat only |
+
+Partial, each part with its reason in the file: **weapon damage instances** (Aquila Favonia's
+Falcon, the five Skywards' procs) — the target has no weapon-hit row kind, as kits' direct hits
+have none; **a conversion the recipe does not carry per candidate on the wielder** — Engulfing
+Lightning's ATK% from ER, Key of Khaj-Nisut's EM from HP (self and party, when the subject wields
+it), Makhaira Aquamarine's and Wandering Evenstar's ATK from EM, Peak Patrol Song's party bonus
+from DEF; each is a number when a teammate wields it; **Stellar-Conduct** (Kagura's Verity),
+refused by name since task 13; **a timeline** (Alley Hunter's decay, Light of Foliar Incision's
+28 instances); Starcaller's Watch's EM (the seeded list does not carry it); Peak Patrol Song's
+Ode DEF% not in the DEF its party bonus reads; Polar Star's R4 three-stack value (GO writes 0.528,
+the seeded list 0.525; ours is read).
+
+**Tiers.** `RESEARCH_passive_tiers.md`'s tier 1/1c were a regex over gcsim's Go and its per-row
+list was never committed. The estimate's question is GO's, where a stack, a duration or an aura is
+a **condition the user states** — so gcsim's tier 2 (timed, stacking) is as expressible as tier 1
+here, and most of the weapons above are tier 2 by that survey. What stays out is what has no
+closed form in GO either: weapon damage instances, and the conversions the recipe lacks. All of
+tier 1's named weapons are in (The Stringless, Festering Desire, "The Catch", White Tassel, Rust,
+Redhorn Stonethresher, Primordial Jade Cutter), and 1c's Staff of Homa and Engulfing Lightning
+(the latter partial, above).
+
+#### GO agreement
+
+73 weapon fixtures (`go_fixtures_weapons.py` to `_weapons4.py`), one or more per weapon with a
+damage effect on its main effect, R1 and R5 for Staff of Homa, Primordial Jade Cutter, Mistsplitter,
+Amos' Bow, Polar Star, Calamity Queller, The Widsith, Deathmatch and Peak Patrol Song. Each is GO's formula worked
+by hand with our seeded refinement values written out (never read through the resolver), against
+the resolver's source for a stated wielder. **66 exact** (`relative_divergence_from_go` 0; the browser within 8.5e-8, the f32 floor), the
+six amplified ones (2.78 vs 25/9, ~2e-4) and Engulfing Lightning's (its withheld ATK% from ER,
+recorded). `formula:verify` plants on weapon sources as on kits: every effect 1% off must fail, a
+frozen self-conversion must fail where it reaches the row, a cap ignored must fail past it
+(Finale of the Deep below and past its 150).
 
 ## 3. Phases
 
