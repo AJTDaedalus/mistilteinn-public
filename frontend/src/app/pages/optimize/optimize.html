@@ -223,7 +223,7 @@
         [element]="formulaElement()"
         [hits]="hits()"
         [refusedHits]="refusedHits()"
-        [groups]="formulaGroups()"
+        [groups]="panelGroups()"
         [assumptions]="formulaAssumptions()"
         [withheld]="formulaWithheld()"
         [procs]="formulaProcs()"
@@ -447,12 +447,35 @@
               @if (objective() === 'formula') {
                 <p class="hint">
                   Each weapon gets its own estimate and its own full search: its base ATK and
-                  substat at this build's weapon level and refinement, and its passive where one
-                  is modelled — a weapon without one competes on base stats and says so.
+                  substat at this build's weapon level, its passive at the refinement set below
+                  where one is modelled — a weapon without one competes on base stats and says
+                  so — and its own passive conditions in the assumptions panel.
                 </p>
               } @else {
                 <p class="hint">
                   About <strong>2½ minutes</strong> per weapon.
+                </p>
+              }
+
+              <!-- Owner ruling 2026-11-15 (OQ-W2 answered, DECISIONS §46): the weapons you own,
+                   unless you ask for the rest. One picker for both modes. -->
+              <label class="weapon-compare__unowned">
+                <input
+                  type="checkbox"
+                  [checked]="includeUnowned()"
+                  (change)="setIncludeUnowned($any($event.target).checked)"
+                />
+                <span>Include weapons I don't own</span>
+              </label>
+              @if (ownedWeaponsFailed() && !includeUnowned()) {
+                <p class="warn">
+                  Could not load the weapons you own, so none can be offered. Include the ones
+                  you don't own to compare anyway.
+                </p>
+              } @else if (ownedWeapons() !== null && !includeUnowned() && !weaponOptions().length) {
+                <p class="hint">
+                  You own no other weapon of this class — import a GOOD export with weapons, or
+                  include the ones you don't own.
                 </p>
               }
 
@@ -465,6 +488,32 @@
                 [selected]="weaponsSelected()"
                 (selectedChange)="setWeapons($event)"
               />
+
+              <!-- A refinement per candidate (owner ruling 2026-11-15): yours where you own the
+                   weapon, else R1 — said beside it, never assumed silently. -->
+              @if (pickedWeapons().length) {
+                <ul class="weapon-refinements">
+                  @for (pick of pickedWeapons(); track pick.id) {
+                    <li>
+                      <label class="weapon-refinements__choice">
+                        <span class="weapon-refinements__name">{{ pick.name }}</span>
+                        <select
+                          [attr.aria-label]="'Refinement for ' + pick.name"
+                          (change)="setWeaponRefinement(pick.id, $any($event.target).value)"
+                        >
+                          @for (r of refinementChoices; track r) {
+                            <option [value]="r" [selected]="r === pick.refinement">R{{ r }}</option>
+                          }
+                        </select>
+                      </label>
+                      <span class="muted weapon-refinements__note">
+                        {{ pick.owned ? 'you own R' + pick.owned
+                          : pick.chosen ? 'not owned' : 'not owned · R1 assumed' }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
 
               @if (weaponGuide(); as guide) {
                 <p class="hint">

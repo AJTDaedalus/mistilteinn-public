@@ -259,6 +259,12 @@ export interface ConditionGroup {
    * "applied" (found driving task 12).
    */
   inert?: boolean;
+  /**
+   * A **candidate weapon's** passive in a weapon comparison (owner ruling 2026-11-15,
+   * `DECISIONS.md` §47): its conditions are that candidate's own state, read only by its run,
+   * so the panel reads and writes them by weapon id rather than under `sourceId`.
+   */
+  candidate?: { weaponId: string };
 }
 
 /** Each part named once: the panel tracks a part by its `what`, and repeating it said nothing. */

@@ -1742,7 +1742,8 @@ Choices made, each reversible:
    (`uiData.ts:266-276`, the `small` accumulator), so Kazuha's Freedom-Sworn beats Venti's Elegy
    whatever their refinements. It is arbitrary, not "the stronger"; followed because GO is the
    comparator (D-F4). A character with no GO sheet sorts after every GO key. *Owner question:
-   keep GO's rule, or apply the stronger buff?*
+   keep GO's rule, or apply the stronger buff?* **Answered 2026-11-15: the stronger (§46); GO's
+   rule is now only the tie-break.** Items 1–3 are superseded by §46 too.
 7. **Proc rows only for the optimized character's own weapon**, priced through the talent-hit
    path with no move (GO `customDmgNode(…, 'elemental')`); GO reads Aquila's and Skyward Blade's
    procs off `premod.atk` and the estimate off total ATK, equal unless an ATK-from-another-stat
@@ -1755,7 +1756,53 @@ Choices made, each reversible:
 GO agreement: 11 new fixtures (233), all exact except the recorded 2.78 vs 25/9 on the two
 amplified ones; the #389 Engulfing Lightning fixture, a recorded withholding, is now exact.
 
-## 46. ER from particles in the formula estimate: the model built, its default left open (2026-11-15)
+## 46. Four rulings on weapon comparison under the estimate (2026-11-15)
+
+**Owner, 2026-11-15**, answering §45's questions. Built on `feat/formula-weapon-compare-calls`
+(`DESIGN_team_math_fallback.md` §2.10, TASKS 12c; `DESIGN_weapons_in_the_optimizer.md` OQ-W2).
+
+1. **The stronger non-stacking buff applies**, not GO's alphabetical-first rule (§45 (6)).
+   *Stronger* is defined per GO family **name**, because GO's families are per name
+   (`nonStackBuff(name, …)`, one `input.nonStacking[name]` each) and every name grants **one
+   stat** across every weapon holding it — asserted by
+   `test_every_non_stacking_family_is_one_stat`, so the comparison is never ATK% against EM.
+   For each name, per receiving row: the source whose effects of that name give the row the
+   largest resolved amount — the value times its stacks and teammate count, capped; a
+   conversion weighed at the hit owner's zero-artifact stat (`strengthOf`). A tie falls back to
+   GO's rule (the wielder whose GO key sorts first). The loser stays named in the assumptions,
+   with GO's own winner where it differs. The Millennial Movement series is three GO names, so
+   Elegy's party EM (`millenialelemas`) applies beside a stronger Freedom-Sworn's ATK% — as in
+   GO, where the same names apply independently.
+   **Fixture divergence:** `millennial_movement_one_the_stronger_elegy_over_freedom_sworn_on_
+   xiangling_vape` (renamed from `…_freedom_sworn_over_elegy_…`): ours applies Venti's R5 Elegy
+   40% ATK, **7,486.86**; GO applies Kazuha's R1 Freedom-Sworn 20% by key order, **6,840.28**
+   (`go_value`, which also carries GO's 25/9). No other fixture holds two members of a family.
+2. **A refinement per candidate.** Default: the equipped weapon is the baseline and keeps the
+   build's own; a candidate takes the **highest refinement among the copies the account owns**
+   (`/weapons/owned`, a GOOD import), else **R1** — an unowned weapon has no refinement to read,
+   so R1 is the assumption, and the picker says so beside it. The user can set R1–R5 per pick.
+   It reaches both modes: `/formula/kit-buffs?subject_weapon_refinement=` and `/calibrate`'s new
+   `weapon_refinement`; both caches key on it (`kitKey`, and `|refine=N` in the recipe cache).
+   `/compare-weapons/gcsim` takes `weapon_refinements` too (no page calls it; R1 stays its
+   default for a candidate not named).
+3. **A candidate's passive conditions are shown and editable**, grouped per candidate under
+   "Candidate weapons" in the assumptions panel, with their §41 defaults, reasons and
+   citation. They are that candidate's own state (`candidateConditionals`, by weapon id), read
+   only by its run: the page's setting under the same source id — which a teammate wielding the
+   same weapon can hold in the equipped run — is dropped for it. Not offered as per-row
+   overrides.
+4. **OQ-W2 answered: owned weapons only, by default**, with an explicit "Include weapons I
+   don't own". One picker serves both modes, so the gcsim and the formula comparisons answer it
+   the same way. A failed owned-weapons load offers nothing and says so — "could not tell what
+   you own" is never read as "owns everything" or "owns nothing".
+
+Found on the way, both in the gcsim comparison's calibration and both #240's shape: the
+`waitForEnergy` option reached the recipe cache key but **never the `/calibrate` request**, so a
+"waiting" search ran the skipping config under a key that said waiting; and a candidate weapon's
+aggregate was **read from and written to the run corpus under the build's own context** (its
+equipped weapon). Both fixed (`2c12985`).
+
+## 47. ER from particles in the formula estimate: the model built, its default left open (2026-11-15)
 
 **Owner, 2026-11-15: "ER from particles."** The go-ahead for P3 task 14 (G13). Built on
 `feat/formula-er-particles` (DESIGN §2.10, TASKS 14).

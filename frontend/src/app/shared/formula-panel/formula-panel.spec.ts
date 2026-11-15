@@ -125,6 +125,34 @@ describe('FormulaPanel', () => {
     expect(el.querySelector('.assumptions__default--changed')).toBeTruthy();
   });
 
+  it('draws each candidate weapon\'s conditions under its own heading, writing its own state', () => {
+    // Owner ruling 2026-11-15 (DECISIONS §46): a candidate's toggles, grouped per candidate.
+    const { el, fixture, service } = render();
+    fixture.componentRef.setInput('groups', [...GROUPS, {
+      sourceId: 'candidate:w9', label: 'Candidate: Freedom-Sworn R3', citation: 'GO FreedomSworn',
+      conditions: [{ key: 'song', label: 'Millennial Movement: Song of Resistance',
+        kind: 'toggle', default: 1, default_reason: 'self' }],
+      unmodelled: [], kind: 'weapon', verified: true, candidate: { weaponId: 'w9' },
+    } satisfies ConditionGroup]);
+    fixture.detectChanges();
+    const text = el.querySelector('.assumptions')!.textContent!;
+    expect(text).toContain('Candidate weapons');
+    expect(text).toContain('Candidate: Freedom-Sworn R3');
+    expect(text).toContain('Default on — the wielder triggers it');
+    expect(text).toContain('Source: GO FreedomSworn');
+
+    const boxes = el.querySelectorAll<HTMLInputElement>('.assumptions__toggle input');
+    const candidate = boxes[boxes.length - 1];
+    expect(candidate.checked).toBe(true);
+    candidate.checked = false;
+    candidate.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(service.candidateConditionals()).toEqual({ w9: { song: 0 } });
+    expect(Object.keys(service.conditionals())).toEqual([]);
+    // Not offered as a per-row override: it is the candidate's own setting.
+    expect(el.textContent).not.toContain('candidate:w9');
+  });
+
   it('adds a row, keeps a count that is not positive from being written, and removes a row', () => {
     const { el, fixture, service } = render();
     el.querySelector<HTMLButtonElement>('.formula__actions button')!.click();

@@ -111,7 +111,11 @@ export interface TeamKits {
    * asked for): its name, refinement and passive status — `no_passive_data` is "passive not
    * modelled", and the weapon competes on base ATK and substat alone.
    */
-  subjectWeapon?: { name: string | null; refinement: number | null; status: string };
+  subjectWeapon?: {
+    name: string | null; refinement: number | null; status: string;
+    /** Its source among `sources` (`weapon:<slug>`), or null with no passive data. */
+    sourceId?: string | null;
+  };
   /** The subject's weapon's own damage instances, each a proc row the panel can offer. */
   procs?: ProcChoice[];
 }
@@ -136,12 +140,12 @@ export function kitKey(
 export type TeamEnergyData = components['schemas']['FormulaTeamEnergyRead'];
 
 /**
- * The energy model's assumptions, every one the user's to change (task 14, DESIGN §2.10).
+ * The energy model's assumptions, every one the user's to change (task 14, DESIGN §2.11).
  * An absent key takes its default, said in the panel.
  */
 export interface EnergySettings {
   /**
-   * `off` (the default until the owner rules, DESIGN §2.10): the requirement is reported and ER
+   * `off` (the default until the owner rules, DESIGN §2.11): the requirement is reported and ER
    * is still worth nothing. `skip` and `wait` are the gcsim path's two models.
    */
   mode: EnergyMode;
@@ -241,6 +245,61 @@ export function energyInput(
   };
 }
 
+/**
+ * The conditional state a **candidate weapon's** run reads (owner ruling 2026-11-15,
+ * `DECISIONS.md` §47: a candidate's passive conditions are shown and editable per candidate).
+ *
+ * Every key under the candidate's own source is dropped from the page's state — a teammate
+ * wielding the same weapon in the equipped run can hold that very source id, and its setting is
+ * not this candidate's — and the candidate's own settings are written under it. A condition the
+ * user did not set takes the source's default, as every condition does.
+ */
+export function candidateConditionState(
+  state: Readonly<Record<string, ConditionValue>>,
+  sourceId: string | null | undefined,
+  own: Readonly<Record<string, ConditionValue>>,
+): Record<string, ConditionValue> {
+  if (!sourceId) return { ...state };
+  const prefix = `${sourceId}/`;
+  const out: Record<string, ConditionValue> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (!key.startsWith(prefix)) out[key] = value;
+  }
+  for (const [condition, value] of Object.entries(own)) out[`${prefix}${condition}`] = value;
+  return out;
+}
+
+/**
+ * The assumptions panel's group for one candidate weapon (§46): its passive's conditions,
+ * defaults, reasons and citation, marked `candidate` so the panel reads and writes that
+ * candidate's own state. A weapon with no passive data is named as one, as the equipped
+ * weapon's would be.
+ */
+export function candidateGroup(kits: TeamKits, weapon: WeaponChoice, name: string): ConditionGroup {
+  const refinement = weapon.refinement ?? kits.subjectWeapon?.refinement ?? null;
+  const label = `Candidate: ${name}${refinement ? ` R${refinement}` : ''}`;
+  const source = kits.sources.find((s) => s.id === kits.subjectWeapon?.sourceId);
+  const candidate = { weaponId: weapon.id };
+  if (!source) {
+    return {
+      sourceId: `candidate:${weapon.id}`, label, citation: '', conditions: [], kind: 'no-weapon',
+      unmodelled: [{
+        what: 'weapon passive', reason: 'no weapon passive modelled: base ATK and substat only',
+      }],
+      candidate,
+    };
+  }
+  return {
+    sourceId: `candidate:${weapon.id}`, label, citation: source.citation,
+    conditions: source.bonus.conditions,
+    unmodelled: source.bonus.unmodelled.filter(
+      (part, i, all) => all.findIndex((p) => p.what === part.what) === i,
+    ),
+    kind: 'weapon', verified: source.verified, candidate,
+    ...(source.status === 'no_damage_effect' ? { inert: true } : {}),
+  };
+}
+
 /** The API's search context in the kernel's spelling — the same mapping single-hit uses. */
 export function kernelContext(context: SearchContext): KernelContext {
   return {
@@ -331,6 +390,12 @@ export class FormulaEstimateService {
   readonly forBuild = signal('');
   /** Team-level conditionals the user changed. An absent key takes the source's default. */
   readonly conditionals = signal<Record<string, ConditionValue>>({});
+  /**
+   * Each candidate weapon's own passive conditions the user changed, by catalogue weapon id
+   * and condition key (owner ruling 2026-11-15, §46). Read only by that candidate's run
+   * (`candidateConditionState`); an absent key takes the passive's default.
+   */
+  readonly candidateConditionals = signal<Record<string, Record<string, ConditionValue>>>({});
 
   /** The energy model's assumptions (task 14). */
   readonly energy = signal<EnergySettings>(DEFAULT_ENERGY);
@@ -410,8 +475,16 @@ export class FormulaEstimateService {
     this.conditionals.update((state) => ({ ...state, [key]: value }));
   }
 
+  /** Set one candidate weapon's passive condition (§46), keyed by the condition's own key. */
+  setCandidateCondition(weaponId: string, condition: string, value: ConditionValue): void {
+    this.candidateConditionals.update((all) => ({
+      ...all, [weaponId]: { ...all[weaponId], [condition]: value },
+    }));
+  }
+
   resetConditions(): void {
     this.conditionals.set({});
+    this.candidateConditionals.set({});
   }
 
   /** Every conditional set tier. Fetched once per session: it is catalogue data. */
@@ -478,7 +551,10 @@ export class FormulaEstimateService {
           .filter((w) => w.status === 'no_passive_data' && w.weapon)
           .map((w) => `${w.weapon} R${w.refinement} (${w.wielder})`),
         ...(mine ? {
-          subjectWeapon: { name: mine.weapon, refinement: mine.refinement, status: mine.status },
+          subjectWeapon: {
+            name: mine.weapon, refinement: mine.refinement, status: mine.status,
+            sourceId: mine.source_id ?? null,
+          },
         } : {}),
         procs: sources
           .filter((s) => s.id === mine?.source_id)
@@ -539,6 +615,13 @@ export class FormulaEstimateService {
       // nothing, as before — rather than failing the estimate.
       this.energyData(request.team, request.buildId).catch(() => null),
     ]);
+    // A candidate's run reads the candidate's own passive conditions (§46), never the equipped
+    // run's under the same source id — on the team state and on each row's overrides alike.
+    const candidateSource = request.weapon ? kits.subjectWeapon?.sourceId ?? null : null;
+    const own = request.weapon ? this.candidateConditionals()[request.weapon.id] ?? {} : {};
+    const teamState = request.weapon
+      ? candidateConditionState(this.conditionals(), candidateSource, own)
+      : this.conditionals();
     const formulaRows: FormulaRow[] = rows.map((row, i) => ({
       id: row.id,
       label: row.label,
@@ -547,7 +630,9 @@ export class FormulaEstimateService {
         ? null : { talent: row.hit.talent, label: row.hit.label, index: row.hit.index },
       count: row.count,
       context: kernelContext(contexts[i]),
-      conditionals: row.overrides,
+      conditionals: request.weapon
+        ? candidateConditionState(row.overrides, candidateSource, {})
+        : row.overrides,
       reaction: row.reaction ?? null,
       additive: row.reaction || row.proc ? null : row.additive ?? null,
       proc: row.proc ?? null,
@@ -571,7 +656,7 @@ export class FormulaEstimateService {
         const input = energyInput(energy, this.energy());
         return input ? { energy: input } : {};
       })() : {}),
-      conditionals: this.conditionals() as ConditionState,
+      conditionals: teamState as ConditionState,
       kits,
       characters: [character?.name ?? 'Build', ...request.team
         .filter((b) => b.id !== request.buildId)

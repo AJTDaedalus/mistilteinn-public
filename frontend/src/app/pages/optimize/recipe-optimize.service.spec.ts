@@ -207,9 +207,45 @@ describe('RecipeOptimizeService', () => {
 
     await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, 'w-one');
     await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, 'w-two');
+    // A refinement per candidate (owner ruling 2026-11-15): one weapon at two refinements is
+    // two recipes, never one read back for the other.
+    await service.calibrateAll('b1', 'r1', 'pin', target, ignoreProgress, 'w-two', false,
+      undefined, 3);
 
-    expect(written.length).toBeGreaterThan(1);
+    expect(written.length).toBeGreaterThan(2);
     expect(new Set(written).size).toBe(written.length);
+  });
+
+  it('asks for the candidate refinement and the energy model it keys on', async () => {
+    const service = setup();
+    const fetchSpy = vi.mocked(globalThis.fetch);
+    const target = [{ artifactSetIds: [], setIds: [], label: 'baseline' }];
+
+    await service.calibrateAll('b1', 'r1', 'pin', target, () => undefined, 'w-one', true,
+      undefined, 4);
+
+    const request = fetchSpy.mock.calls
+      .map(([input]) => input as Request)
+      .find((r) => r.url.endsWith('/calibrate'));
+    const body = await request!.clone().json();
+    expect(body.weapon_id).toBe('w-one');
+    expect(body.weapon_refinement).toBe(4);
+    // The cache key says "waiting" (#240), so the config must be the waiting one too.
+    expect(body.wait_for_energy).toBe(true);
+  });
+
+  it('never reads or writes the run corpus for a candidate weapon', async () => {
+    // The corpus is keyed by the build's own context — its equipped weapon — so a candidate's
+    // aggregate stored there would be served as the build's run, and the equipped weapon's
+    // read back as the candidate's: #240's flat ranking, one layer down.
+    const service = setup();
+    const fetchSpy = vi.mocked(globalThis.fetch);
+    const target = [{ artifactSetIds: [], setIds: [], label: 'baseline' }];
+
+    await service.calibrateAll('b1', 'r1', 'pin', target, () => undefined, 'w-one');
+
+    const urls = fetchSpy.mock.calls.map(([input]) => (input as Request).url);
+    expect(urls.some((u) => u.includes('/sim-runs'))).toBe(false);
   });
 
 

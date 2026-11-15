@@ -14,10 +14,12 @@ as the wielder of a row the effect reaches, and `covers` says so.
   Patrol Song's party DMG from DEF up to 3,200 (`PeakPatrolSong/index.tsx:51-64`, `total.def`
   with the Ode's own DEF%) below and past its cap. Each moves with the candidate: `formula:
   verify` fails a frozen copy.
-- **Non-stacking.** Two Millennial Movement wielders, both on: GO applies the shared ATK% for
+- **Non-stacking.** Two Millennial Movement wielders, both on. GO applies the shared ATK% for
   the writer whose character key sorts first (`SheetUtil.tsx:102-117`, `uiData.ts:266-276`) —
-  `KaedeharaKazuha` before `Venti` — so Kazuha's R1 Freedom-Sworn 20% applies and Venti's R5
-  Elegy 40% does not, though it is larger. Elegy's EM (`millenialelemas`, no rival) applies.
+  `KaedeharaKazuha` before `Venti`, Kazuha's R1 Freedom-Sworn 20%. **The estimate applies the
+  stronger** (owner ruling 2026-11-15, `docs/DECISIONS.md` §46), Venti's R5 Elegy 40%: the
+  fixture's `expected` is ours and its `go_value` GO's, a recorded divergence. Elegy's EM
+  (`millenialelemas`, no rival) applies under both.
 - **Proc rows.** Aquila Favonia's Falcon (`premod.atk`), Skyward Harp's AoE (`total.atk`, its
   own CRIT DMG applying) and Skyward Pride's vacuum blade (its own all-DMG applying): GO
   `customDmgNode(prod(x, atk), 'elemental', {hit: {ele: physical}})` (`dataUtil.tsx:113-138`),
@@ -156,27 +158,47 @@ def conversion_fixtures() -> list[dict[str, Any]]:
     return out
 
 
+#: The owner's ruling of 2026-11-15 (`docs/DECISIONS.md` §46), where it moves a figure off GO's.
+STRONGER_DIVERGENCE = (
+    "non-stacking: the stronger buff applies (owner ruling 2026-11-15) — Venti's R5 Elegy 40% "
+    "ATK; GO applies Kazuha's R1 Freedom-Sworn 20%, his character key sorting first "
+    "(uiData.ts:266-276); `go_value` is GO's figure under GO's rule"
+)
+
+
 def non_stack_fixtures() -> list[dict[str, Any]]:
-    """Two Millennial Movement wielders: GO's one-of-a-kind, by GO character key."""
+    """Two Millennial Movement wielders: one applies, **the stronger** (owner ruling 2026-11-15,
+    `docs/DECISIONS.md` §46) — where GO applies the one whose wielder's key sorts first.
+
+    `expected` is ours: Venti's R5 Elegy 40% ATK, larger than Kazuha's R1 Freedom-Sworn 20%.
+    `go_value` is GO's own figure, Freedom-Sworn's 20% (and GO's 25/9), stated beside it. The
+    family is decided per GO name: Elegy's EM (`millenialelemas`) has no rival and applies under
+    both rules; Freedom-Sworn's normal/charged/plunge DMG (`millenialncpdmg`) has none either and
+    misses a burst row under both.
+    """
     team = {**w2.XTEAM, "member_elements": ["pyro", "anemo", "anemo", "hydro"]}
     venti = source("15503", 5, "Venti", {}, subject=False, rank="Venti",
                    team_elements=team["member_elements"])
     kazuha = source("11503", 1, "Kaedehara Kazuha", {}, subject=False, rank="KaedeharaKazuha",
                     team_elements=team["member_elements"])
+    ours = _xiangling(w2.XA, {"em": 200.0, "atk_pct": 0.4}, vape=True)
+    gos = _xiangling(w2.XA, {"em": 200.0, "atk_pct": 0.2}, vape=True)
     fixture = w._fx(
-        "millennial_movement_one_freedom_sworn_over_elegy_on_xiangling_vape",
-        "two Millennial Movement wielders, both on: one shared ATK% applies — Kazuha's R1 "
-        "Freedom-Sworn 20%, his GO key sorting before Venti's — not Venti's larger R5 Elegy 40%; "
-        "Elegy's EM, which nothing else shares, applies",
+        "millennial_movement_one_the_stronger_elegy_over_freedom_sworn_on_xiangling_vape",
+        "two Millennial Movement wielders, both on: one shared ATK% applies — the stronger, "
+        "Venti's R5 Elegy 40% (owner ruling 2026-11-15), where GO applies Kazuha's R1 "
+        "Freedom-Sworn 20% by key order; Elegy's EM, which nothing else shares, applies",
         [w.FORMULA_AMP, f"{w.WEAPONS}Bow/ElegyForTheEnd/index.tsx:8-43",
          f"{w.WEAPONS}Sword/FreedomSworn/index.tsx:9-59", *NONSTACK],
         w._wielder("Venti", "Elegy for the End", 5, {}), team, w2.XB, w2.XA, "pyro",
         [w.NADO_VAPE], venti,
         {"weapon:elegy_for_the_end/farewell": 1, "weapon:freedom_sworn/song": 1},
-        _xiangling(w2.XA, {"em": 200.0, "atk_pct": 0.2}, vape=True), w.AMP_DIVERGENCE)
+        ours, f"{w.AMP_DIVERGENCE}; {STRONGER_DIVERGENCE}")
+    fixture["go_value"] = gos(base.GO_EM_COEFFICIENT)
     fixture["givers"].append(w._wielder("Kaedehara Kazuha", "Freedom-Sworn", 1, {}))
     fixture["sources"].append(kazuha)
     fixture["non_stack"] = "millenialatk"
+    fixture["non_stack_rule"] = "stronger"
     return [fixture]
 
 

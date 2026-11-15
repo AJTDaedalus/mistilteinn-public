@@ -327,8 +327,10 @@ class Effect(_Model):
     #: `elemental_skill`, `elemental_burst`).
     talent: str | None = None
     #: GO's non-stacking buff name (`SheetUtil.tsx:nonStackBuff`, e.g. `millenialatk`): of the
-    #: sources whose effects carry the same name and hold, **one** applies — the one whose
-    #: source `stack_rank` sorts first (GO `uiData.ts:_small`). Weapon passives only (§45).
+    #: sources whose effects carry the same name and hold, **one** applies — the stronger for
+    #: the receiving row (owner ruling 2026-11-15, §46; the browser's `applySources`), a tie
+    #: going to the source whose `stack_rank` sorts first, which is GO's whole rule
+    #: (`uiData.ts:_small`). Weapon passives only (§45).
     non_stack: str | None = None
 
     @model_validator(mode="after")

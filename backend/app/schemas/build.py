@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
@@ -680,6 +680,10 @@ class CalibrationRequest(BaseModel):
     #: weapons. **The build is never modified**: the substitution lives in the config this
     #: endpoint emits and nowhere else.
     weapon_id: str | None = None
+    #: The candidate's refinement (owner ruling 2026-11-15, `docs/DECISIONS.md` §46: a
+    #: refinement per candidate). `None` is the build's own, as before. Only with `weapon_id`:
+    #: a refinement for the worn weapon would be an edit to the build in disguise.
+    weapon_refinement: int | None = Field(None, ge=1, le=5)
     #: Hold the simulation when a burst cannot be paid for, instead of skipping it.
     #:
     #: **Two models, and they disagree by a factor of six.** Skipping gates the burst: gcsim
@@ -809,6 +813,14 @@ class GcsimComparisonRequest(BaseModel):
     #: costs a full gcsim run and a caller comparing against nothing worn should not pay for
     #: one it did not ask for.
     weapon_ids: list[str] = Field(..., min_length=1)
+    #: A refinement per candidate, by catalogue id (owner ruling 2026-11-15,
+    #: `docs/DECISIONS.md` §46). A candidate not named stays at R1, `SubstituteWeapon`'s stated
+    #: assumption; the optimizer's picker sends the owned refinement where it knows one. A key
+    #: that is not one of `weapon_ids` is refused: a refinement for a weapon nobody asked about
+    #: is a typo, and ignoring it would score the typo's intended weapon at R1.
+    weapon_refinements: dict[str, Annotated[int, Field(ge=1, le=5)]] = Field(
+        default_factory=dict,
+    )
     #: Monte Carlo iterations per candidate. The cost is linear and real — ~4.9 s per config
     #: per 100 iterations, measured — and the standard error falls as 1/sqrt(n), so this trades
     #: wall time for separability. See `docs/DESIGN_weapon_passives.md` §4.
@@ -817,6 +829,14 @@ class GcsimComparisonRequest(BaseModel):
     #: no enemy of its own — it is a team's action list, not a scenario — so this is the
     #: caller's to state rather than something to be inferred from the rotation.
     enemy_id: str | None = None
+
+    @model_validator(mode="after")
+    def _refinements_name_candidates(self) -> GcsimComparisonRequest:
+        stray = sorted(set(self.weapon_refinements) - set(self.weapon_ids))
+        if stray:
+            msg = f"a refinement names a weapon that is not a candidate: {', '.join(stray)}"
+            raise ValueError(msg)
+        return self
 
 
 class GcsimCandidateConfig(BaseModel):

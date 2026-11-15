@@ -1601,6 +1601,39 @@ describe('OptimizePage — the rotation objective', () => {
     expect(seenMidRun.every((r) => r === null)).toBe(true);
   });
 
+  it('calibrates each gcsim candidate at its own refinement (owner ruling 2026-11-15)', async () => {
+    const calibrateAll = vi.fn(async () => ({
+      byFourPieceSet: new Map(), noFourPiece: null,
+      caveats: { unstable: [], staleConversions: [], characters: [], fromCache: [] },
+    }));
+    const page: unknown = pageWith({
+      recipeOptimize: { calibrateAll } as unknown as Partial<RecipeOptimizeService>,
+      optimize: {
+        artifactSets: vi.fn().mockResolvedValue(
+          new Map([[1, { id: 'uuid-1', name: 'Set One', simulable: true }]]),
+        ),
+      } as unknown as Partial<OptimizeService>,
+      rotations: {
+        list: vi.fn().mockResolvedValue({
+          items: [{ id: 'r1', name: 'Burst' }], total: 1, offset: 0, limit: 50,
+        }),
+      },
+    });
+    await (at(page, 'load') as () => Promise<void>).call(page);
+    await (at(page, 'loadFilterData') as () => Promise<void>).call(page);
+    (at(page, 'toggleSet') as (id: number) => void).call(page, 1);
+    (at(page, 'buildId') as { set: (v: string) => void }).set(AYAKA_BUILD.id);
+    (at(page, 'ownedWeapons') as { set: (v: unknown) => void }).set(new Map([['w-owned', 3]]));
+    (at(page, 'selectedWeapons') as { set: (v: unknown) => void })
+      .set(new Set(['w-owned', 'w-other']));
+
+    await (at(page, 'runRotation') as () => Promise<void>).call(page);
+
+    // (weaponId, waitForEnergy, shouldCancel, refinement): the equipped weapon first, as it is.
+    const asked = (calibrateAll.mock.calls as unknown[][]).map((c) => [c[5], c[8]]);
+    expect(asked).toEqual([[undefined, undefined], ['w-owned', 3], ['w-other', 1]]);
+  });
+
   it('starts on the rotation objective, with single-hit still reachable', () => {
     // §15, and the reverse of what this test used to pin. OQ-W4's point stands — deleting a
     // fast honest answer because a slow better one exists is a downgrade — but *which of two

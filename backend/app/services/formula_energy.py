@@ -1,6 +1,6 @@
 """The team's energy data for the formula estimate: particles per skill, burst costs, the drip.
 
-Math-fallback P3, task 14 (`docs/DESIGN_team_math_fallback.md` §2.10). The browser's energy
+Math-fallback P3, task 14 (`docs/DESIGN_team_math_fallback.md` §2.11). The browser's energy
 model (`frontend/src/app/sim/formula-energy.ts`) does the arithmetic; this serves what it reads:
 
 - each member's **burst energy cost** (`Character.burst_energy_cost`, game data) and **burst
@@ -9,7 +9,7 @@ model (`frontend/src/app/sim/formula-energy.ts`) does the arithmetic; this serve
 - each member's **Elemental Skill particles**, curated in `app/data/formula/energy/particles.json`
   with every count cited to the gcsim line it is read off (the game data's `energy[]` rows
   publish per-drop entries, not a count per cast: Kazuha's `per_drop` is 1 where his tap gives
-  3, so they are not used as counts — DESIGN §2.10);
+  3, so they are not used as counts — DESIGN §2.11);
 - the **energy drip** gcsim's waiting model already emits (`gcsim_config.ENERGY_DRIP`), as a
   mean interval: one clear particle every `start + (end - start - 1) / 2` frames, the
   expectation of `pkg/simulation/setup.go:522-531` at the pin.

@@ -27,7 +27,7 @@ import {
 } from '../pages/optimize/formula-estimate.service';
 
 /**
- * The formula estimate's energy model (math-fallback P3, task 14; DESIGN §2.10). The rules are
+ * The formula estimate's energy model (math-fallback P3, task 14; DESIGN §2.11). The rules are
  * gcsim's at the pin and KQM's Energy library page; gcsim's own events for the owner's
  * National team are held in `scripts/verify-formula-recipe.mjs` and
  * `backend/tests/unit/test_formula_energy_gcsim_sample.py`. Here: the arithmetic, each mode's

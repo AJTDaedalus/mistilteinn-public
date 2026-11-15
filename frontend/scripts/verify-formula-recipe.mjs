@@ -223,14 +223,27 @@ for (const f of data.fixtures) {
     if (Math.abs(both - f.expected) / f.expected <= TOLERANCE) {
       failures.push(`${f.name} (passes with every non-stacking buff applied)`);
     }
-    // And the tie-break reversed: the other wielder winning must miss too.
+    // **The stronger applies** (owner ruling 2026-11-15, DECISIONS §46), and GO's key order is
+    // only its tie-break: reversing the keys must change nothing on a fixture with no tie …
     const ranks = f.sources.map((s) => s.stack_rank).filter(Boolean).sort();
     const swapped = new Map(ranks.map((r, i) => [r, ranks[ranks.length - 1 - i]]));
     const reversed = f.sources.map((s) => (s.stack_rank
       ? { ...s, stack_rank: swapped.get(s.stack_rank) } : s));
     const flipped = score(f, reversed);
-    if (Math.abs(flipped - f.expected) / f.expected <= TOLERANCE) {
-      failures.push(`${f.name} (passes with GO's tie-break reversed)`);
+    if (f.non_stack_rule === 'stronger'
+      && Math.abs(flipped - f.expected) / f.expected > TOLERANCE) {
+      failures.push(`${f.name} (the key order moved a figure the stronger buff decides)`);
+    }
+    // … and GO's own rule — only the wielder whose key sorts first writes the family — must
+    // miss, or the fixture is not showing the ruling at all.
+    const first = ranks[0];
+    const goRule = f.sources.map((s) => (s.stack_rank && s.stack_rank !== first
+      ? { ...s, bonus: { ...s.bonus, effects: s.bonus.effects.filter(
+        (e) => e.non_stack !== f.non_stack) } }
+      : s));
+    const asGo = score(f, goRule);
+    if (Math.abs(asGo - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (passes under GO's key-order rule too)`);
     }
   }
   // A proc row (DECISIONS §45): the proc's multiplier 1% off must miss.

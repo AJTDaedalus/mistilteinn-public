@@ -6544,6 +6544,19 @@
             ],
             "title": "Weapon Id"
           },
+          "weapon_refinement": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Refinement"
+          },
           "wait_for_energy": {
             "type": "boolean",
             "title": "Wait For Energy",
@@ -9622,6 +9635,15 @@
             "type": "array",
             "minItems": 1,
             "title": "Weapon Ids"
+          },
+          "weapon_refinements": {
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 5.0,
+              "minimum": 1.0
+            },
+            "type": "object",
+            "title": "Weapon Refinements"
           },
           "iterations": {
             "type": "integer",
