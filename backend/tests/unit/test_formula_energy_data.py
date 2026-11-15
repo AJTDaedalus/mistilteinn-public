@@ -236,10 +236,81 @@ def test_summon_cadences_are_their_citations() -> None:
     assert "30P/M when triggered once per second" in eye["kqm"]
 
 
-def test_yae_is_left_to_the_user_with_both_sources_named() -> None:
-    yae = TABLE["not_curated"]["Yae Miko"]
-    assert "Yae Miko" not in TABLE["characters"]
-    for path, line, needle in yae["lines"]:
-        assert needle in _line(path, line)
-    assert "only the first one generates Particles" in yae["kqm"]
-    assert formula_energy.not_curated()["Yae Miko"].startswith("Two cited sources disagree")
+# ── Refinements (owner rulings 2026-11-15, DECISIONS §49) ────────────────────────────────────
+
+
+def test_yae_is_gcsims_rate_one_a_strike_under_a_shared_icd() -> None:
+    """Ruling 4: gcsim's rate, with KQM's disagreement recorded beside it."""
+    [totems] = TABLE["characters"]["Yae Miko"]["sources"]
+    assert "Yae Miko" not in TABLE["not_curated"]
+    # One particle a strike (the literal), behind an ICD the character holds — shared by
+    # every totem — of 2.5 s, shorter than a totem's own 176-frame cadence.
+    skill = "internal/characters/yaemiko/skill.go"
+    assert "QueueParticle(c.Base.Key.String(), 1," in _line(skill, 47)
+    assert "c.StatusIsActive(particleICDKey)" in _line("internal/characters/yaemiko/skill.go", 43)
+    icd = float(re.search(r"particleICDKey, ([\d.]+)\*60", _line(
+        "internal/characters/yaemiko/skill.go", 46)).group(1))
+    cadence = int(re.search(r"kitsuneTick\(totem\), (\d+)\)", _line(
+        "internal/characters/yaemiko/kitsune.go", 166)).group(1))
+    assert icd < cadence / 60
+    assert totems["interval"] == pytest.approx(cadence / 60, abs=1e-6)
+    assert totems["particles"] == 1
+    assert totems["shared_icd"] is True
+    # 15 s, and Edict of Cleansing's 10 s more, on by default (`revelation = 1`).
+    base = int(re.search(r"kitsuneDur = (\d+)", _line(
+        "internal/characters/yaemiko/kitsune.go", 13)).group(1))
+    bonus = int(re.search(r"return (\d+) \* 60", _line(
+        "internal/characters/yaemiko/stellar.go", 51)).group(1)) * 60
+    assert "revelation = 1" in _line("internal/characters/yaemiko/yaemiko.go", 39)
+    assert totems["max_seconds"] == (base + bonus) / 60
+    # The cadence's second citation, and the disagreement, both in the entry.
+    assert "Every following hit takes 3s" in totems["kqm"]
+    assert "only the first one generates Particles" in totems["kqm"]
+    assert "KQM's library disagrees" in totems["note"]
+    [source] = formula_energy.particle_table()["Yae Miko"]
+    assert source.shared_icd is True
+
+
+def test_nothing_is_left_to_the_user_now() -> None:
+    assert TABLE["not_curated"] == {}
+    assert formula_energy.not_curated() == {}
+
+
+def test_electro_resonance_is_gcsims_high_voltage() -> None:
+    """Ruling 1: one Electro particle on an Electro reaction, 5 s cooldown, four members."""
+    res = TABLE["resonances"]["electro"]
+    for path, line, needle in res["lines"]:
+        assert needle in _line(path, line), f"{path}:{line} does not contain {needle!r}"
+    setup = "pkg/simulation/setup.go"
+    assert "len(chars) < 4" in _line(setup, 108)
+    assert "v < 2" in _line(setup, 118)
+    frames = int(re.search(r"s\.F-last < (\d+)", _line(setup, 185)).group(1))
+    assert res["cooldown_seconds"] == frames / 60
+    assert res["particles"] == int(re.search(r"Num:\s+(\d+)", _line(setup, 190)).group(1))
+    assert "attributes.Electro" in _line(setup, 191)
+    # The reactions it listens to, and the partner element each needs.
+    events = {_line(setup, n).split("event.")[1].split(",")[0] for n in range(200, 208)}
+    assert events == {"OnOverload", "OnSuperconduct", "OnStellarConduct", "OnElectroCharged",
+                      "OnLunarCharged", "OnQuicken", "OnAggravate", "OnHyperbloom"}
+    assert set(res["trigger_elements"]) == {"pyro", "cryo", "hydro", "dendro"}
+    assert "(CD: 5s)" in res["kqm"]
+    spec = formula_energy.resonance_spec()
+    assert (spec.element, spec.particles, spec.cooldown_seconds) == ("electro", 1.0, 5.0)
+    assert spec.citation.startswith(f"gcsim {declared_pin()[:8]} pkg/simulation/setup.go:")
+    assert "KQM library.keqingmains.com" in spec.citation
+
+
+@pytest.mark.parametrize(("elements", "has", "triggers"), [
+    (["electro", "electro", "hydro", "geo"], True, True),
+    (["electro", "electro", "anemo", "geo"], True, False),
+    (["electro", "electro", "electro", "dendro"], True, True),
+    (["electro", "hydro", "geo", "pyro"], False, True),
+    (["electro", "electro", "hydro"], False, True),  # three members: no resonance at all
+])
+def test_the_team_has_high_voltage_by_the_resonance_tally(
+    elements: list[str], has: bool, triggers: bool,
+) -> None:
+    found = formula_energy.team_resonance(elements)
+    assert (found is not None) == has
+    if found is not None:
+        assert found.team_can_trigger == triggers

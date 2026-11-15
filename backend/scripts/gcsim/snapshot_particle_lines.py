@@ -4,7 +4,8 @@
 
 The particle table (`app/data/formula/energy/particles.json`) cites each count to a
 `QueueParticle` call (and each flat refund to its `AddEnergy`, the Favonius proc to its
-weapon file, a character left to the user to the lines that say why), and the energy model's
+weapon file, a resonance's particle to its `SetupResonance` lines, a character left to the user to
+the lines that say why), and the energy model's
 constants cite gcsim's `ReceiveParticle`, its energy drip and its own ER-requirement
 formula. This copies each cited line, verbatim, into
 `app/data/formula/energy/gcsim_lines.json`, so `tests/unit/test_formula_energy_data.py` can
@@ -44,6 +45,7 @@ def _cited(table: dict) -> set[tuple[str, int]]:
                for s in (*c["sources"], *c.get("refunds", ()))]
     entries += list(table.get("weapons", {}).values())
     entries += list(table.get("not_curated", {}).values())
+    entries += list(table.get("resonances", {}).values())
     for entry in entries:
         for path, line, _needle in entry["lines"]:
             lines.add((path, int(line)))
