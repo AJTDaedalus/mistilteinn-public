@@ -224,7 +224,10 @@ export interface KitCoverage {
    * Weapon passives (task 12): the ones applied (`<weapon> R<r> (<wielder>)`), and the members'
    * weapons with no passive data. Absent: the estimate says no weapon passive is modelled.
    */
-  weapons?: { modelled: { name: string; verified: boolean }[]; missing: string[] };
+  weapons?: {
+    modelled: { name: string; verified: boolean; inert?: boolean }[];
+    missing: string[];
+  };
 }
 
 /** `{ "<source id>/<condition key>": value }`. */
@@ -1041,6 +1044,11 @@ export function weaponAssumptions(coverage: KitCoverage | undefined): string[] {
   if (weapons === undefined) return ['No weapon passives modelled.'];
   const out: string[] = [];
   for (const w of weapons.modelled) {
+    // A teammate's Homa or Aquila: every part is the wielder's own (found driving it).
+    if (w.inert) {
+      out.push(`${w.name}: no damage effect on the optimized character (the wielder's own).`);
+      continue;
+    }
     out.push(`Weapon passive ${w.name}: ${w.verified
       ? 'verified against Genshin Optimizer' : 'unverified (cited to Genshin Optimizer)'}.`);
   }

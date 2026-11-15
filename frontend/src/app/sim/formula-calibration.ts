@@ -135,8 +135,10 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
     missing: [...input.kits.missing],
     ...(input.kits.missingWeapons === undefined ? {} : {
       weapons: {
-        modelled: input.kits.sources.filter(isWeapon)
-          .map((k) => ({ name: k.label, verified: k.verified })),
+        modelled: input.kits.sources.filter(isWeapon).map((k) => ({
+          name: k.label, verified: k.verified,
+          ...(k.status === 'no_damage_effect' ? { inert: true } : {}),
+        })),
         missing: [...input.kits.missingWeapons],
       },
     }),
@@ -210,6 +212,12 @@ export interface ConditionGroup {
   kind?: 'kit' | 'no-kit' | 'weapon' | 'no-weapon';
   /** A kit sheet's verification: a GO-cited fixture checks it, or it is unverified. */
   verified?: boolean;
+  /**
+   * Nothing in it reaches the optimized character (its status is `no_damage_effect`): a
+   * teammate's Skyward Blade, every part of it the wielder's own. The panel then does not say
+   * "applied" (found driving task 12).
+   */
+  inert?: boolean;
 }
 
 /** Each part named once: the panel tracks a part by its `what`, and repeating it said nothing. */
@@ -263,6 +271,7 @@ export function conditionGroups(
       unmodelled: distinctParts(kit.bonus.unmodelled),
       kind: kit.kind === 'weapon' ? 'weapon' : 'kit',
       verified: kit.verified,
+      ...(kit.status === 'no_damage_effect' ? { inert: true } : {}),
     });
   }
   for (const name of kits.missing) {

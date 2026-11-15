@@ -90,12 +90,5 @@
    ],
    "go": "19,23-40"
   }
- ],
- "unmodelled": [
-  {
-   "what": "the wielder's own ATK",
-   "reason": "GO and the game give it only to the incoming character, never the wielder",
-   "receiver": "subject"
-  }
  ]
 }

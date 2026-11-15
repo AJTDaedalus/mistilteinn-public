@@ -217,7 +217,8 @@
             </span>
           </div>
         }
-        @if (!group.conditions.length && group.kind !== 'no-kit' && group.kind !== 'no-weapon') {
+        @if (!group.conditions.length && group.kind !== 'no-kit' && group.kind !== 'no-weapon'
+          && !group.inert) {
           <p class="assumptions__static">Applied whenever it is active; nothing to set.</p>
         }
         @for (part of group.unmodelled; track part.what) {
@@ -247,7 +248,12 @@
         } @else {
           <li>No kit buffs: talents, passives, constellations and teammates' buffs are absent.</li>
         }
-        <li>No weapon passives.</li>
+        @if (hasWeapons()) {
+          <li>Weapon passives: each member's weapon as listed above, or "no weapon passive
+            modelled" where it says so.</li>
+        } @else {
+          <li>No weapon passives.</li>
+        }
         <li>Reactions: only the rows above. Add a reaction row, or spread/aggravate on an
           ability, to count transformative, additive or Lunar reaction damage.</li>
       </ul>

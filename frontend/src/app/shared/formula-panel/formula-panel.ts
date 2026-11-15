@@ -112,6 +112,10 @@ export class FormulaPanel {
 
   /** Whether the groups say anything about kits (P2): then they, not a blanket line, do. */
   protected readonly hasKits = computed(() => this.groups().some((g) => g.kind !== undefined));
+  /** A weapon passive or a weapon without one is listed (task 12). */
+  protected readonly hasWeapons = computed(
+    () => this.groups().some((g) => g.kind === 'weapon' || g.kind === 'no-weapon'),
+  );
 
   /** Groups that carry a control, for the per-row overrides. */
   protected readonly conditional = computed(

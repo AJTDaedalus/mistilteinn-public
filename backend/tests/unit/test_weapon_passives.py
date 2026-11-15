@@ -106,7 +106,10 @@ def test_homa_reaches_nobody_else():
     """Every Homa effect is its wielder's own: a teammate's Homa gives the subject nothing."""
     kit = _resolve("13501", 5, subject=False, stats={"base_hp": 15000.0})
     assert kit.bonus.effects == ()
-    assert kit.status in {"no_damage_effect", "unmodelled"}
+    # Said once, as no damage effect on this receiver, never as "applied" (found driving it).
+    assert kit.status == "no_damage_effect"
+    [said] = kit.bonus.unmodelled
+    assert "Wielder's own" in said.reason
 
 
 def test_a_team_buff_is_a_number_from_the_wielders_own_stats_with_its_own_hp():

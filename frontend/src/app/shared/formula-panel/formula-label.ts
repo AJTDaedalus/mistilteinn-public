@@ -4,6 +4,7 @@ import { FORMULA_LABEL, FORMULA_SCORE_LABEL } from '../../sim/formula-calibratio
 
 /** `Kit buffs from Bennett: verified …` → `Bennett`: the givers an estimate applied. */
 const KIT_GIVER = /^Kit buffs from (.+?): /;
+const WEAPON_PASSIVE = /^Weapon passive (.+?): (verified|unverified)/;
 
 /**
  * The members whose kit sheet an estimate applied, read from its own assumptions
@@ -12,6 +13,18 @@ const KIT_GIVER = /^Kit buffs from (.+?): /;
 export function kitGivers(assumptions: readonly string[]): string[] {
   return assumptions.flatMap((line) => {
     const found = KIT_GIVER.exec(line);
+    return found ? [found[1]] : [];
+  });
+}
+
+/**
+ * The weapon passives an estimate applied, read from its own assumptions
+ * (`formula-recipe.ts:weaponAssumptions` writes one `Weapon passive <weapon> R<r> (<wielder>): …`
+ * line per weapon with data, math-fallback P3 task 12).
+ */
+export function weaponPassives(assumptions: readonly string[]): string[] {
+  return assumptions.flatMap((line) => {
+    const found = WEAPON_PASSIVE.exec(line);
     return found ? [found[1]] : [];
   });
 }
@@ -72,8 +85,11 @@ export class FormulaLabel {
 
   protected readonly kitsSentence = computed(() => {
     const givers = kitGivers(this.assumptions());
-    if (!givers.length) return 'No kit buffs or weapon passives are modelled.';
-    return `Kit buffs applied from ${givers.join(', ')} (listed in the assumptions); `
-      + 'weapon passives are not modelled.';
+    const weapons = weaponPassives(this.assumptions());
+    const kits = givers.length
+      ? `Kit buffs applied from ${givers.join(', ')}` : 'No kit buffs are modelled';
+    const passives = weapons.length
+      ? `weapon passives from ${weapons.join(', ')}` : 'no weapon passives';
+    return `${kits}; ${passives} (listed in the assumptions).`;
   });
 }

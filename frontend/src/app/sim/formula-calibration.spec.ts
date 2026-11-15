@@ -324,6 +324,18 @@ describe('formulaCalibration with weapon passives (P3, task 12)', () => {
     expect(said).not.toMatch(/Kit buffs from Xingqiu/);
   });
 
+  it('says a teammate\'s self-only weapon has no damage effect here, not that it is applied', () => {
+    const aquila: FormulaKit = {
+      ...THRILLING, id: 'weapon:aquila_favonia', label: 'Aquila Favonia R1 (Bennett)',
+      status: 'no_damage_effect',
+      bonus: { conditions: [], effects: [], unmodelled: [] },
+    };
+    const said = formulaCalibration({ ...INPUT, kits: { ...kits, sources: [aquila] } })
+      .assumptions.join('\n');
+    expect(said).toMatch(/Aquila Favonia R1 \(Bennett\): no damage effect on the optimized/);
+    expect(said).not.toMatch(/Weapon passive Aquila/);
+  });
+
   it('without weapon coverage it still says none is modelled', () => {
     expect(formulaCalibration({ ...INPUT, kits: { sources: [BENNETT], missing: [] } })
       .assumptions.join('\n')).toMatch(/No weapon passives modelled\./);

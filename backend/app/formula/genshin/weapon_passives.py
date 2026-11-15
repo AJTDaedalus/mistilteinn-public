@@ -500,6 +500,16 @@ def resolve(
         if effect.per is not None:
             used.add(effect.per)
         applied.append(effect.key)
+    if (params is not None and not wielder_is_subject and not effects and passive.effects
+            and all(e.receivers == "self" for e in passive.effects)):
+        # A teammate's Homa or Aquila: every part is the wielder's own (their stats, their
+        # procs), so nothing here concerns this receiver — said once, as no damage effect on
+        # them, rather than as "applied" beside the wielder's own unmodelled parts. Found
+        # driving it: Bennett's Aquila Favonia read "Applied whenever it is active".
+        unmodelled = [Unmodelled(
+            what="every part of this passive",
+            reason=f"no damage effect on the optimized character: it is {wielder.name}'s own",
+        )]
     bonus = Bonus(
         conditions=tuple(c for c in conditions if c.key in used),
         effects=tuple(effects),
