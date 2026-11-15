@@ -9287,7 +9287,7 @@
           "gcsim_commit"
         ],
         "title": "FormulaTeamEnergyRead",
-        "description": "The team's energy data for the formula estimate's energy model (DESIGN \u00a72.10)."
+        "description": "The team's energy data for the formula estimate's energy model (DESIGN \u00a72.11)."
       },
       "FormulaTeamKitRead": {
         "properties": {
