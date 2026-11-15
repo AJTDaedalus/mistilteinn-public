@@ -75,6 +75,15 @@ def test_a_fixed_count_is_the_number_on_its_queue_particle_line(name: str, sourc
             assert source["particles"] == float(constant.group(1))
 
 
+def test_a_per_second_rate_is_its_citation() -> None:
+    """Furina's one per 3.25 s is KQM's measured average; Nahida's 3 per 7 s her ICD line."""
+    furina = TABLE["characters"]["Furina"]["sources"][0]
+    assert f"~{furina['interval']} seconds" in furina["kqm"]
+    assert furina["max_seconds"] == pytest.approx(1736 / 60, abs=1e-3)
+    nahida = TABLE["characters"]["Nahida"]["sources"][0]
+    assert f"{nahida['interval']}*60" in _line("internal/characters/nahida/skill.go", 128)
+
+
 def test_the_model_constants_are_gcsims() -> None:
     """The four rules `formula-energy.ts` applies, each on the line it cites."""
     def block(name: str) -> str:

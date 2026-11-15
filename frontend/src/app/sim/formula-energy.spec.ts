@@ -66,6 +66,8 @@ describe('the rules (gcsim energy.go at the pin; KQM Energy page)', () => {
   it("banks gcsim's 39.97176 over the National rotation at ER 1.9594", () => {
     expect(rawParticleEnergy(NATIONAL)).toBeCloseTo(20.4, 12);
     expect(energyAt(NATIONAL, 1.9594)).toBeCloseTo(39.97176, 9);
+    // Flat energy is added after ER, never multiplied by it (energy.go:35-43).
+    expect(energyAt({ ...NATIONAL, flatEnergy: 10 }, 2)).toBeCloseTo(2 * 20.4 + 10, 12);
   });
 
   it("requires gcsim's max((cost − flat) / raw, 1)", () => {
