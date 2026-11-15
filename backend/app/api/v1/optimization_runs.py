@@ -31,16 +31,28 @@ router = APIRouter(prefix="/optimization-runs", tags=["optimization-runs"])
 _Repo = Annotated[OptimizationRunRepository, Depends(get_optimization_run_repo)]
 
 
+#: A formula estimate's energy mode as the list row names it (DESIGN_team_math_fallback §2.11).
+_FORMULA_ENERGY = {"wait": "waiting", "skip": "skipping", "off": "report only"}
+
+
+def _formula_energy_model(objective: dict) -> str | None:
+    """The energy model a saved formula estimate priced ER with; `None` for one saved before
+    the settings were kept with it (2026-11-15), rather than a guess."""
+    energy = objective.get("energy")
+    mode = energy.get("mode") if isinstance(energy, dict) else None
+    return _FORMULA_ENERGY.get(mode) if isinstance(mode, str) else None
+
+
 def _summary(run: object) -> dict:
     """The fields a list row needs, drawn from `objective` so no second fetch is required."""
     objective = getattr(run, "objective", None) or {}
-    # A formula estimate (math-fallback P1, task 8) ran no simulation, so it has no energy
-    # model, and its row must say what it is rather than read as a sim run.
+    # A formula estimate (math-fallback P1, task 8) ran no simulation; its row must say what it
+    # is rather than read as a sim run, and names the energy mode it was saved with (task 14).
     formula = objective.get("kind") == "formula-estimate"
     return {
         "sets": objective.get("artifact_set_ids") or [],
         "weapons": objective.get("weapon_ids") or [],
-        "energy_model": None if formula else (
+        "energy_model": _formula_energy_model(objective) if formula else (
             "waiting" if objective.get("wait_for_energy") else "skipping"
         ),
         "enemy": objective.get("enemy"),

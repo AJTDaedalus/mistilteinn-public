@@ -3,10 +3,12 @@
     cd backend && python -m scripts.gcsim.snapshot_particle_lines --src /path/to/gcsim
 
 The particle table (`app/data/formula/energy/particles.json`) cites each count to a
-`QueueParticle` call, and the energy model's constants cite gcsim's `ReceiveParticle`, its
-energy drip and its own ER-requirement formula. This copies each cited line, verbatim, into
-`app/data/formula/energy/gcsim_lines.json`, so `tests/unit/test_formula_energy_data.py` can hold
-every number to the line it names without gcsim's source or the network (the rule
+`QueueParticle` call (and each flat refund to its `AddEnergy`, the Favonius proc to its
+weapon file, a character left to the user to the lines that say why), and the energy model's
+constants cite gcsim's `ReceiveParticle`, its energy drip and its own ER-requirement
+formula. This copies each cited line, verbatim, into
+`app/data/formula/energy/gcsim_lines.json`, so `tests/unit/test_formula_energy_data.py` can
+hold every number to the line it names without gcsim's source or the network (the rule
 `app/data/gcsim/keys.json` follows). A snapshot built from another commit is refused.
 """
 
@@ -38,10 +40,13 @@ CONSTANT_LINES: dict[str, tuple[str, int, int]] = {
 
 def _cited(table: dict) -> set[tuple[str, int]]:
     lines: set[tuple[str, int]] = set()
-    for character in table["characters"].values():
-        for source in character["sources"]:
-            for path, line, _needle in source["lines"]:
-                lines.add((path, int(line)))
+    entries = [s for c in table["characters"].values()
+               for s in (*c["sources"], *c.get("refunds", ()))]
+    entries += list(table.get("weapons", {}).values())
+    entries += list(table.get("not_curated", {}).values())
+    for entry in entries:
+        for path, line, _needle in entry["lines"]:
+            lines.add((path, int(line)))
     for path, start, end in CONSTANT_LINES.values():
         lines.update((path, n) for n in range(start, end + 1))
     return lines

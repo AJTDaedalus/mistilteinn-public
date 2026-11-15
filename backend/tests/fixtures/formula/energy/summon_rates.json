@@ -1,0 +1,75 @@
+{
+ "sim_version": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "runs": [
+  {
+   "config": "summon_rates_1.txt",
+   "iterations": 3000,
+   "receiver": "xingqiu",
+   "receiver_element": "hydro",
+   "receiver_er": 1.5,
+   "always_off_field": true,
+   "sources": {
+    "fischl": {
+     "mean": 48.301500000000274,
+     "sd": 3.7335069449562015
+    },
+    "kukishinobu": {
+     "mean": 12.872400000000068,
+     "sd": 2.4997162039653387
+    },
+    "zhongli": {
+     "mean": 24.375000000000124,
+     "sd": 3.3055313005717935
+    }
+   },
+   "hits": {
+    "Oz (Summon)": 4,
+    "Sanctifying Ring": 4,
+    "Oz (Skill)": 40,
+    "Stone Stele (Initial)": 4,
+    "Thundering Retribution (A4)": 8,
+    "Grass Ring of Sanctification": 32,
+    "Stone Stele (Tick)": 54,
+    "Midnight Phantasmagoria": 4,
+    "Oz (Burst)": 40
+   }
+  },
+  {
+   "config": "summon_rates_2.txt",
+   "iterations": 3000,
+   "receiver": "bennett",
+   "receiver_element": "pyro",
+   "receiver_er": 1.7667,
+   "always_off_field": true,
+   "sources": {
+    "jean": {
+     "mean": 11.315360160000013,
+     "sd": 1.015148672776649
+    },
+    "kujousara": {
+     "mean": 12.72023999999999,
+     "sd": 0
+    },
+    "sangonomiyakokomi": {
+     "mean": 19.79870022000002,
+     "sd": 2.56261510705633
+    },
+    "sara-a4": {
+     "mean": 7.199999999999989,
+     "sd": 0
+    }
+   },
+   "hits": {
+    "Bake-Kurage": 28,
+    "Fully-Charged Aimed Shot (A1)": 4,
+    "electrocharged": 4,
+    "Gale Blade": 4,
+    "swirl-electro": 8,
+    "swirl-hydro": 12,
+    "Tengu Juurai: Ambush": 4,
+    "Dandelion Breeze (In/Out)": 8,
+    "Dandelion Breeze": 4
+   }
+  }
+ ]
+}

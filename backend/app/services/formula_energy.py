@@ -16,6 +16,14 @@ model (`frontend/src/app/sim/formula-energy.ts`) does the arithmetic; this serve
 
 A member with no curated count is `no_particle_data`, named, never zero by default without
 saying so.
+
+**Follow-ups (owner rulings 2026-11-15, DESIGN §2.11, DECISIONS §48).** Summons whose particles
+come with a chance per hit carry that chance and a cited hit cadence; a kit's **flat refunds**
+(gcsim `AddEnergy`: Raiden's burst, Sara's and Jean's and Venti's A4) are served per member with
+their amount, recipients and how they scale; and a member holding a **Favonius** weapon is
+served with the proc's chance and cooldown from our catalogue's refinement row, and the
+member's own crit rate and ER (pass 1, `kit_buffs.pass_one`) that the proc count and the
+ER-scaled refunds read.
 """
 
 from __future__ import annotations
@@ -27,9 +35,14 @@ from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
+from app.formula.genshin import sheets, tags
 from app.models.enums import TalentType
-from app.services import talent_scaling
+from app.pando.calculator import Calculator
+from app.services import kit_buffs, talent_scaling
+from app.services.build_assembler import BuildAssemblyError
 from app.services.gcsim_config import ENERGY_DRIP
+from app.services.stat_calculator import StatInputError
+from app.services.talent_boosts import TalentBoostError, effective_talent_levels
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -62,6 +75,56 @@ class ParticleSource:
     interval: float | None = None
     max_seconds: float | None = None
     note: str | None = None
+    #: `skill`: counted per skill cast. `burst`: per burst (Oz from Fischl's burst).
+    on: Literal["skill", "burst"] = "skill"
+    #: A summon hit's chance of a particle, the literal on its `Rand` line; `particles` is it
+    #: times the particles a hit drops.
+    chance: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RefundSpec:
+    """One flat-energy refund as `particles.json` curates it, before a build resolves it."""
+
+    label: str
+    per: Literal["burst", "cast"]
+    count: float
+    recipients: Literal["team", "self"]
+    scaling: Literal["none", "per_er", "raiden_a4"]
+    citation: str
+    amount: float | None = None
+    #: `(talent type, label)`: the amount is that talent row's value at the build's level.
+    amount_row: tuple[str, str] | None = None
+    requires_ascension: int | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Refund:
+    """A refund resolved for one build: energy per trigger before scaling, or why not."""
+
+    label: str
+    per: Literal["burst", "cast"]
+    count: float
+    recipients: Literal["team", "self"]
+    scaling: Literal["none", "per_er", "raiden_a4"]
+    amount: float | None
+    citation: str
+    note: str | None = None
+    #: Why the refund cannot be counted for this build (an ascension it lacks, a missing row).
+    unavailable: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FavoniusProc:
+    """A member's Favonius weapon: the proc's chance and cooldown at their refinement."""
+
+    weapon: str
+    refinement: int
+    chance: float
+    cooldown_seconds: float
+    particles: float
+    citation: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +139,14 @@ class MemberEnergy:
     is_subject: bool
     status: Literal["curated", "no_particle_data"]
     sources: tuple[ParticleSource, ...] = ()
+    refunds: tuple[Refund, ...] = ()
+    favonius: FavoniusProc | None = None
+    #: The build's own totals (pass 1), as fractions: what the proc count and an ER-scaled
+    #: refund read for a teammate. `None` when the build's stats cannot be assembled.
+    energy_recharge: float | None = None
+    crit_rate: float | None = None
+    #: Why a member is left to the user (`not_curated`), when the table says.
+    note: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,10 +176,24 @@ def _citation(lines: list[list[Any]], commit: str) -> str:
     return f"gcsim {commit[:8]} {cited}"
 
 
+def _load() -> dict[str, Any]:
+    return json.loads(TABLE.read_text())
+
+
+def _cited(entry: dict[str, Any], commit: str) -> str:
+    citation = _citation(entry["lines"], commit)
+    if entry.get("kqm"):
+        citation += f"; KQM {entry['kqm']}"
+    return citation
+
+
 @cache
 def particle_table() -> dict[str, tuple[ParticleSource, ...]]:
-    """`particles.json` by catalogue character name, each source with its citation."""
-    data = json.loads(TABLE.read_text())
+    """`particles.json` by catalogue character name, each source with its citation.
+
+    A character carried only for a refund (Venti) has no sources and is not in this map.
+    """
+    data = _load()
     commit = str(data["gcsim_commit"])
     out: dict[str, tuple[ParticleSource, ...]] = {}
     for name, entry in data["characters"].items():
@@ -120,22 +205,161 @@ def particle_table() -> dict[str, tuple[ParticleSource, ...]]:
             if s["per"] == "second" and not s.get("interval"):
                 msg = f"{name}: a per-second source needs an interval"
                 raise FormulaEnergyError(msg)
-            citation = _citation(s["lines"], commit)
-            if s.get("kqm"):
-                citation += f"; KQM {s['kqm']}"
+            if s.get("on", "skill") not in ("skill", "burst"):
+                msg = f"{name}: unknown on {s['on']!r}"
+                raise FormulaEnergyError(msg)
             sources.append(ParticleSource(
                 label=s["label"], per=s["per"], particles=float(s["particles"]),
-                collector=s["collector"], citation=citation,
+                collector=s["collector"], citation=_cited(s, commit),
                 interval=s.get("interval"), max_seconds=s.get("max_seconds"),
-                note=s.get("note"),
+                note=s.get("note"), on=s.get("on", "skill"), chance=s.get("chance"),
             ))
-        out[name] = tuple(sources)
+        if sources:
+            out[name] = tuple(sources)
     return out
+
+
+@cache
+def refund_table() -> dict[str, tuple[RefundSpec, ...]]:
+    """Each character's flat-energy refunds, cited to the `AddEnergy` line they are read off."""
+    data = _load()
+    commit = str(data["gcsim_commit"])
+    out: dict[str, tuple[RefundSpec, ...]] = {}
+    for name, entry in data["characters"].items():
+        specs = []
+        for r in entry.get("refunds", ()):
+            if (r["per"] not in ("burst", "cast") or r["recipients"] not in ("team", "self")
+                    or r["scaling"] not in ("none", "per_er", "raiden_a4")):
+                msg = f"{name}: a refund with an unknown per, recipients or scaling: {r}"
+                raise FormulaEnergyError(msg)
+            if ("amount" in r) == ("amount_row" in r):
+                msg = f"{name}: a refund names an amount or a talent row, exactly one"
+                raise FormulaEnergyError(msg)
+            row = r.get("amount_row")
+            specs.append(RefundSpec(
+                label=r["label"], per=r["per"], count=float(r["count"]),
+                recipients=r["recipients"], scaling=r["scaling"], citation=_cited(r, commit),
+                amount=float(r["amount"]) if "amount" in r else None,
+                amount_row=(row["talent"], row["label"]) if row else None,
+                requires_ascension=r.get("requires_ascension"), note=r.get("note"),
+            ))
+        if specs:
+            out[name] = tuple(specs)
+    return out
+
+
+@cache
+def favonius_spec() -> tuple[frozenset[str], float, str]:
+    """The Favonius weapons by catalogue name, the particles a proc drops, its citation."""
+    data = _load()
+    fav = data["weapons"]["favonius"]
+    return frozenset(fav["names"]), float(fav["particles"]), _cited(fav, data["gcsim_commit"])
+
+
+@cache
+def not_curated() -> dict[str, str]:
+    """Characters the table leaves to the user, each with the reason it gives."""
+    return {name: str(e["reason"]) for name, e in _load().get("not_curated", {}).items()}
+
+
+def favonius_proc(params: Sequence[float]) -> tuple[float, float]:
+    """`(chance, cooldown seconds)` from a Favonius refinement `param_list` in our catalogue.
+
+    Param 0 is the chance and param 1 the cooldown in seconds (`[0.6, 12, …]` at R1): gcsim
+    computes the same from the refinement, `0.5 + 0.1 R` and `810 - 90 R` frames
+    (`internal/weapons/common/favonius.go:28-29`), and a test holds every row to it.
+    """
+    if len(params) < 2 or not 0 < params[0] <= 1 or params[1] <= 0:  # noqa: PLR2004
+        msg = f"not a Favonius refinement row: {list(params)!r}"
+        raise FormulaEnergyError(msg)
+    return float(params[0]), float(params[1])
+
+
+_PARAM_REF = re.compile(r"\{param(\d+)")
+
+
+def _row_value(build: Build, talent: str, label: str) -> tuple[float | None, str | None]:
+    """A talent row's first value at the build's effective level, or why there is none."""
+    character = build.character
+    stored = dict(build.talent_levels or {})
+    try:
+        levels = effective_talent_levels(character, build.constellation_level, stored)
+    except TalentBoostError as exc:
+        return None, str(exc)
+    level = levels.get(talent)
+    if level is None:
+        return None, f"the build has no {talent} level"
+    for found_talent in character.talents:
+        if str(found_talent.talent_type) != talent:
+            continue
+        for scaling in found_talent.scalings:
+            if scaling.level != level:
+                continue
+            for entry in scaling.labels or []:
+                name, _, spec = (entry or "").partition("|")
+                found = _PARAM_REF.search(spec)
+                if name == label and found:
+                    return float((scaling.params or [])[int(found.group(1)) - 1]), None
+            return None, f"{talent} level {level} has no {label!r} row"
+    return None, f"no {talent} row at level {level}"
+
+
+def _refunds(build: Build) -> tuple[Refund, ...]:
+    out = []
+    for spec in refund_table().get(build.character.name, ()):
+        amount, unavailable = spec.amount, None
+        if spec.amount_row is not None:
+            amount, unavailable = _row_value(build, *spec.amount_row)
+        scaling = spec.scaling
+        short = (spec.requires_ascension is not None
+                 and build.ascension_phase < spec.requires_ascension)
+        if short and scaling == "raiden_a4":
+            # Without her A4 the restoration is the row's alone (gcsim `asc.go:39`).
+            scaling = "none"
+        elif short:
+            unavailable = (f"needs ascension {spec.requires_ascension}; the build is at "
+                           f"{build.ascension_phase}")
+        out.append(Refund(
+            label=spec.label, per=spec.per, count=spec.count, recipients=spec.recipients,
+            scaling=scaling, amount=amount, citation=spec.citation, note=spec.note,
+            unavailable=unavailable,
+        ))
+    return tuple(out)
+
+
+def _favonius(build: Build) -> FavoniusProc | None:
+    names, particles, citation = favonius_spec()
+    weapon = build.weapon
+    if weapon is None or weapon.name not in names:
+        return None
+    refinement = int(build.refinement or 1)
+    row = next((r for r in weapon.refinements if r.level == refinement), None)
+    if row is None:
+        msg = f"{weapon.name} has no refinement {refinement} row"
+        raise FormulaEnergyError(msg)
+    chance, cooldown_s = favonius_proc(list(row.param_list or []))
+    return FavoniusProc(
+        weapon=weapon.name, refinement=refinement, chance=chance,
+        cooldown_seconds=cooldown_s, particles=particles,
+        citation=f"{citation}; chance and cooldown: {weapon.name} R{refinement} "
+                 f"refinement row (game data)",
+    )
+
+
+def _own_stats(build: Build) -> tuple[float | None, float | None]:
+    """`(ER, crit rate)` from the build alone (pass 1), or `None`s when it cannot assemble."""
+    try:
+        calculator = Calculator(kit_buffs.pass_one(build))
+        er = float(calculator.compute(sheets.GIVER_STATS[tags.Q_ENERGY_RECHARGE]))
+        cr = float(calculator.compute(sheets.GIVER_STATS[tags.Q_CRIT_RATE]))
+    except (BuildAssemblyError, StatInputError):
+        return None, None
+    return er, cr
 
 
 def table_commit() -> str:
     """The gcsim commit the particle table cites."""
-    return str(json.loads(TABLE.read_text())["gcsim_commit"])
+    return str(_load()["gcsim_commit"])
 
 
 def drip() -> Drip:
@@ -176,10 +400,12 @@ def team_energy(members: Sequence[Build], subject_build_id: str) -> TeamEnergy:
         msg = "the optimized build is not one of the members"
         raise FormulaEnergyError(msg)
     table = particle_table()
+    reasons = not_curated()
     out = []
     for build in members:
         character = build.character
         sources = table.get(character.name, ())
+        er, cr = _own_stats(build)
         out.append(MemberEnergy(
             build_id=str(build.id), name=character.name,
             element=character.element.value.lower() if character.element else None,
@@ -188,5 +414,9 @@ def team_energy(members: Sequence[Build], subject_build_id: str) -> TeamEnergy:
             is_subject=str(build.id) == subject_build_id,
             status="curated" if sources else "no_particle_data",
             sources=sources,
+            refunds=_refunds(build),
+            favonius=_favonius(build),
+            energy_recharge=er, crit_rate=cr,
+            note=reasons.get(character.name),
         ))
     return TeamEnergy(members=out, drip=drip(), gcsim_commit=table_commit())

@@ -315,6 +315,42 @@ class FormulaParticleSourceRead(BaseModel):
     max_seconds: float | None = None
     note: str | None = None
     citation: str
+    #: `skill`: counted per skill cast; `burst`: per burst (Oz from Fischl's burst).
+    on: Literal["skill", "burst"] = "skill"
+    #: A summon hit's chance of a particle (gcsim's `Rand` literal); `particles` is the
+    #: expectation per hit.
+    chance: float | None = None
+
+
+class FormulaRefundRead(BaseModel):
+    """A kit's flat energy (gcsim `AddEnergy`): ER never multiplies it (DESIGN §2.11)."""
+
+    label: str
+    #: Triggered per `burst` or per skill `cast`, `count` times each.
+    per: Literal["burst", "cast"]
+    count: float
+    #: `team`: every member gets it, on field or off. `self`: the giver alone.
+    recipients: Literal["team", "self"]
+    #: `none`: `amount` as is. `per_er`: × the giver's total ER (Sara). `raiden_a4`:
+    #: × (1 + 0.006 × whole percent of the giver's ER above 100 %).
+    scaling: Literal["none", "per_er", "raiden_a4"]
+    #: Energy per trigger before scaling; `None` with `unavailable` saying why.
+    amount: float | None = None
+    unavailable: str | None = None
+    note: str | None = None
+    citation: str
+
+
+class FormulaFavoniusRead(BaseModel):
+    """A member's Favonius weapon: 3 clear particles on a crit while the wielder is active."""
+
+    weapon: str
+    refinement: int
+    #: From the weapon's refinement row in our catalogue (param 0, param 1).
+    chance: float
+    cooldown_seconds: float
+    particles: float
+    citation: str
 
 
 class FormulaEnergyMemberRead(BaseModel):
@@ -332,6 +368,13 @@ class FormulaEnergyMemberRead(BaseModel):
     #: user's number.
     status: Literal["curated", "no_particle_data"]
     sources: list[FormulaParticleSourceRead] = []
+    refunds: list[FormulaRefundRead] = []
+    favonius: FormulaFavoniusRead | None = None
+    #: The build's own ER and crit rate (fractions), for the proc count and ER-scaled refunds.
+    energy_recharge: float | None = None
+    crit_rate: float | None = None
+    #: Why a member is left to the user, when the particle table says (Yae Miko).
+    note: str | None = None
 
 
 class FormulaDripRead(BaseModel):
