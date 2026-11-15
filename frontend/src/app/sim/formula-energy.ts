@@ -37,6 +37,18 @@
  *   the drip, as gcsim's waiting model does.
  *
  * Both are monotone in ER, so the search's bound stays admissible.
+ *
+ * **Wait is the default** (owner, 2026-11-15, `DECISIONS.md` §48): the estimate prices the
+ * sequence a player performs, and a player waits for the burst rather than dropping it.
+ *
+ * ## Flat energy (follow-ups, §48)
+ *
+ * A kit's refund (gcsim `AddEnergy`: Raiden's burst to every member, Sara's A4, Jean's and
+ * Venti's) is **flat**: ER never multiplies it. Two of them scale with **their giver's** ER
+ * instead — Sara's is `1.2 × ER` (`sara/asc.go:32`) and Raiden's restoration is
+ * `× (1 + 0.006 × ⌊(ER − 1) × 100⌋)` (`raiden/asc.go:42`, her A4). When the giver is the
+ * optimized character that ER is the candidate's, so the refund moves with it; for a
+ * teammate it is their build's, a constant here. Both are non-decreasing, so the bound holds.
  */
 
 /** Which energy model prices ER in a formula recipe. */
@@ -55,6 +67,37 @@ export interface EnergySource {
   citation: string;
 }
 
+/**
+ * How a flat refund scales with the optimized character's own total ER: `none` (a constant —
+ * a teammate's, its giver's ER already applied), `per_er` (× ER, Sara's A4) or `raiden_a4`
+ * (× 1 + 0.006 × whole percent above 100 %, Raiden's burst).
+ */
+export type FlatScaling = 'none' | 'per_er' | 'raiden_a4';
+
+/** One flat-energy source over one rotation, as the subject receives it. */
+export interface FlatSource {
+  key: string;
+  label: string;
+  /** Energy per rotation before `scaling` is applied. */
+  energy: number;
+  scaling: FlatScaling;
+  citation: string;
+}
+
+/** gcsim `raiden/asc.go:42-43`: `excess := int(er * 100)`, `× 0.006` — whole percents only. */
+export function raidenA4Multiplier(totalEnergyRecharge: number): number {
+  return 1 + 0.006 * Math.floor(Math.max(totalEnergyRecharge - 1, 0) * 100);
+}
+
+/** A flat source's energy at a total ER. */
+export function flatSourceAt(source: FlatSource, totalEnergyRecharge: number): number {
+  switch (source.scaling) {
+    case 'none': return source.energy;
+    case 'per_er': return source.energy * totalEnergyRecharge;
+    case 'raiden_a4': return source.energy * raidenA4Multiplier(totalEnergyRecharge);
+  }
+}
+
 /** Everything the closed form reads, for one recipe. */
 export interface FormulaEnergy {
   mode: EnergyMode;
@@ -66,8 +109,10 @@ export interface FormulaEnergy {
   partyCount: number;
   /** The rotation's length in seconds: the waiting model's time base. */
   rotationSeconds: number;
-  /** Energy per rotation that ER does not multiply (a kit's or weapon's flat refund). */
+  /** Energy per rotation the user entered, that ER does not multiply. */
   flatEnergy: number;
+  /** The kits' flat refunds over one rotation (absent: none). */
+  flatSources?: FlatSource[];
   /** Every particle source over one rotation, the drip included when it is on. */
   sources: EnergySource[];
   /** The drip as a rate (clear particles a second) and the subject's on-field share; null: off. */
@@ -106,10 +151,20 @@ export function rawParticleEnergy(model: FormulaEnergy): number {
   return raw;
 }
 
+/** Flat energy over one rotation at a total ER: the user's plus every refund. */
+export function flatEnergyAt(model: FormulaEnergy, totalEnergyRecharge: number): number {
+  let flat = model.flatEnergy;
+  for (const source of model.flatSources ?? []) flat += flatSourceAt(source, totalEnergyRecharge);
+  return flat;
+}
+
 /** Energy banked over one rotation at a total ER: `ER × raw + flat` (gcsim `energy.go:77`). */
 export function energyAt(model: FormulaEnergy, totalEnergyRecharge: number): number {
-  return totalEnergyRecharge * rawParticleEnergy(model) + model.flatEnergy;
+  return totalEnergyRecharge * rawParticleEnergy(model) + flatEnergyAt(model, totalEnergyRecharge);
 }
+
+/** The highest ER the requirement is searched to (10 000 %): beyond it, "no ER answers". */
+const ER_CEILING = 100;
 
 /**
  * The total ER at which one rotation funds one burst — gcsim's own
@@ -120,8 +175,23 @@ export function energyAt(model: FormulaEnergy, totalEnergyRecharge: number): num
  */
 export function requiredEnergyRecharge(model: FormulaEnergy): number | null {
   const raw = rawParticleEnergy(model);
-  if (raw <= 0) return model.flatEnergy >= model.cost ? 1 : null;
-  return Math.max((model.cost - model.flatEnergy) / raw, 1);
+  if (!(model.flatSources ?? []).some((s) => s.scaling !== 'none')) {
+    const flat = flatEnergyAt(model, 1);
+    if (raw <= 0) return flat >= model.cost ? 1 : null;
+    return Math.max((model.cost - flat) / raw, 1);
+  }
+  // A refund that scales with the subject's own ER: energy is still non-decreasing in ER, so
+  // the requirement is the least ER whose energy reaches the cost, found by bisection.
+  if (energyAt(model, 1) >= model.cost) return 1;
+  if (energyAt(model, ER_CEILING) < model.cost) return null;
+  let low = 1;
+  let high = ER_CEILING;
+  for (let i = 0; i < 200 && high - low > 1e-12; i += 1) {
+    const mid = (low + high) / 2;
+    if (energyAt(model, mid) >= model.cost) high = mid;
+    else low = mid;
+  }
+  return high;
 }
 
 /** The artifact ER the requirement asks for beyond this recipe's own: 0 when already met. */
@@ -202,7 +272,7 @@ export function energyAssumptions(model: FormulaEnergy, subject: string): string
       ? `${subject}'s burst (${model.cost} energy): no particle counted, so no ER requirement can be computed.`
       : `${subject} needs ${(total * 100).toFixed(1)}% Energy Recharge to burst every rotation `
         + `(${model.cost} energy; ${rawParticleEnergy(model).toFixed(2)} particle energy per `
-        + `rotation at 100% ER, ${model.flatEnergy} flat).`,
+        + `rotation at 100% ER, ${flatEnergyAt(model, 1).toFixed(2)} flat).`,
   ];
   if (model.mode === 'off') out.push('Energy: reported only — ER does not change the score.');
   if (model.mode === 'skip') {
@@ -216,6 +286,13 @@ export function energyAssumptions(model: FormulaEnergy, subject: string): string
   for (const s of model.sources) {
     out.push(`Energy source: ${s.label} — ${s.particles.toFixed(2)} particles a rotation, `
       + `${Math.round(s.onFieldShare * 100)}% caught on field (${s.citation}).`);
+  }
+  for (const s of model.flatSources ?? []) {
+    const scaled = s.scaling === 'none' ? ''
+      : s.scaling === 'per_er' ? ' × the optimized character\'s ER'
+        : ' × (1 + 0.006 per whole 1% of the optimized character\'s ER above 100%)';
+    out.push(`Flat energy: ${s.label} — ${s.energy.toFixed(2)} a rotation${scaled}, `
+      + `not multiplied by ER (${s.citation}).`);
   }
   return out;
 }

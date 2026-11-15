@@ -16,7 +16,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  energyAt, fieldMultiplier, particleValue, requiredEnergyRecharge,
+  energyAt, fieldMultiplier, flatSourceAt, particleValue, raidenA4Multiplier,
+  requiredEnergyRecharge,
 } from '../src/app/sim/formula-energy.ts';
 import { synthesizeRecipe } from '../src/app/sim/formula-recipe.ts';
 import { cappedAmount } from '../src/app/sim/recipe.ts';
@@ -81,6 +82,12 @@ function score(f, sources) {
     rows, sources, team, f.conditionals, [], undefined, f.raised_talents ?? [],
   );
   if (recipe.meta.formula?.kind !== 'formula-estimate') throw new Error('no provenance marker');
+  // The GO fixtures state their energy assumption explicitly: none. GO has no energy model, so
+  // no fixture may carry one — and the estimate's default mode (Wait, owner 2026-11-15) cannot
+  // move a figure that has no energy model to apply it to.
+  if (recipe.meta.formulaEnergy !== undefined) {
+    throw new Error(`${f.name} carries an energy model; the GO fixtures are scored without one`);
+  }
   return evaluateRecipe(recipe, candidateStatsFrom([f.artifacts, ...f.set_pools]));
 }
 
@@ -319,6 +326,49 @@ for (const [name, model] of Object.entries(plants)) {
   }
 }
 
+// ── Summons, Favonius and flat refunds (TASKS 14 follow-ups, DECISIONS §48) ───────────────
+//
+// A second native sample at the pin: Raiden (a Favonius Lance R3), Fischl, Kokomi, Zhongli.
+// Every particle event — the Favonius proc's clear particles included — must be what the
+// module says, and every Raiden restoration must be `flatSourceAt` with her A4: the row's 2.4
+// (burst level 9 in our catalogue) × (1 + 0.006 × whole percent of her ER above 100 %),
+// to every member, never times the receiver's ER.
+const SUMMON = JSON.parse(readFileSync(join(FRONTEND, '..', 'backend', 'tests', 'fixtures',
+  'formula', 'energy', 'summon_energy_sample.json'), 'utf8'));
+let summonChecked = 0;
+let favoniusChecked = 0;
+for (const e of SUMMON.particles) {
+  const ele = e.ele === 'none' ? null : e.ele;
+  const got = e.count * particleValue(SUMMON.elements[e.receiver], ele)
+    * fieldMultiplier(e.is_active ? 1 : 0, e.party_count) * e.er;
+  if (Math.abs(got - e.amt) > 1e-9 * e.amt) {
+    failures.push(`summon energy event ${e.frame}/${e.receiver}/${e.source} (${got} against ${e.amt})`);
+  }
+  if (e.source.startsWith('favonius-')) {
+    favoniusChecked += 1;
+    if (e.count !== 3 || ele !== null) failures.push(`a Favonius drop is not 3 clear: ${e.frame}`);
+  }
+  summonChecked += 1;
+}
+const raidenEr = SUMMON.particles.find((e) => e.receiver === 'raidenshogun').er;
+const restoration = { key: 'r', label: 'Musou Isshin', energy: 2.4, scaling: 'raiden_a4', citation: '' };
+const refunds = SUMMON.flat.filter((e) => e.source === 'raiden-burst');
+for (const e of refunds) {
+  const got = flatSourceAt(restoration, raidenEr);
+  if (Math.abs(got - e.amt) > 1e-12) {
+    failures.push(`Raiden's restoration ${e.frame}/${e.receiver}: ${got} against gcsim's ${e.amt}`);
+  }
+}
+// Plants: the A4 read as a continuous 0.6 % per percent, or times the receiver's ER, must miss.
+const continuous = 2.4 * (1 + 0.6 * (raidenEr - 1));
+if (Math.abs(continuous - refunds[0].amt) <= 1e-9) failures.push('Raiden plant: continuous A4 still matches');
+if (Math.abs(2.4 * raidenA4Multiplier(raidenEr) * raidenEr - refunds[0].amt) <= 1e-9) {
+  failures.push("Raiden plant: a refund times the receiver's ER still matches");
+}
+if (refunds.length !== 5 * 4 * 4 || favoniusChecked === 0) { // 5 a burst, 4 bursts, 4 members
+  failures.push(`summon sample: ${refunds.length} restorations, ${favoniusChecked} Favonius events`);
+}
+
 if (failures.length > 0) {
   console.error(`formula recipe diverges from the GO-cited figures: ${failures.join(', ')}`);
   process.exit(1);
@@ -330,4 +380,8 @@ console.log(
 console.log(
   `energy model matches gcsim's ${energyChecked} particle events and Xiangling's drain `
     + `(${banked.toFixed(5)} banked; 3 plants miss)`,
+);
+console.log(
+  `summons, Favonius and refunds match gcsim's ${summonChecked} particle events `
+    + `(${favoniusChecked} Favonius) and ${refunds.length} Raiden restorations (2 plants miss)`,
 );

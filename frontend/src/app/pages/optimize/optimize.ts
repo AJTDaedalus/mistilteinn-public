@@ -541,6 +541,9 @@ export class OptimizePage implements OnInit {
               label: r.label, count: r.count, move: r.move, overrides: r.overrides,
             })),
             conditionals: this.formulaService.conditionals(),
+            // The energy settings the number was priced with (task 14): Wait became the
+            // default on 2026-11-15, so a saved estimate states its mode rather than implying it.
+            energy: this.formulaService.energy(),
             assumptions: this.formulaAssumptions(),
           } : {}),
         },

@@ -9,7 +9,7 @@ import { FormulaPanel } from './formula-panel';
 
 /**
  * Task 14 — the panel's Energy section (DESIGN §2.10): the requirement, every assumption with
- * its default and citation, each editable, and the mode the owner has yet to choose.
+ * its default and citation, each editable, and Wait as the default mode (owner, 2026-11-15).
  */
 
 const HITS = [{ talent: 'elemental_burst', label: 'Pyronado DMG', index: 0, multiplier: 1.4,
@@ -20,15 +20,15 @@ const DATA: TeamEnergyData = {
   drip: { particles: 1, interval_seconds: 599.5 / 60, config: 'energy every', citation: 'drip cite' },
   members: [
     { build_id: 'xl', name: 'Xiangling', element: 'pyro', burst_energy_cost: 80,
-      burst_cooldown: 20, is_subject: true, status: 'curated',
+      burst_cooldown: 20, is_subject: true, status: 'curated', refunds: [],
       sources: [{ label: 'Guoba Attack', per: 'cast', particles: 4, collector: 'active',
-        citation: 'gcsim xiangling/skill.go:79' }] },
+        citation: 'gcsim xiangling/skill.go:79', on: 'skill' }] },
     { build_id: 'xq', name: 'Xingqiu', element: 'hydro', burst_energy_cost: 80,
-      burst_cooldown: 20, is_subject: false, status: 'curated',
+      burst_cooldown: 20, is_subject: false, status: 'curated', refunds: [],
       sources: [{ label: 'Rainscreen', per: 'cast', particles: 5, collector: 'caster',
-        citation: 'gcsim xingqiu/skill.go:99' }] },
+        citation: 'gcsim xingqiu/skill.go:99', on: 'skill' }] },
     { build_id: 'rd', name: 'Raiden Shogun', element: 'electro', burst_energy_cost: 90,
-      burst_cooldown: 18, is_subject: false, status: 'no_particle_data', sources: [] },
+      burst_cooldown: 18, is_subject: false, status: 'no_particle_data', refunds: [], sources: [] },
   ],
 };
 
@@ -58,16 +58,18 @@ describe('FormulaPanel energy', () => {
     expect(text(el)).toContain('No particle count is curated for Raiden Shogun');
   });
 
-  it('defaults to report only and offers both priced modes', () => {
+  it('defaults to waiting (owner, 2026-11-15) and offers skip and report only', () => {
     const { el, fixture, service } = render();
     const select = el.querySelector('.energy select') as HTMLSelectElement;
     const options = [...select.options].map((o) => o.value);
     expect(options).toEqual(['off', 'skip', 'wait']);
-    expect(service.energy().mode).toBe('off');
-    select.value = 'wait';
+    expect(service.energy().mode).toBe('wait');
+    expect(select.options[select.selectedIndex].value).toBe('wait');
+    expect(text(el)).toContain('Default: wait');
+    select.value = 'off';
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    expect(service.energy().mode).toBe('wait');
+    expect(service.energy().mode).toBe('off');
   });
 
   it('takes an edit on change, and refuses an emptied box', () => {
@@ -108,5 +110,56 @@ describe('FormulaPanel energy', () => {
     for (const control of el.querySelectorAll('.energy select, .energy input')) {
       expect(control.closest('label')?.textContent?.trim().length ?? 0).toBeGreaterThan(0);
     }
+  });
+
+  it('shows a summon, a Favonius holder and a refund, each editable and cited', () => {
+    TestBed.configureTestingModule({ imports: [FormulaPanel] });
+    const service = TestBed.inject(FormulaEstimateService);
+    service.ensureTarget('rd', HITS as never);
+    service.teamEnergy.set({
+      ...DATA,
+      members: [
+        { build_id: 'rd', name: 'Raiden Shogun', element: 'electro', burst_energy_cost: 90,
+          burst_cooldown: 18, is_subject: true, status: 'curated', energy_recharge: 1.3,
+          crit_rate: 0.4,
+          sources: [{ label: 'Eye', per: 'second', particles: 0.5, chance: 0.5, interval: 1,
+            max_seconds: 25, collector: 'active', citation: 'raiden/skill.go:93', on: 'skill' }],
+          refunds: [{ label: 'Musou Isshin', per: 'burst', count: 5, recipients: 'team',
+            scaling: 'raiden_a4', amount: 2.4, citation: 'raiden/burst.go:99' }],
+          favonius: { weapon: 'Favonius Lance', refinement: 3, chance: 0.8, cooldown_seconds: 9,
+            particles: 3, citation: 'weapons/common/favonius.go:44' } },
+        { build_id: 'fs', name: 'Fischl', element: 'electro', burst_energy_cost: 60,
+          burst_cooldown: 15, is_subject: false, status: 'curated', refunds: [],
+          sources: [{ label: 'Oz (burst)', per: 'second', particles: 0.67, chance: 0.67,
+            interval: 1, max_seconds: 10, collector: 'active', citation: 'fischl/burst.go:115',
+            on: 'burst' }] },
+      ],
+    });
+    const fixture = TestBed.createComponent(FormulaPanel);
+    fixture.componentRef.setInput('hits', HITS);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const shown = text(el);
+    expect(shown).toContain('50% chance of a particle a hit');
+    expect(shown).toContain('67% chance of a particle a hit · counted per burst');
+    expect(shown).toContain('Favonius Lance R3: 80% a crit, every 9 s at most, 3 clear particles');
+    expect(shown).toContain('weapons/common/favonius.go:44');
+    expect(shown).toContain('Musou Isshin: times per burst (2.4 flat each)');
+    expect(shown).toContain('raiden/burst.go:99');
+    const boxes = [...el.querySelectorAll('.energy input[type=number]')] as HTMLInputElement[];
+    const find = (label: string) => boxes.find(
+      (b) => b.closest('label')?.textContent?.includes(label))!;
+    const hits = find('Hits on field per rotation');
+    hits.value = '12';
+    hits.dispatchEvent(new Event('change'));
+    expect(service.energy().favoniusHits).toEqual({ rd: 12 });
+    const restorations = find('Musou Isshin');
+    restorations.value = '3';
+    restorations.dispatchEvent(new Event('change'));
+    expect(service.energy().refundCounts).toEqual({ 'rd:refund:0': 3 });
+    const bursts = find('Bursts per rotation');
+    bursts.value = '2';
+    bursts.dispatchEvent(new Event('change'));
+    expect(Object.values(service.energy().bursts)).toContain(2);
   });
 });

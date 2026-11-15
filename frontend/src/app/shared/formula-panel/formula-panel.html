@@ -262,8 +262,8 @@
     }
 
     @if (energyView(); as energy) {
-      <!-- Task 14 (DESIGN §2.10): the closed-form energy model. Every number here is an
-           assumption with its default and citation; the mode is the owner's open fork. -->
+      <!-- Task 14 (DESIGN §2.11): the closed-form energy model. Every number here is an
+           assumption with its default and citation; Wait is the default (owner, §48). -->
       <fieldset class="assumptions__group energy" aria-describedby="energy-requirement">
         <legend>Energy</legend>
         <div class="assumptions__condition">
@@ -276,14 +276,14 @@
               }
             </select>
           </label>
-          <span class="assumptions__default" [class.assumptions__default--changed]="energySettings().mode !== 'off'">
+          <span class="assumptions__default" [class.assumptions__default--changed]="energySettings().mode !== 'wait'">
             @switch (energySettings().mode) {
               @case ('skip') { Skip: a burst the energy cannot fund is not cast; burst rows land min(1, energy ÷ cost) as often. }
               @case ('wait') { Wait: the team holds the rotation until the drip funds the burst; every row is scaled by rotation ÷ (rotation + wait). }
               @default { Report only: ER does not change the score. }
             }
-            Default: report only, until the owner chooses between skipping and waiting (the gcsim
-            path offers both).
+            Default: wait (the owner's choice: a player waits for the burst rather than dropping
+            it). With enemy particles off there is nothing to wait on, so it skips instead.
           </span>
         </div>
 
@@ -332,6 +332,9 @@
                 No particle count is curated for {{ row.member.name }}: none are counted unless you
                 enter them.
               </p>
+              @if (row.member.note) {
+                <p class="assumptions__static">{{ row.member.note }}</p>
+              }
             } @else {
               <label class="assumptions__value">
                 <span>Skill casts per rotation</span>
@@ -352,12 +355,78 @@
                     <input type="number" min="0" max="100" step="any" [value]="item.onField * 100"
                       (change)="setOnField(item.key, $any($event.target), item.onField)" />
                   </label>
+                  @if (item.source.chance) {
+                    <p class="assumptions__static">
+                      {{ (item.source.chance * 100).toFixed(0) }}% chance of a particle a hit
+                      @if (item.source.on === 'burst') {· counted per burst}
+                      @if (item.source.max_seconds) {· for up to {{ item.source.max_seconds }} s a
+                        {{ item.source.on === 'burst' ? 'burst' : 'cast' }}}
+                    </p>
+                  }
                   @if (item.source.note) {
                     <p class="assumptions__static">{{ item.source.note }}</p>
                   }
                   <p class="assumptions__cite">Source: {{ item.source.citation }}</p>
                 </div>
               }
+            }
+            @if (row.countsBursts) {
+              <label class="assumptions__value">
+                <span>Bursts per rotation</span>
+                <input type="number" min="0" step="any" [value]="row.bursts"
+                  (change)="setBursts(row.member.build_id, $any($event.target), row.bursts)" />
+              </label>
+            }
+            @if (row.favonius; as fav) {
+              <div class="energy__source energy__favonius">
+                <p class="energy__name">{{ fav.fav.weapon }} R{{ fav.fav.refinement }}:
+                  {{ (fav.fav.chance * 100).toFixed(0) }}% a crit, every
+                  {{ fav.fav.cooldown_seconds }} s at most, {{ fav.fav.particles }} clear particles</p>
+                <label class="assumptions__value">
+                  <span>Hits on field per rotation</span>
+                  <input type="number" min="0" step="any" [value]="fav.hits"
+                    (change)="setFavoniusHits(row.member.build_id, $any($event.target), fav.hits)" />
+                </label>
+                <label class="assumptions__value">
+                  <span>Caught by {{ energy.subject?.name }} on field (%)</span>
+                  <input type="number" min="0" max="100" step="any" [value]="fav.onField * 100"
+                    (change)="setOnField(fav.key, $any($event.target), fav.onField)" />
+                </label>
+                <p class="assumptions__static">
+                  <span class="mono">{{ fav.procs.toFixed(2) }}</span> procs a rotation:
+                  min(rotation ÷ cooldown, hits × crit rate
+                  <span class="mono">{{ percent(fav.critRate) }}</span> × chance).
+                  @if (fav.hitsIsDefault) {
+                    Default hits: {{ row.member.is_subject ? 'the direct-hit rows above'
+                      : 'one per skill cast' }}.
+                  }
+                  A proc needs the holder on field; its particles land 1.67 s later, on whoever
+                  is on field then.
+                </p>
+                <p class="assumptions__cite">Source: {{ fav.fav.citation }}</p>
+              </div>
+            }
+            @for (item of row.refunds; track item.key) {
+              <div class="energy__source energy__refund">
+                @if (item.refund.unavailable) {
+                  <p class="assumptions__unmodelled">{{ item.refund.label }}: not counted —
+                    {{ item.refund.unavailable }}.</p>
+                } @else if (!item.reaches) {
+                  <p class="assumptions__static">{{ item.refund.label }}: {{ row.member.name }}'s
+                    own, so it does not reach {{ energy.subject?.name }}.</p>
+                } @else {
+                  <label class="assumptions__value">
+                    <span>{{ item.refund.label }}: times per {{ item.refund.per }}
+                      ({{ item.refund.amount }} flat each)</span>
+                    <input type="number" min="0" step="any" [value]="item.count"
+                      (change)="setRefundCount(item.key, $any($event.target), item.count)" />
+                  </label>
+                }
+                @if (item.refund.note) {
+                  <p class="assumptions__static">{{ item.refund.note }}</p>
+                }
+                <p class="assumptions__cite">Source: {{ item.refund.citation }}</p>
+              </div>
             }
           </div>
         }
@@ -371,13 +440,14 @@
         <p class="assumptions__cite">Source: {{ energy.drip.citation }}</p>
 
         <label class="assumptions__value">
-          <span>Flat energy per rotation</span>
+          <span>Other flat energy per rotation</span>
           <input type="number" min="0" step="any" [value]="energySettings().flatEnergy"
             (change)="setFlatEnergy($any($event.target), energySettings().flatEnergy)" />
         </label>
         <p class="assumptions__static">
-          Not counted unless entered: Favonius procs, a kit's flat refund (Raiden's burst), normal
-          attacks' chance of 1 energy. A particle is worth 3 of its own element, 2 clear, 1 other;
+          Counted above: the team's Favonius procs and the kits' flat refunds the table curates.
+          Not counted unless entered: constellation refunds, Electro resonance's particles,
+          normal attacks' chance of 1 energy. A particle is worth 3 of its own element, 2 clear, 1 other;
           60% off field in a party of four; ER multiplies particles only (gcsim at the pin, KQM's
           Energy page).
         </p>
