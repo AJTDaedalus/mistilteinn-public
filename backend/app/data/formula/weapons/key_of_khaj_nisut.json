@@ -8,7 +8,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/weapons/sword/keyofkhajnisut/keyofkhajnisut.go",
  "verified_by": [
-  "key_of_khaj_nisut_r1_on_xiangling_vape"
+  "key_of_khaj_nisut_r1_on_xiangling_vape",
+  "key_of_khaj_nisut_r1_em_from_hp_on_xiangling_vape"
  ],
  "pins": {
   "1": [
@@ -100,6 +101,7 @@
    "label": "Grand Hymn at 3 stacks: party EM from the wielder's Max HP",
    "receivers": "team",
    "stat": "elemental_mastery",
+   "non_stack": "key",
    "when": [
     {
      "condition": "stacks",

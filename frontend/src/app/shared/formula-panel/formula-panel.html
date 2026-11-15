@@ -8,7 +8,19 @@
   <ol class="formula__rows">
     @for (row of rows(); track row.id; let i = $index) {
       <li class="formula__row">
-        @if (row.reaction; as reaction) {
+        @if (row.proc; as proc) {
+        <label class="formula__field formula__field--hit">
+          <span>Weapon proc {{ i + 1 }}</span>
+          <select (change)="pickProc(row, $any($event.target).value)">
+            @for (p of procs(); track procKey(p)) {
+              <option [value]="procKey(p)" [selected]="procKey(p) === procKey(proc)">{{ procLabel(p) }}</option>
+            }
+            @if (!procs().length) {
+              <option selected disabled>{{ row.label }}</option>
+            }
+          </select>
+        </label>
+        } @else if (row.reaction; as reaction) {
         <label class="formula__field formula__field--hit">
           <span>Reaction {{ i + 1 }}</span>
           <select (change)="pickReaction(row, $any($event.target).value)">
@@ -92,7 +104,13 @@
           (click)="remove(row)"
         >Remove</button>
 
-        @if (row.reaction) {
+        @if (row.proc) {
+          <p class="formula__note">
+            Dealt by the optimized character with that weapon: its ATK multiplier through the
+            whole chain, no move-scoped bonus. The count is your assumption; no proc chance or
+            cooldown is simulated. With another weapon it deals nothing.
+          </p>
+        } @else if (row.reaction) {
           <p class="formula__note">
             Triggered by the optimized character: their Elemental Mastery and level apply. The
             count is your assumption; no gauge or cooldown is simulated.
@@ -106,7 +124,7 @@
 
         @if (rows().length > 1 && conditional().length) {
           <details class="formula__overrides">
-            <summary>Conditions for {{ row.reaction ? "reaction" : "ability" }} {{ i + 1 }} only</summary>
+            <summary>Conditions for {{ row.proc ? "proc" : row.reaction ? "reaction" : "ability" }} {{ i + 1 }} only</summary>
             @for (group of conditional(); track group.sourceId) {
               @for (condition of group.conditions; track condition.key) {
                 <label class="formula__override">
@@ -136,6 +154,11 @@
     <button type="button" class="linkish" (click)="addReaction()" [disabled]="!hits().length">
       Add reaction
     </button>
+    @if (procs().length) {
+      <button type="button" class="linkish" (click)="addProc()" [disabled]="!hits().length">
+        Add weapon proc
+      </button>
+    }
   </div>
 
   <refused-hits [refused]="refusedHits()" />

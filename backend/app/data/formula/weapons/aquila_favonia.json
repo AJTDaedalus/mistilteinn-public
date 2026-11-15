@@ -8,7 +8,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/weapons/sword/aquila/aquila.go",
  "verified_by": [
-  "aquila_favonia_r1_on_kaeya"
+  "aquila_favonia_r1_on_kaeya",
+  "aquila_favonia_r1_falcon_proc_row_on_kaeya"
  ],
  "pins": {
   "1": [
@@ -74,11 +75,20 @@
    "go": "18,21-24,49-52"
   }
  ],
- "unmodelled": [
+ "procs": [
   {
-   "what": "the Falcon's DMG on taking DMG",
-   "reason": "a damage instance of the weapon's own: the target has no weapon-hit row kind yet"
-  },
+   "key": "falcon",
+   "label": "Falcon's Sword: 200% ATK Physical on taking DMG",
+   "multiplier": {
+    "param": 2
+   },
+   "element": "physical",
+   "stat_layer": "premod",
+   "go": "19,33-44,46-57",
+   "gcsim": "internal/weapons/sword/aquila/aquila.go:42,61-73"
+  }
+ ],
+ "unmodelled": [
   {
    "what": "the Falcon's healing",
    "reason": "no damage effect"

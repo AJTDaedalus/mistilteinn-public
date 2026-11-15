@@ -13,16 +13,23 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.dependencies import get_artifact_set_repo, get_character_repo, get_owned_build_repo
+from app.dependencies import (
+    get_artifact_set_repo,
+    get_character_repo,
+    get_owned_build_repo,
+    get_weapon_repo,
+)
 from app.formula.genshin import resonance, set_effects
 from app.formula.genshin.formula_effects import status_of
 from app.repositories.artifact_set import ArtifactSetRepository
 from app.repositories.build import BuildRepository
 from app.repositories.character import CharacterRepository
+from app.repositories.weapon import WeaponRepository
 from app.schemas.formula import (
     FormulaBonusRead,
     FormulaKitMemberRead,
     FormulaKitSourceRead,
+    FormulaProcRead,
     FormulaRaisedTalentRead,
     FormulaResonanceRead,
     FormulaSetEffectsRead,
@@ -118,14 +125,22 @@ async def resonance_route(
 @router.get("/kit-buffs", response_model=FormulaTeamKitRead)
 async def kit_buffs_route(
     builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    weapons_repo: Annotated[WeaponRepository, Depends(get_weapon_repo)],
     subject_build_id: str,
     member_build_id: Annotated[list[str], Query(max_length=_MAX_MEMBERS)],
+    subject_weapon_id: str | None = None,
+    subject_weapon_refinement: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> FormulaTeamKitRead:
     """Every member's kit buffs for the optimized build, from the two-pass evaluation.
 
     `member_build_id` is the team, the optimized build included; each of the caller's own. A
     member with no sheet is listed as `no_sheet` rather than omitted, so the estimate can name
     who contributes no kit buffs.
+
+    `subject_weapon_id` resolves the optimized character with a **candidate** weapon (owner
+    approval 2026-11-14, `docs/DECISIONS.md` §45): its passive instead of the equipped one's, and
+    their pass-1 stats on its base ATK and substat; `subject_weapon_refinement` defaults to the
+    build's own, as the gcsim weapon comparison does.
     """
     if len(set(member_build_id)) != len(member_build_id):
         raise HTTPException(status_code=422, detail="a build appears in a team once")
@@ -135,8 +150,25 @@ async def kit_buffs_route(
         if build is None:
             raise HTTPException(status_code=404, detail=f"No build {build_id!r}")
         members.append(build)
+    candidate = None
+    if subject_weapon_id is not None:
+        found = await weapons_repo.get_many_with_refinements([subject_weapon_id])
+        if not found:
+            raise HTTPException(status_code=404, detail=f"weapon {subject_weapon_id} not found")
+        candidate = found[0]
+        subject = next((b for b in members if str(b.id) == subject_build_id), None)
+        character = subject.character if subject is not None else None
+        if character is not None and candidate.weapon_type != character.weapon_type:
+            raise HTTPException(
+                status_code=422,
+                detail=f"{character.name} cannot wield {candidate.name} "
+                       f"({candidate.weapon_type}, not {character.weapon_type})",
+            )
     try:
-        team = kit_buffs.team_kit(members, subject_build_id)
+        team = kit_buffs.team_kit(
+            members, subject_build_id, subject_weapon=candidate,
+            subject_refinement=subject_weapon_refinement,
+        )
     except (kit_buffs.KitBuffsError, BuildAssemblyError, StatInputError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return FormulaTeamKitRead(
@@ -148,6 +180,9 @@ async def kit_buffs_route(
                 verified=s.verified, bonus=FormulaBonusRead.of(s.bonus), citation=s.citation,
                 giver_stats=team.giver_stats[s.source_id],
                 kind="weapon" if s.source_id.startswith("weapon:") else "kit",
+                stack_rank=s.stack_rank,
+                procs=[FormulaProcRead.model_validate(p.model_dump(mode="json"))
+                       for p in s.procs],
             )
             for s in team.sources
         ],

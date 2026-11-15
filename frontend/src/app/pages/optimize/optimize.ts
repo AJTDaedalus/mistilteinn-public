@@ -38,7 +38,7 @@ import {
   type ConditionGroup,
   type GcsimRefusal,
 } from '../../sim/formula-calibration';
-import { FormulaEstimateService } from './formula-estimate.service';
+import { FormulaEstimateService, type ProcChoice } from './formula-estimate.service';
 import { type Amplifying, type ScalingStat } from '../../sim/damage';
 import { SLOTS, type SearchResult, type Slot, search } from '../../sim/search';
 import { BuildsService, type BuildRead } from '../builds/builds.service';
@@ -246,6 +246,19 @@ export const SLOT_ORDER = [
  * without saying so, is a confident answer to a question nobody asked — at the scale of a
  * whole feature.
  */
+/**
+ * What a weapon comparison under the formula estimate says about a weapon's passive (§45):
+ * nothing when it is modelled, else why its number is base ATK and substat alone (or partly).
+ */
+export function passiveNote(status: string | undefined): string | null {
+  switch (status) {
+    case 'no_passive_data': return 'passive not modelled';
+    case 'partial': return 'passive partly modelled';
+    case 'unmodelled': return 'passive not modelled';
+    default: return null;
+  }
+}
+
 @Component({
   selector: 'page-optimize',
   imports: [
@@ -587,7 +600,7 @@ export class OptimizePage implements OnInit {
    * are compared against.
    */
   protected readonly weaponResults = signal<
-    { weaponId: string | undefined; result: SearchResult }[]
+    { weaponId: string | undefined; result: SearchResult; passive?: string | null }[]
   >([]);
 
   /** The best damage each searched weapon reached, worn weapon first. */
@@ -603,6 +616,9 @@ export class OptimizePage implements OnInit {
           ? named.find((w) => w.id === run.weaponId)?.name ?? 'weapon'
           : this.build()?.weapon?.name ?? 'equipped',
         equipped: run.weaponId === undefined,
+        // Formula mode only (owner approval 2026-11-14, `DECISIONS.md` §45): a weapon whose
+        // passive has no data competes on base ATK and substat, and says so.
+        passive: run.passive ?? null,
         damage,
         // Null rather than 0 against itself: "the same as the worn weapon" and "this *is* the
         // worn weapon" are different, and both would render as 0 %.
@@ -1505,6 +1521,38 @@ export class OptimizePage implements OnInit {
   protected readonly gcsimBlocked = computed(() => this.teamBuilds()
     .filter((b) => b.character?.gcsim?.status === 'none')
     .map((b) => b.character?.name ?? 'a member'));
+
+  /**
+   * The weapon procs the formula target can count (owner approval 2026-11-14, §45): the
+   * equipped weapon's, and each weapon picked for comparison — so a proc row can be added for
+   * whichever weapon the user is weighing. A row naming one weapon's proc deals nothing in
+   * another weapon's run, and the estimate says so.
+   */
+  protected readonly formulaProcs = signal<ProcChoice[]>([]);
+
+  private readonly refreshFormulaProcs = effect(() => {
+    if (this.objective() !== 'formula') return;
+    const team = this.teamBuilds();
+    const id = this.buildId();
+    const picked = [...this.selectedWeapons()];
+    if (!team.length || !id) {
+      this.formulaProcs.set([]);
+      return;
+    }
+    void Promise.all([undefined, ...picked].map((weaponId) => this.formulaService
+      .kits(team, id, weaponId ? { id: weaponId } : undefined)
+      .then((kits) => kits.procs ?? [])
+      .catch(() => [] as ProcChoice[])))
+      .then((all) => {
+        const seen = new Set<string>();
+        this.formulaProcs.set(all.flat().filter((p) => {
+          const key = `${p.source}#${p.key}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }));
+      });
+  });
 
   /** Keep a target for the chosen build while the formula mode is on. */
   private readonly seedFormulaTarget = effect(() => {
@@ -2421,38 +2469,54 @@ export class OptimizePage implements OnInit {
       const chosen = this.reachableSets(pieces).filter((setId) => this.isSelected(setId));
       const pair = this.chosenPair();
 
-      const { calibration, formula } = await this.formulaService.estimate({
-        buildId: id,
-        build,
-        team: this.teamBuilds(),
-        channel: this.channel,
-        scope: this.scope,
-        enemyLevel: this.enemyLevel,
-        fourPieceSetIds: chosen,
-      });
-      // A 2+2 is the no-set recipe plus both sets' pools, which the search adds — so the pair
-      // state is the baseline recipe, keyed as the search expects.
-      const byPair = new Map(calibration.byPair);
-      if (pair) byPair.set(pairKey(pair[0], pair[1]), formula.noFourPiece);
-
-      const found = searchRecipe(
-        pieces.map((piece) => ({
-          id: piece.id,
-          slot: piece.slot as Slot,
-          setId: piece.set_id ?? -1,
-          stats: piece.stats,
-        })),
-        {
-          recipes: {
-            byFourPieceSet: calibration.byFourPieceSet,
-            byPair,
-            noFourPiece: formula.noFourPiece,
+      // **One estimate and one full search per weapon, the equipped weapon first** — the gcsim
+      // comparison's arrangement (`runRotation`), now under the estimate (owner approval
+      // 2026-11-14, `DECISIONS.md` §45). Each weapon's base comes from `/search-context` and its
+      // passive from `/formula/kit-buffs`, both asked with the weapon's id, and each search
+      // filters the inventory against its own recipes: a piece that loses under one weapon and
+      // wins under another is never pruned by the first.
+      const weaponRuns: (string | undefined)[] = [undefined, ...this.selectedWeapons()];
+      const runs = [];
+      for (const weaponId of weaponRuns) {
+        const estimate = await this.formulaService.estimate({
+          buildId: id,
+          build,
+          team: this.teamBuilds(),
+          channel: this.channel,
+          scope: this.scope,
+          enemyLevel: this.enemyLevel,
+          fourPieceSetIds: chosen,
+          ...(weaponId ? { weapon: { id: weaponId } } : {}),
+        });
+        // A 2+2 is the no-set recipe plus both sets' pools, which the search adds — so the
+        // pair state is the baseline recipe, keyed as the search expects.
+        const byPair = new Map(estimate.calibration.byPair);
+        if (pair) byPair.set(pairKey(pair[0], pair[1]), estimate.formula.noFourPiece);
+        const result = searchRecipe(
+          pieces.map((piece) => ({
+            id: piece.id,
+            slot: piece.slot as Slot,
+            setId: piece.set_id ?? -1,
+            stats: piece.stats,
+          })),
+          {
+            recipes: {
+              byFourPieceSet: estimate.calibration.byFourPieceSet,
+              byPair,
+              noFourPiece: estimate.formula.noFourPiece,
+            },
+            setBonuses: estimate.formula.setBonuses,
+            fourPieceSets: chosen,
+            twoPiecePairs: pair === null ? [] : [pair],
           },
-          setBonuses: formula.setBonuses,
-          fourPieceSets: chosen,
-          twoPiecePairs: pair === null ? [] : [pair],
-        },
-      );
+        );
+        runs.push({ weaponId, estimate, result });
+      }
+      const [{ estimate: { calibration, formula }, result: found }] = runs;
+      this.weaponResults.set(runs.length > 1 ? runs.map((run) => ({
+        weaponId: run.weaponId, result: run.result,
+        passive: passiveNote(run.estimate.kits.subjectWeapon?.status),
+      })) : []);
       this.resultIsFormula.set(true);
       this.result.set(found);
       const winner = found.builds[0];

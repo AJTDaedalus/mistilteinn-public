@@ -2267,7 +2267,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExplainRequest"
+                "$ref": "#/components/schemas/SearchContextRequest"
               }
             }
           }
@@ -4828,7 +4828,7 @@
           "formula"
         ],
         "summary": "Kit Buffs Route",
-        "description": "Every member's kit buffs for the optimized build, from the two-pass evaluation.\n\n`member_build_id` is the team, the optimized build included; each of the caller's own. A\nmember with no sheet is listed as `no_sheet` rather than omitted, so the estimate can name\nwho contributes no kit buffs.",
+        "description": "Every member's kit buffs for the optimized build, from the two-pass evaluation.\n\n`member_build_id` is the team, the optimized build included; each of the caller's own. A\nmember with no sheet is listed as `no_sheet` rather than omitted, so the estimate can name\nwho contributes no kit buffs.\n\n`subject_weapon_id` resolves the optimized character with a **candidate** weapon (owner\napproval 2026-11-14, `docs/DECISIONS.md` \u00a745): its passive instead of the equipped one's, and\ntheir pass-1 stats on its base ATK and substat; `subject_weapon_refinement` defaults to the\nbuild's own, as the gcsim weapon comparison does.",
         "operationId": "kit_buffs_route_api_v1_formula_kit_buffs_get",
         "security": [
           {
@@ -4856,6 +4856,40 @@
               },
               "maxItems": 4,
               "title": "Member Build Id"
+            }
+          },
+          {
+            "name": "subject_weapon_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subject Weapon Id"
+            }
+          },
+          {
+            "name": "subject_weapon_refinement",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 5,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subject Weapon Refinement"
             }
           }
         ],
@@ -8511,6 +8545,17 @@
               }
             ],
             "title": "Talent"
+          },
+          "non_stack": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Non Stack"
           }
         },
         "type": "object",
@@ -8617,6 +8662,25 @@
             ],
             "title": "Kind",
             "default": "kit"
+          },
+          "stack_rank": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stack Rank"
+          },
+          "procs": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaProcRead"
+            },
+            "type": "array",
+            "title": "Procs",
+            "default": []
           }
         },
         "type": "object",
@@ -8633,6 +8697,50 @@
         ],
         "title": "FormulaKitSourceRead",
         "description": "One team member's kit, resolved for the optimized character (math-fallback P2).\n\nSame `bonus` vocabulary as a set tier or a resonance, with every number already resolved\nin the **giver's** context (`app/formula/genshin/sheets.py`): Bennett's ATK bonus arrives\nas flat ATK computed from Bennett's own base ATK. The browser gates each effect by its\n`when`, exactly as it does a set bonus."
+      },
+      "FormulaProcRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "multiplier": {
+            "type": "number",
+            "title": "Multiplier"
+          },
+          "scaling": {
+            "type": "string",
+            "const": "atk",
+            "title": "Scaling",
+            "default": "atk"
+          },
+          "element": {
+            "type": "string",
+            "title": "Element"
+          },
+          "stat_layer": {
+            "type": "string",
+            "enum": [
+              "premod",
+              "total"
+            ],
+            "title": "Stat Layer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "multiplier",
+          "element",
+          "stat_layer"
+        ],
+        "title": "FormulaProcRead",
+        "description": "A weapon's own damage instance at the wielder's refinement (`formula_effects.Proc`, \u00a745):\na proc row the target may count, dealt by the optimized character."
       },
       "FormulaRaisedHitRead": {
         "properties": {
@@ -12764,6 +12872,75 @@
         ],
         "title": "SearchContextRead",
         "description": "Everything `search.ts`'s `SearchContext` needs except the inventory.\n\nO.1. The inventory has its own home \u2014 `/artifacts/inventory`, which is ETag'd because the\nbrowser holds it across searches (OQ-S3). This is the per-build, per-hit half.\n\n**Published, not recomputed.** Every figure here is one the server already works out for\n`/explain`: the base from `build_assembler.base_contributions`, set bonuses from the same\nmodule, the hit through `resolve_talent_hit`. A second assembly of \"what a build starts\nfrom\" is how two definitions of it begin \u2014 which `build_assembler` records having already\nhappened once.\n\n`base` is keyed by **kernel quantity**, which is the reason this endpoint exists at all:\nthe kernel reads `base_atk` and the source spells it `FIGHT_PROP_BASE_ATTACK`, and the\nmapping between them decides what every stat means."
+      },
+      "SearchContextRequest": {
+        "properties": {
+          "hit": {
+            "$ref": "#/components/schemas/HitSpec"
+          },
+          "enemy": {
+            "$ref": "#/components/schemas/EnemySpec"
+          },
+          "artifact_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Ids"
+          },
+          "compare_to_equipped": {
+            "type": "boolean",
+            "title": "Compare To Equipped",
+            "default": true
+          },
+          "context_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Key"
+          },
+          "energy_recharge": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy Recharge"
+          },
+          "weapon_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hit",
+          "enemy"
+        ],
+        "title": "SearchContextRequest",
+        "description": "Body for `POST /builds/{id}/search-context`: `/explain`'s, plus a candidate weapon.\n\n`weapon_id` scores the hit on a **candidate** weapon in place of the build's own (owner\napproval 2026-11-14, `docs/DECISIONS.md` \u00a745): the base takes the candidate's base ATK and\nsubstat at the build's weapon level, as the gcsim weapon comparison does. Absent is the\nequipped weapon. A subclass rather than a field on `ExplainRequest`, because `/explain`\nexplains the build as it stands and would otherwise accept a field it ignores."
       },
       "SectionRead": {
         "properties": {

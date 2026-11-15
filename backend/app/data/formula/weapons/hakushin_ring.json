@@ -89,6 +89,7 @@
    "label": "Electro DMG for an Electro receiver after any Electro reaction",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushinelectro",
    "value": {
     "param": 0
    },
@@ -118,6 +119,7 @@
    "label": "Pyro DMG for a Pyro receiver",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushinpyro",
    "value": {
     "param": 0
    },
@@ -142,6 +144,7 @@
    "label": "Hydro DMG for a Hydro receiver",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushinhydro",
    "value": {
     "param": 0
    },
@@ -166,6 +169,7 @@
    "label": "Cryo DMG for a Cryo receiver",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushincryo",
    "value": {
     "param": 0
    },
@@ -190,6 +194,7 @@
    "label": "Anemo DMG for a Anemo receiver",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushinanemo",
    "value": {
     "param": 0
    },
@@ -214,6 +219,7 @@
    "label": "Geo DMG for a Geo receiver",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushingeo",
    "value": {
     "param": 0
    },
@@ -238,6 +244,7 @@
    "label": "Dendro DMG for a Dendro receiver",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "hakushindendro",
    "value": {
     "param": 0
    },
@@ -256,13 +263,6 @@
     }
    ],
    "go": "21,23,26,33-39,48-56"
-  }
- ],
- "unmodelled": [
-  {
-   "what": "Millennial Movement / same-name buffs from two wielders",
-   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
-   "receiver": "teammate"
   }
  ]
 }

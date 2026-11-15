@@ -11,6 +11,7 @@ import {
 } from '../../sim/damage';
 import {
   FormulaEstimateService,
+  type ProcChoice,
   type TargetRow,
 } from '../../pages/optimize/formula-estimate.service';
 import type { AvailableHit, RefusedHit } from '../../pages/explain/explain.service';
@@ -86,6 +87,11 @@ export class FormulaPanel {
    * to refuse a mismatch by name.
    */
   readonly element = input<string>('');
+  /**
+   * Weapon procs a row can count (owner approval 2026-11-14, `DECISIONS.md` §45): the equipped
+   * weapon's and any weapon picked for comparison. Empty hides *Add weapon proc*.
+   */
+  readonly procs = input<readonly ProcChoice[]>([]);
 
   protected readonly moves = MOVES;
   protected readonly reactions = REACTIONS;
@@ -199,6 +205,30 @@ export class FormulaPanel {
     this.service.updateRow(row.id, {
       additive: value in ADDITIVE ? value as Additive : null,
     });
+  }
+
+  // ── Weapon procs (owner approval 2026-11-14, §45) ────────────────────────────────────────
+
+  protected procKey(proc: { source: string; key: string }): string {
+    return `${proc.source}#${proc.key}`;
+  }
+
+  /** The panel's name for a proc: the weapon and the proc, so two weapons' procs differ. */
+  protected procLabel(proc: ProcChoice): string {
+    return proc.weapon ? `${proc.weapon}: ${proc.label}` : proc.label;
+  }
+
+  protected addProc(): void {
+    const first = this.hits()[0];
+    const proc = this.procs()[0];
+    if (first && proc) this.service.addProcRow(first, proc);
+  }
+
+  protected pickProc(row: TargetRow, key: string): void {
+    const proc = this.procs().find((p) => this.procKey(p) === key);
+    if (!proc) return;
+    this.service.updateRow(row.id, { proc: { source: proc.source, key: proc.key },
+      label: proc.label });
   }
 
   protected remove(row: TargetRow): void {

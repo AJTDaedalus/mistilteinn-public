@@ -9,7 +9,9 @@
  "gcsim": "internal/weapons/sword/peakpatrolsong/peakpatrolsong.go",
  "verified_by": [
   "peak_patrol_song_r1_on_xiangling",
-  "peak_patrol_song_r5_past_its_def_cap_on_xiangling"
+  "peak_patrol_song_r5_past_its_def_cap_on_xiangling",
+  "peak_patrol_song_r1_dmg_from_def_below_its_cap_on_xiangling",
+  "peak_patrol_song_r1_dmg_from_def_past_its_cap_on_xiangling"
  ],
  "pins": {
   "1": [
@@ -117,6 +119,7 @@
    "label": "Party Elemental DMG per 1,000 of the wielder's DEF, to 3,200 DEF",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "patrol",
    "elements": [
     "pyro",
     "hydro",
@@ -152,11 +155,6 @@
   {
    "what": "the party bonus from the wielder's DEF including the Ode's own DEF%",
    "reason": "pass 1 carries no conditional weapon stat: the DEF it reads is the wielder's build without the Ode stacks, where GO's `total.def` has them",
-   "receiver": "teammate"
-  },
-  {
-   "what": "Millennial Movement / same-name buffs from two wielders",
-   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
    "receiver": "teammate"
   }
  ]

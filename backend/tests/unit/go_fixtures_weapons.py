@@ -330,5 +330,9 @@ def weapon_fixtures() -> list[dict[str, Any]]:
     from tests.unit.go_fixtures_weapons4 import owner_weapon_fixtures, team_weapon_fixtures
     out.extend(team_weapon_fixtures())
     out.extend(owner_weapon_fixtures())
+    # Owner approvals 2026-11-14 after #389 (DECISIONS §45): wielder conversions,
+    # non-stacking and proc rows.
+    from tests.unit.go_fixtures_weapon_compare import weapon_compare_fixtures
+    out.extend(weapon_compare_fixtures())
     return out
 

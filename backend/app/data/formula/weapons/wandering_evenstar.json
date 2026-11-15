@@ -8,7 +8,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/weapons/catalyst/wanderingevenstar/wanderingevenstar.go",
  "verified_by": [
-  "wandering_evenstar_r5_on_xiangling"
+  "wandering_evenstar_r5_on_xiangling",
+  "wandering_evenstar_r5_atk_from_em_on_xiangling"
  ],
  "pins": {
   "1": [

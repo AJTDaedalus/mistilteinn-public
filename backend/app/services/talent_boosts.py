@@ -105,6 +105,21 @@ def go_key(name: str, element: Element | str | None) -> str:
     return gcsim_keys.normalise(name)
 
 
+def go_character_key(name: str, element: Element | str | None) -> str:
+    """GO's character key as GO spells it (`KaedeharaKazuha`), from the committed sheet list.
+
+    The non-stacking weapon buffs need the case: GO picks the writer whose key sorts first
+    (`uiData.ts:266-276`, a JavaScript string comparison), and `normalise` lower-cases. A
+    character GO has no sheet for falls back to the normalised name, which sorts after every
+    capitalised key — said where it is used (`DECISIONS.md` §45).
+    """
+    wanted = go_key(name, element)
+    for key in go_table():
+        if key.lower() == wanted:
+            return key
+    return wanted
+
+
 def boosts_for(character: _Character) -> dict[str, int]:
     """`{talent: constellation}` for one character, from the first source that knows them."""
     try:

@@ -121,12 +121,39 @@ def test_a_team_buff_is_a_number_from_the_wielders_own_stats_with_its_own_hp():
     assert team.value == pytest.approx(0.002 * 10000.0 * (1 + 0.5 + 0.2))
 
 
-def test_a_subject_buff_the_recipe_cannot_carry_is_withheld_by_name():
+def test_the_wielders_em_from_hp_is_a_per_candidate_conversion():
+    """Owner approval 2026-11-14 (§45): Key of Khaj-Nisut on its wielder converts their own Max
+    HP into EM per candidate, both the stacked self part and the party share at three stacks."""
     kit = _resolve("11511", 1, subject=True, stats={"base_hp": 10000.0})
-    assert [e.stat for e in kit.bonus.effects] == ["hp_pct"]
-    withheld = [u.what for u in kit.bonus.unmodelled]
-    assert any("Grand Hymn" in w for w in withheld)
-    assert kit.status == "partial"
+    assert [(e.stat, e.value, e.per) for e in kit.bonus.effects] == [
+        ("hp_pct", 0.2, None), ("em_from_hp", 0.0012, "stacks"), ("em_from_hp", 0.002, None)]
+    assert kit.bonus.effects[2].non_stack == "key"
+    assert kit.status == "modelled"
+
+
+@pytest.mark.parametrize(("nanoka_id", "stat", "value", "cap", "threshold"), [
+    # Engulfing Lightning R1: 28% of ER above 100%, at most 80% (GO EngulfingLightning:18-31).
+    ("13509", "atk_pct_from_er", 0.28, 0.8, 1.0),
+    # Makhaira Aquamarine / Wandering Evenstar R1: 24% of the wielder's EM as ATK.
+    ("12415", "flat_atk_from_em", 0.24, None, None),
+    ("14416", "flat_atk_from_em", 0.24, None, None),
+])
+def test_the_withheld_wielder_conversions_are_carried(nanoka_id, stat, value, cap, threshold):
+    kit = _resolve(nanoka_id, 1, subject=True)
+    [conversion] = [e for e in kit.bonus.effects if e.stat == stat]
+    assert conversion.value == pytest.approx(value)
+    assert conversion.cap == (None if cap is None else pytest.approx(cap))
+    assert conversion.threshold == threshold
+    assert not [u for u in kit.bonus.unmodelled if "withheld" in u.reason]
+
+
+def test_peak_patrol_songs_stat_cap_becomes_the_conversions_cap():
+    """`k × min(DEF, 3200) / 1000` is `min(k × DEF / 1000, k × 3.2)`."""
+    kit = _resolve("11516", 1, subject=True)
+    [party] = [e for e in kit.bonus.effects if e.stat == "dmg_bonus_from_def"]
+    assert party.value == pytest.approx(0.08 / 1000)
+    assert party.cap == pytest.approx(0.08 * 3.2)
+    assert party.non_stack == "patrol"
 
 
 def test_others_never_reach_the_wielder():
@@ -176,3 +203,74 @@ def test_a_condition_no_effect_reads_is_refused():
     data["effects"][0].pop("when")
     with pytest.raises(ValueError, match="no effect reads this condition"):
         weapon_passives.WeaponPassive.model_validate(data)
+
+
+# ── Non-stacking families (owner approval 2026-11-14, `DECISIONS.md` §45) ──────────────────
+
+
+def test_non_stacking_families_come_from_gos_sheets():
+    """Every weapon whose GO sheet calls `nonStackBuff` names it on its effects, and every name
+    is one GO declares for that sheet: the Millennial Movement family is GO's `millenial*`."""
+    declared = weapon_passives.go_non_stack()
+    families: dict[str, set[str]] = {}
+    for passive in weapon_passives.all_passives().values():
+        go_key = weapon_passives.go_sheet_key(passive.go)
+        named = {e.non_stack for e in passive.effects if e.non_stack}
+        if go_key in declared:
+            assert named, passive.slug
+        else:
+            assert not named, passive.slug
+        for name in named:
+            families.setdefault(name, set()).add(passive.weapon)
+    millennial = set().union(*(w for n, w in families.items() if n.startswith("millenial")))
+    assert millennial == {"Elegy for the End", "Freedom-Sworn", "Song of Broken Pines"}
+    assert families["leafCon"] == {"Forest Regalia", "Sapwood Blade"}
+
+
+def test_a_non_stack_name_go_does_not_declare_is_refused():
+    passive = weapon_passives.passive_for("15503")
+    assert passive is not None
+    data = passive.model_dump(by_alias=True, mode="json")
+    data["effects"][1]["non_stack"] = "millenialcritrate"
+    with pytest.raises(ValueError, match="declares no non-stacking buff"):
+        weapon_passives.WeaponPassive.model_validate(data)
+
+
+def test_a_resolved_source_carries_its_wielders_go_key():
+    passive = weapon_passives.passive_for("15503")
+    assert passive is not None
+    wielder = weapon_passives.Wielder("Venti", 1, list(passive.pins[1]), _stated_registry({}),
+                                      stack_rank="Venti")
+    kit = weapon_passives.resolve(passive, wielder, wielder_is_subject=False,
+                                  receiver_element="pyro", team_elements=["pyro", "anemo"])
+    assert kit.stack_rank == "Venti"
+    assert {e.non_stack for e in kit.bonus.effects} == {"millenialelemas", "millenialatk"}
+
+
+# ── Weapon procs (owner approval 2026-11-14, `DECISIONS.md` §45) ───────────────────────────
+
+
+@pytest.mark.parametrize(("nanoka_id", "refinement", "multiplier", "layer"), [
+    ("11501", 1, 2.0, "premod"),   # Aquila Favonia: GO atkDealt [2 … 3.2]
+    ("11501", 5, 3.2, "premod"),
+    ("15501", 1, 1.25, "total"),   # Skyward Harp: GO percent(1.25)
+    ("13502", 5, 1.0, "total"),    # Skyward Spine: GO dmgPerc [0.4 … 1]
+])
+def test_a_wielders_proc_is_resolved_at_its_refinement(nanoka_id, refinement, multiplier, layer):
+    kit = _resolve(nanoka_id, refinement, subject=True)
+    [proc] = kit.procs
+    assert proc.multiplier == pytest.approx(multiplier)
+    assert (proc.element, proc.scaling, proc.stat_layer) == ("physical", "atk", layer)
+
+
+def test_a_teammates_proc_is_named_not_a_row():
+    kit = _resolve("11501", 1, subject=False)
+    assert kit.procs == ()
+    assert any("own hit" in u.reason for u in kit.bonus.unmodelled)
+
+
+def test_a_passive_whose_damage_is_its_proc_is_modelled():
+    kit = _resolve("13403", 1, subject=True)
+    assert kit.bonus.effects == ()
+    assert [p.key for p in kit.procs] == ["orb_hit"]
+    assert kit.status == "modelled"

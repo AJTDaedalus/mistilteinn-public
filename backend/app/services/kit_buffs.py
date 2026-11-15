@@ -25,19 +25,20 @@ Their equipped artifacts never leak into the estimate as a number.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from dataclasses import dataclass, field, replace
+from typing import TYPE_CHECKING, Any
 
 from app.formula.genshin import sheets, weapon_passives
 from app.pando.calculator import Calculator
 from app.services import artifact_optimizer, build_assembler
-from app.services.talent_boosts import TalentBoostError
+from app.services.talent_boosts import TalentBoostError, go_character_key
 from app.services.team_talent_levels import RaisedTalent, raised_talents
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from app.models.build import Build
+    from app.models.weapon import Weapon
     from app.pando.calculator import NodeRegistry
 
 
@@ -91,6 +92,32 @@ class TeamKit:
     raised_talents: list[RaisedTalent] = field(default_factory=list)
     #: Every member's weapon and whether its passive reaches the estimate (task 12).
     weapons: list[MemberWeapon] = field(default_factory=list)
+
+
+class WeaponSwap:
+    """A build seen with a candidate weapon in place of its own (owner approval 2026-11-14,
+    `DECISIONS.md` §45: weapon comparison under the formula estimate).
+
+    Every attribute is the build's, except `weapon` and `refinement`. The weapon's **level** is
+    the build's own, as the gcsim comparison's `SubstituteWeapon` rules: ranking a level-90 worn
+    weapon against a level-1 candidate measures levelling, not weapons. A read-only view rather
+    than a mutated row, because the build is a session-attached ORM object and an assignment to
+    it would be flushed as an edit to the caller's build.
+    """
+
+    __slots__ = ("_build", "refinement", "weapon")
+
+    def __init__(self, build: Build, weapon: Weapon, refinement: int) -> None:
+        object.__setattr__(self, "_build", build)
+        object.__setattr__(self, "weapon", weapon)
+        object.__setattr__(self, "refinement", refinement)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_build"), name)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        msg = f"a weapon swap is read-only ({name})"
+        raise AttributeError(msg)
 
 
 def pass_one(build: Build) -> NodeRegistry:
@@ -225,11 +252,14 @@ def wielder_of(build: Build, registry: NodeRegistry) -> weapon_passives.Wielder 
         return None
     refinement = int(build.refinement or 1)
     row = next((r for r in weapon.refinements if r.level == refinement), None)
-    name = build.character.name if build.character is not None else "Build"
+    character = build.character
+    name = character.name if character is not None else "Build"
     return weapon_passives.Wielder(
         name=name, refinement=refinement,
         params=list(row.param_list or []) if row is not None else [],
         registry=registry,
+        stack_rank=(go_character_key(character.name, character.element)
+                    if character is not None else None),
     )
 
 
@@ -274,11 +304,7 @@ def team_weapons(
         base_id = resolved.source_id
         seen[base_id] = seen.get(base_id, 0) + 1
         if seen[base_id] > 1:
-            resolved = sheets.ResolvedKit(
-                source_id=f"{base_id}:{seen[base_id]}", label=resolved.label,
-                giver=resolved.giver, bonus=resolved.bonus, citation=resolved.citation,
-                verified=resolved.verified, status=resolved.status,
-            )
+            resolved = replace(resolved, source_id=f"{base_id}:{seen[base_id]}")
         sources.append(resolved)
         stats[resolved.source_id] = weapon_passives.stats_read(passive, wielder)
         builds[resolved.source_id] = str(build.id)
@@ -289,11 +315,30 @@ def team_weapons(
     return sources, coverage, stats, builds
 
 
-def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
-    """Pass 1 for every member with a sheet, then pass 2 for the subject as receiver."""
+def team_kit(
+    members: Sequence[Build], subject_build_id: str, *,
+    subject_weapon: Weapon | None = None, subject_refinement: int | None = None,
+) -> TeamKit:
+    """Pass 1 for every member with a sheet, then pass 2 for the subject as receiver.
+
+    `subject_weapon` scores the subject with a candidate weapon (§45): their pass 1 — the base
+    ATK their own kit reads, the stats their weapon's passive reads — and the passive resolved
+    are the candidate's, at `subject_refinement` (default: the build's own refinement, as the
+    gcsim weapon comparison rules). Teammates are unchanged.
+    """
     if not any(str(b.id) == subject_build_id for b in members):
         msg = "the optimized build must be one of the team's members"
         raise KitBuffsError(msg)
+    if subject_refinement is not None and subject_weapon is None:
+        msg = "a refinement is for a candidate weapon; name the weapon"
+        raise KitBuffsError(msg)
+    if subject_weapon is not None:
+        members = [
+            WeaponSwap(b, subject_weapon,  # type: ignore[list-item]
+                       int(subject_refinement or b.refinement or 1))
+            if str(b.id) == subject_build_id else b
+            for b in members
+        ]
     sources: list[sheets.ResolvedKit] = []
     coverage: list[MemberKit] = []
     giver_stats: dict[str, dict[str, float]] = {}

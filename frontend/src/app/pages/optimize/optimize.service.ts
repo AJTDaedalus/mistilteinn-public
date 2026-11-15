@@ -51,6 +51,7 @@ export class OptimizeService {
     channel: string,
     scope: string,
     enemyLevel: number,
+    weaponId?: string,
   ): Promise<SearchContext> {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/search-context', {
       params: { path: { build_id: buildId } },
@@ -61,6 +62,10 @@ export class OptimizeService {
         hit: { channel, scope, talent: hit, flat_damage: 0 },
         enemy: { level: enemyLevel, resistances: {}, default_resistance: 0.1 },
         compare_to_equipped: false,
+        // A candidate weapon's base instead of the equipped one's (owner approval 2026-11-14,
+        // `DECISIONS.md` §45). Absent is the equipped weapon — never sent as `null`, which the
+        // server would read the same, so a request says only what it means.
+        ...(weaponId ? { weapon_id: weaponId } : {}),
       },
     });
     if (error) throw error;

@@ -607,6 +607,15 @@
 
 .weapon-ranking__name { flex: 1 1 auto; min-width: 0; }
 
+/* Formula mode: a weapon whose passive has no data competes on base stats, and says so.
+   On a phone the note takes its own line rather than squeezing the weapon's name. */
+.weapon-ranking__passive { font-size: var(--text-xs); white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .weapon-ranking li { flex-wrap: wrap; }
+  .weapon-ranking__passive { order: 10; flex-basis: 100%; }
+}
+
 
 /* The energy-model toggle. A checkbox with its consequence beside it rather than a mode name:
    "waiting" means nothing until you know it costs time and prices ER higher. */

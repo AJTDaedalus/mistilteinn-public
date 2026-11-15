@@ -74,11 +74,20 @@
    "go": "19,22,40-44"
   }
  ],
- "unmodelled": [
+ "procs": [
   {
-   "what": "the vacuum blade proc",
-   "reason": "a damage instance of the weapon's own: the target has no weapon-hit row kind yet"
-  },
+   "key": "vacuum",
+   "label": "Vacuum blade: 40% ATK Physical",
+   "multiplier": {
+    "param": 3
+   },
+   "element": "physical",
+   "stat_layer": "total",
+   "go": "20,23-36,38-48",
+   "gcsim": "internal/weapons/spear/skyward/skyward.go:44,66-75"
+  }
+ ],
+ "unmodelled": [
   {
    "what": "Normal ATK SPD +12%",
    "reason": "no damage effect in a static estimate: speed is a rotation's timing"
