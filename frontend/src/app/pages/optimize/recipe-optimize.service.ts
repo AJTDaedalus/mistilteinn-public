@@ -353,6 +353,13 @@ export class RecipeOptimizeService {
      * within one — without it, Cancel and leaving the page did nothing until every set had run.
      */
     shouldCancel?: () => boolean,
+    /**
+     * The candidate weapon's refinement (owner ruling 2026-11-15, `DECISIONS.md` §46): sent as
+     * `weapon_refinement` and **in the cache key**, so one weapon at two refinements is two
+     * recipes. Absent is the build's own refinement, as the server rules. Only with
+     * `weaponId`.
+     */
+    weaponRefinement?: number,
   ): Promise<CalibrationResult> {
     const byFourPieceSet = new Map<number, Recipe>();
     const byPair = new Map<string, Recipe>();
@@ -386,8 +393,12 @@ export class RecipeOptimizeService {
       if (shouldCancel?.()) throw new CalibrationCancelled();
       onProgress({ done: index, total: targets.length, current: target.label, loading: false });
 
+      // `waitForEnergy` reaches the request as well as the cache key below: it used not to,
+      // so a "waiting" search ran the skipping config under a key that said waiting — #240's
+      // shape, found while threading the refinement through (2026-11-15).
       const configs = await this.configs(
-        buildId, rotationId, target.artifactSetIds, weaponId,
+        buildId, rotationId, target.artifactSetIds, weaponId, waitForEnergy,
+        weaponId ? weaponRefinement : undefined,
       );
       const key = {
         // `RecipeCacheKey` still spells this field `gcsimPin`. Renaming it there would
@@ -418,6 +429,7 @@ export class RecipeOptimizeService {
         // reaches the cache key produces two identical answers, which reads as the
         // models agreeing rather than as the option doing nothing.
         context: `${context ?? ''}${weaponId ? `|weapon=${weaponId}` : ''}`
+          + (weaponId && weaponRefinement ? `|refine=${weaponRefinement}` : '')
           + (waitForEnergy ? '|waiting' : ''),
       };
 
@@ -436,12 +448,18 @@ export class RecipeOptimizeService {
         // weapon, team, rotation, target — and *not* by artifacts. One aggregate answers for
         // every target in the search; running one each would store a set-specific number under
         // a set-independent key.
+        //
+        // **And never for a candidate weapon.** The corpus key is the build's own context, so
+        // its equipped weapon: a candidate's aggregate written there would be served as the
+        // build's run, and the worn weapon's read back as the candidate's. The aggregate still
+        // runs; it is only kept out of a store keyed for a different simulation.
         const wantsAggregate = target.artifactSetIds.length === 0;
+        const corpusFits = weaponId === undefined;
         // **Local cache, then the corpus, then simulate.** `readRecipe` above answers in
         // microseconds and is checked first; this is a request, so it is checked second; and
         // gcsim is the last resort. A corpus hit is what makes the run store cross-device and
         // cross-user rather than a write-only log.
-        const corpusRaw = wantsAggregate
+        const corpusRaw = wantsAggregate && corpusFits
           ? await this.fromCorpus(buildId, rotationId, configs.energy_recharge)
           : null;
         const aggregate = !wantsAggregate
@@ -464,7 +482,7 @@ export class RecipeOptimizeService {
         // corpus accumulates from real searches, and a user whose search finished must not be
         // told otherwise because a cache write was refused. **Skipped on a corpus hit** —
         // writing back what was just read would be a no-op request per search.
-        if (aggregate !== null && corpusRaw === null) {
+        if (aggregate !== null && corpusRaw === null && corpusFits) {
           void this.cache(buildId, rotationId, configs.energy_recharge, aggregate.raw);
         }
 
@@ -760,6 +778,7 @@ export class RecipeOptimizeService {
     artifactSetIds: readonly string[],
     weaponId?: string,
     waitForEnergy = false,
+    weaponRefinement?: number,
   ) {
     const { data, error } = await this.api.POST('/api/v1/builds/{build_id}/calibrate', {
       params: { path: { build_id: buildId } },
@@ -768,6 +787,7 @@ export class RecipeOptimizeService {
         // Omitted rather than sent as null when there is none, so a search over the
         // build's own weapon puts nothing new in the request it has always sent.
         ...(weaponId ? { weapon_id: weaponId } : {}),
+        ...(weaponId && weaponRefinement ? { weapon_refinement: weaponRefinement } : {}),
         // Always stated rather than omitted when false: the request says which of the two
         // energy models produced the recipe, and a number whose meaning depends on an
         // unstated assumption is the shape this repo refuses.
