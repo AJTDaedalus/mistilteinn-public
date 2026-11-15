@@ -166,7 +166,7 @@
   <section class="assumptions" aria-labelledby="formula-assumptions-title">
     <header class="assumptions__head">
       <h3 id="formula-assumptions-title" class="assumptions__title">Assumptions</h3>
-      @if (conditional().length) {
+      @if (resettable()) {
         <button type="button" class="linkish" (click)="reset()">Back to defaults</button>
       }
     </header>
@@ -177,7 +177,15 @@
       </p>
     }
 
-    @for (group of groups(); track group.sourceId) {
+    @for (group of groups(); track group.sourceId; let i = $index) {
+      @if (startsCandidates(i)) {
+        <!-- Owner ruling 2026-11-15 (DECISIONS §46): each candidate weapon's passive, with its
+             own controls, read only by that weapon's run in the comparison. -->
+        <h4 class="assumptions__subtitle">Candidate weapons</h4>
+        <p class="hint">
+          Each applies only in its own weapon's run; the equipped weapon's are above.
+        </p>
+      }
       <fieldset class="assumptions__group" [class.assumptions__group--nokit]="group.kind === 'no-kit' || group.kind === 'no-weapon'">
         <legend>
           {{ group.label }}

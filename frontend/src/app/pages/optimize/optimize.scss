@@ -616,6 +616,42 @@
   .weapon-ranking__passive { order: 10; flex-basis: 100%; }
 }
 
+/* Owned only by default (DECISIONS §46): the box that opens the whole class, on its own line. */
+.weapon-compare__unowned {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+/* A refinement per picked candidate: the weapon, its R1–R5, and where the default came from. */
+.weapon-refinements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weapon-refinements li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.weapon-refinements__choice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.weapon-refinements__name { min-width: 0; overflow-wrap: anywhere; }
+
+.weapon-refinements__note { font-size: var(--text-xs); }
+
 
 /* The energy-model toggle. A checkbox with its consequence beside it rather than a mode name:
    "waiting" means nothing until you know it costs time and prices ER higher. */

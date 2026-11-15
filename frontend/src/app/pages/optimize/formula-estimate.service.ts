@@ -105,7 +105,11 @@ export interface TeamKits {
    * asked for): its name, refinement and passive status — `no_passive_data` is "passive not
    * modelled", and the weapon competes on base ATK and substat alone.
    */
-  subjectWeapon?: { name: string | null; refinement: number | null; status: string };
+  subjectWeapon?: {
+    name: string | null; refinement: number | null; status: string;
+    /** Its source among `sources` (`weapon:<slug>`), or null with no passive data. */
+    sourceId?: string | null;
+  };
   /** The subject's weapon's own damage instances, each a proc row the panel can offer. */
   procs?: ProcChoice[];
 }
@@ -124,6 +128,61 @@ export function kitKey(
 ): string {
   return `${subjectBuildId}|${memberIds.join(',')}|${weapon?.id ?? 'equipped'}`
     + `|${weapon?.refinement ?? ''}`;
+}
+
+/**
+ * The conditional state a **candidate weapon's** run reads (owner ruling 2026-11-15,
+ * `DECISIONS.md` §46: a candidate's passive conditions are shown and editable per candidate).
+ *
+ * Every key under the candidate's own source is dropped from the page's state — a teammate
+ * wielding the same weapon in the equipped run can hold that very source id, and its setting is
+ * not this candidate's — and the candidate's own settings are written under it. A condition the
+ * user did not set takes the source's default, as every condition does.
+ */
+export function candidateConditionState(
+  state: Readonly<Record<string, ConditionValue>>,
+  sourceId: string | null | undefined,
+  own: Readonly<Record<string, ConditionValue>>,
+): Record<string, ConditionValue> {
+  if (!sourceId) return { ...state };
+  const prefix = `${sourceId}/`;
+  const out: Record<string, ConditionValue> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (!key.startsWith(prefix)) out[key] = value;
+  }
+  for (const [condition, value] of Object.entries(own)) out[`${prefix}${condition}`] = value;
+  return out;
+}
+
+/**
+ * The assumptions panel's group for one candidate weapon (§46): its passive's conditions,
+ * defaults, reasons and citation, marked `candidate` so the panel reads and writes that
+ * candidate's own state. A weapon with no passive data is named as one, as the equipped
+ * weapon's would be.
+ */
+export function candidateGroup(kits: TeamKits, weapon: WeaponChoice, name: string): ConditionGroup {
+  const refinement = weapon.refinement ?? kits.subjectWeapon?.refinement ?? null;
+  const label = `Candidate: ${name}${refinement ? ` R${refinement}` : ''}`;
+  const source = kits.sources.find((s) => s.id === kits.subjectWeapon?.sourceId);
+  const candidate = { weaponId: weapon.id };
+  if (!source) {
+    return {
+      sourceId: `candidate:${weapon.id}`, label, citation: '', conditions: [], kind: 'no-weapon',
+      unmodelled: [{
+        what: 'weapon passive', reason: 'no weapon passive modelled: base ATK and substat only',
+      }],
+      candidate,
+    };
+  }
+  return {
+    sourceId: `candidate:${weapon.id}`, label, citation: source.citation,
+    conditions: source.bonus.conditions,
+    unmodelled: source.bonus.unmodelled.filter(
+      (part, i, all) => all.findIndex((p) => p.what === part.what) === i,
+    ),
+    kind: 'weapon', verified: source.verified, candidate,
+    ...(source.status === 'no_damage_effect' ? { inert: true } : {}),
+  };
 }
 
 /** The API's search context in the kernel's spelling — the same mapping single-hit uses. */
@@ -216,6 +275,12 @@ export class FormulaEstimateService {
   readonly forBuild = signal('');
   /** Team-level conditionals the user changed. An absent key takes the source's default. */
   readonly conditionals = signal<Record<string, ConditionValue>>({});
+  /**
+   * Each candidate weapon's own passive conditions the user changed, by catalogue weapon id
+   * and condition key (owner ruling 2026-11-15, §46). Read only by that candidate's run
+   * (`candidateConditionState`); an absent key takes the passive's default.
+   */
+  readonly candidateConditionals = signal<Record<string, Record<string, ConditionValue>>>({});
 
   private tiers: Promise<FormulaSetTier[]> | null = null;
   /**
@@ -271,8 +336,16 @@ export class FormulaEstimateService {
     this.conditionals.update((state) => ({ ...state, [key]: value }));
   }
 
+  /** Set one candidate weapon's passive condition (§46), keyed by the condition's own key. */
+  setCandidateCondition(weaponId: string, condition: string, value: ConditionValue): void {
+    this.candidateConditionals.update((all) => ({
+      ...all, [weaponId]: { ...all[weaponId], [condition]: value },
+    }));
+  }
+
   resetConditions(): void {
     this.conditionals.set({});
+    this.candidateConditionals.set({});
   }
 
   /** Every conditional set tier. Fetched once per session: it is catalogue data. */
@@ -339,7 +412,10 @@ export class FormulaEstimateService {
           .filter((w) => w.status === 'no_passive_data' && w.weapon)
           .map((w) => `${w.weapon} R${w.refinement} (${w.wielder})`),
         ...(mine ? {
-          subjectWeapon: { name: mine.weapon, refinement: mine.refinement, status: mine.status },
+          subjectWeapon: {
+            name: mine.weapon, refinement: mine.refinement, status: mine.status,
+            sourceId: mine.source_id ?? null,
+          },
         } : {}),
         procs: sources
           .filter((s) => s.id === mine?.source_id)
@@ -391,6 +467,13 @@ export class FormulaEstimateService {
       this.optimize.setBonuses(),
       this.kits(request.team, request.buildId, request.weapon),
     ]);
+    // A candidate's run reads the candidate's own passive conditions (§46), never the equipped
+    // run's under the same source id — on the team state and on each row's overrides alike.
+    const candidateSource = request.weapon ? kits.subjectWeapon?.sourceId ?? null : null;
+    const own = request.weapon ? this.candidateConditionals()[request.weapon.id] ?? {} : {};
+    const teamState = request.weapon
+      ? candidateConditionState(this.conditionals(), candidateSource, own)
+      : this.conditionals();
     const formulaRows: FormulaRow[] = rows.map((row, i) => ({
       id: row.id,
       label: row.label,
@@ -399,7 +482,9 @@ export class FormulaEstimateService {
         ? null : { talent: row.hit.talent, label: row.hit.label, index: row.hit.index },
       count: row.count,
       context: kernelContext(contexts[i]),
-      conditionals: row.overrides,
+      conditionals: request.weapon
+        ? candidateConditionState(row.overrides, candidateSource, {})
+        : row.overrides,
       reaction: row.reaction ?? null,
       additive: row.reaction || row.proc ? null : row.additive ?? null,
       proc: row.proc ?? null,
@@ -419,7 +504,7 @@ export class FormulaEstimateService {
         setId: b.set_id, piecesRequired: b.pieces_required, stats: b.stats,
       })),
       fourPieceSetIds: request.fourPieceSetIds,
-      conditionals: this.conditionals() as ConditionState,
+      conditionals: teamState as ConditionState,
       kits,
       characters: [character?.name ?? 'Build', ...request.team
         .filter((b) => b.id !== request.buildId)
