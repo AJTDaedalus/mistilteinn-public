@@ -4916,6 +4916,67 @@
           }
         }
       }
+    },
+    "/api/v1/formula/energy": {
+      "get": {
+        "tags": [
+          "formula"
+        ],
+        "summary": "Energy Route",
+        "description": "The team's energy data for the formula estimate (math-fallback P3, task 14).\n\nEach member's burst cost and cooldown (game data) and Elemental Skill particles per cast\n(curated, each count cited to gcsim at the pin), and the drip gcsim's waiting model emits.\nA member with no curated count is listed as `no_particle_data`, never omitted. The\nbrowser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.",
+        "operationId": "energy_route_api_v1_formula_energy_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subject_build_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Subject Build Id"
+            }
+          },
+          {
+            "name": "member_build_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Member Build Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormulaTeamEnergyRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8374,6 +8435,35 @@
         "title": "FormulaConditionRead",
         "description": "One assumption a user owns, with its default and why that is the default."
       },
+      "FormulaDripRead": {
+        "properties": {
+          "particles": {
+            "type": "number",
+            "title": "Particles"
+          },
+          "interval_seconds": {
+            "type": "number",
+            "title": "Interval Seconds"
+          },
+          "config": {
+            "type": "string",
+            "title": "Config"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "particles",
+          "interval_seconds",
+          "config",
+          "citation"
+        ],
+        "title": "FormulaDripRead",
+        "description": "The enemy-particle drip gcsim's waiting model emits, as its mean."
+      },
       "FormulaEffectRead": {
         "properties": {
           "stat": {
@@ -8580,6 +8670,80 @@
         "title": "FormulaEffectRead",
         "description": "One buff, as a number and the scope it reaches. See `formula_effects.Effect`."
       },
+      "FormulaEnergyMemberRead": {
+        "properties": {
+          "build_id": {
+            "type": "string",
+            "title": "Build Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "burst_energy_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Burst Energy Cost"
+          },
+          "burst_cooldown": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Burst Cooldown"
+          },
+          "is_subject": {
+            "type": "boolean",
+            "title": "Is Subject"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "curated",
+              "no_particle_data"
+            ],
+            "title": "Status"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaParticleSourceRead"
+            },
+            "type": "array",
+            "title": "Sources",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "build_id",
+          "name",
+          "is_subject",
+          "status"
+        ],
+        "title": "FormulaEnergyMemberRead",
+        "description": "One member's energy data: burst cost and cooldown (game data), skill particles."
+      },
       "FormulaKitMemberRead": {
         "properties": {
           "build_id": {
@@ -8710,6 +8874,81 @@
         ],
         "title": "FormulaKitSourceRead",
         "description": "One team member's kit, resolved for the optimized character (math-fallback P2).\n\nSame `bonus` vocabulary as a set tier or a resonance, with every number already resolved\nin the **giver's** context (`app/formula/genshin/sheets.py`): Bennett's ATK bonus arrives\nas flat ATK computed from Bennett's own base ATK. The browser gates each effect by its\n`when`, exactly as it does a set bonus."
+      },
+      "FormulaParticleSourceRead": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "per": {
+            "type": "string",
+            "enum": [
+              "cast",
+              "second"
+            ],
+            "title": "Per"
+          },
+          "particles": {
+            "type": "number",
+            "title": "Particles"
+          },
+          "collector": {
+            "type": "string",
+            "enum": [
+              "caster",
+              "active"
+            ],
+            "title": "Collector"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval"
+          },
+          "max_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Seconds"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "per",
+          "particles",
+          "collector",
+          "citation"
+        ],
+        "title": "FormulaParticleSourceRead",
+        "description": "One Elemental Skill particle source, cited to the gcsim line its count is read off."
       },
       "FormulaProcRead": {
         "properties": {
@@ -9023,6 +9262,32 @@
         ],
         "title": "FormulaTalentRowRead",
         "description": "One of the hit owner's own talent rows an effect is scoped to. See\n`formula_effects.TalentRowScope`."
+      },
+      "FormulaTeamEnergyRead": {
+        "properties": {
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaEnergyMemberRead"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "drip": {
+            "$ref": "#/components/schemas/FormulaDripRead"
+          },
+          "gcsim_commit": {
+            "type": "string",
+            "title": "Gcsim Commit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "members",
+          "drip",
+          "gcsim_commit"
+        ],
+        "title": "FormulaTeamEnergyRead",
+        "description": "The team's energy data for the formula estimate's energy model (DESIGN \u00a72.11)."
       },
       "FormulaTeamKitRead": {
         "properties": {

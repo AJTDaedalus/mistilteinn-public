@@ -10,10 +10,20 @@ import {
   ADDITIVE, type Additive, type Lunar, SWIRL_ELEMENTS, type Transformative,
 } from '../../sim/damage';
 import {
+  defaultOnField,
+  energyInput,
   FormulaEstimateService,
+  rotationSecondsOf,
+  sourceKey,
+  type EnergySettings,
   type ProcChoice,
   type TargetRow,
 } from '../../pages/optimize/formula-estimate.service';
+import {
+  rawParticleEnergy,
+  requiredEnergyRecharge,
+  type EnergyMode,
+} from '../../sim/formula-energy';
 import type { AvailableHit, RefusedHit } from '../../pages/explain/explain.service';
 import { RefusedHits } from '../refused-hits/refused-hits';
 
@@ -30,6 +40,13 @@ const REACTIONS: { value: Transformative | Lunar; label: string }[] = [
   { value: 'shattered', label: 'Shattered' },
   { value: 'lunar_charged', label: 'Lunar-Charged' },
   { value: 'lunar_crystallize', label: 'Lunar-Crystallize' },
+];
+
+/** The energy model's modes (task 14). `off` is the default until the owner rules. */
+const ENERGY_MODES: { value: EnergyMode; label: string }[] = [
+  { value: 'off', label: 'Report only' },
+  { value: 'skip', label: 'Skip an unfunded burst' },
+  { value: 'wait', label: 'Wait for the energy' },
 ];
 
 const MOVES: { value: FormulaMove; label: string }[] = [
@@ -94,6 +111,44 @@ export class FormulaPanel {
   readonly procs = input<readonly ProcChoice[]>([]);
 
   protected readonly moves = MOVES;
+  protected readonly energyModes = ENERGY_MODES;
+  protected readonly energySettings = this.service.energy;
+
+  /**
+   * The energy section (task 14): every member's skill particles with their casts, the share
+   * the optimized character catches on field, the drip and flat energy — each editable, each
+   * with its default and citation — and the ER the burst needs, from the same closed form the
+   * estimate scores with. `null` before the team's data has arrived.
+   */
+  protected readonly energyView = computed(() => {
+    const data = this.service.teamEnergy();
+    if (!data) return null;
+    const settings = this.service.energy();
+    const subject = data.members.find((m) => m.is_subject) ?? null;
+    const input = energyInput(data, settings);
+    const model = input ? { ...input, baseEnergyRecharge: 0 } : null;
+    return {
+      subject,
+      rotationSeconds: rotationSecondsOf(data, settings),
+      rotationIsDefault: settings.rotationSeconds === null,
+      drip: data.drip,
+      requirement: model ? requiredEnergyRecharge(model) : null,
+      raw: model ? rawParticleEnergy(model) : 0,
+      members: data.members.map((member) => ({
+        member,
+        casts: settings.casts[member.build_id] ?? 1,
+        manual: settings.manual[member.build_id] ?? 0,
+        sources: member.sources.map((source, i) => {
+          const key = sourceKey(member.build_id, i);
+          return {
+            key, source,
+            particles: settings.particles[key] ?? source.particles,
+            onField: settings.onField[key] ?? defaultOnField(member, source),
+          };
+        }),
+      })),
+    };
+  });
   protected readonly reactions = REACTIONS;
   protected readonly swirlElements = SWIRL_ELEMENTS;
 
@@ -340,5 +395,80 @@ export class FormulaPanel {
     const text = raw.slice(2);
     const value = condition.kind === 'choice' ? text : Number(text);
     this.service.overrideRow(row.id, this.key(group, condition), value);
+  }
+
+  // ── Energy (math-fallback P3, task 14) ─────────────────────────────────────────────────
+
+  protected setEnergyMode(value: string): void {
+    if (ENERGY_MODES.some((m) => m.value === value)) {
+      this.service.setEnergy({ mode: value as EnergyMode });
+    }
+  }
+
+  /** A non-negative number from a box on `change`, or the box restored and `null`. */
+  private numberFrom(box: HTMLInputElement, shown: number, positive = false): number | null {
+    const value = Number(box.value);
+    if (box.value.trim() !== '' && Number.isFinite(value) && (positive ? value > 0 : value >= 0)) {
+      return value;
+    }
+    box.value = String(shown);
+    return null;
+  }
+
+  protected setRotation(box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown, true);
+    if (value !== null) this.service.setEnergy({ rotationSeconds: value });
+  }
+
+  protected resetRotation(): void {
+    this.service.setEnergy({ rotationSeconds: null });
+  }
+
+  private patchMap(
+    field: 'casts' | 'particles' | 'onField' | 'manual', key: string, value: number,
+  ): void {
+    const current: EnergySettings = this.service.energy();
+    this.service.setEnergy({ [field]: { ...current[field], [key]: value } });
+  }
+
+  protected setCasts(buildId: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.patchMap('casts', buildId, value);
+  }
+
+  protected setParticles(key: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.patchMap('particles', key, value);
+  }
+
+  /** The on-field share is entered as a percent and kept as a fraction. */
+  protected setOnField(key: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, Math.round(shown * 100));
+    if (value === null) return;
+    if (value > 100) {
+      box.value = String(Math.round(shown * 100));
+      return;
+    }
+    this.patchMap('onField', key, value / 100);
+  }
+
+  protected setManual(buildId: string, box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.patchMap('manual', buildId, value);
+  }
+
+  protected setFlatEnergy(box: HTMLInputElement, shown: number): void {
+    const value = this.numberFrom(box, shown);
+    if (value !== null) this.service.setEnergy({ flatEnergy: value });
+  }
+
+  /** Off, the waiting model has nothing to wait on, so it steps back to skip and says so. */
+  protected setDrip(on: boolean): void {
+    const mode = this.service.energy().mode;
+    this.service.setEnergy({ drip: on, ...(on || mode !== 'wait' ? {} : { mode: 'skip' }) });
+  }
+
+  protected percent(value: number): string {
+    return `${(value * 100).toFixed(1)}%`;
   }
 }

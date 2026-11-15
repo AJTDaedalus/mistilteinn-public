@@ -616,7 +616,7 @@ const CONVERSION_READS: Record<string, ConversionSource | 'er'> = {
 
 /**
  * How strong one effect is **for this row**, for the non-stacking rule (owner ruling
- * 2026-11-15, `DECISIONS.md` §46): its resolved amount — the value times its stacks and its
+ * 2026-11-15, `DECISIONS.md` §47): its resolved amount — the value times its stacks and its
  * teammate count, capped — and for a conversion, the amount it gives at the hit owner's
  * zero-artifact stat (`cappedAmount`, the same reading `formula:verify` freezes), or its
  * per-unit value when that stat is not known.
@@ -740,7 +740,7 @@ export function applySources(
   }
 
   // GO's non-stacking families (§45), **the stronger one applying** (owner ruling 2026-11-15,
-  // `DECISIONS.md` §46): per family name — GO's families are per name and each is one stat —
+  // `DECISIONS.md` §47): per family name — GO's families are per name and each is one stat —
   // the source whose effects of that name give this row the most; a tie falls back to GO's
   // rule. GO itself applies the wielder whose character key sorts first, whatever the
   // strength, and where that differs the loser's line says so.
@@ -1603,4 +1603,31 @@ export function synthesizeRecipeSet(input: FormulaInput): FormulaRecipeSet {
     .filter((b): b is SetBonus => b !== null);
 
   return { recipes: { noFourPiece: recipe([]), byFourPieceSet }, setBonuses, withheld };
+}
+
+// ── Energy (math-fallback P3, task 14) ────────────────────────────────────────────────────
+
+/**
+ * The subject's total Energy Recharge before artifacts under these sources: the first row's
+ * base (character, weapon, ascension, and any set statics folded into it) plus every kit ER
+ * buff that reaches that row. The energy model (`formula-energy.ts`) adds a candidate's
+ * artifact ER to this, the same `b('energy_recharge') + buffs.er` an ER conversion reads.
+ */
+export function subjectEnergyRecharge(
+  rows: readonly FormulaRow[],
+  sources: readonly FormulaSource[],
+  team: FormulaTeam,
+  teamState: ConditionState = {},
+): number {
+  const row = rows[0];
+  if (!row) throw new Error('a formula target needs at least one row');
+  const { base, hit, dmgBonusQuantity } = row.context;
+  const { buffs } = applySources(
+    sources, {
+      element: elementOfQuantity(dmgBonusQuantity), move: row.move, amplifying: hit.amplifying,
+      hit: row.hit ?? null, reaction: hit.amplifying ?? null,
+      reactionRow: !!row.reaction, procRow: !!row.proc,
+    }, team, row.conditionals ?? {}, teamState,
+  );
+  return (base['energy_recharge'] ?? 0) + buffs.er;
 }

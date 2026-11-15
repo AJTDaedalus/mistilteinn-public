@@ -1,0 +1,158 @@
+{
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "source": "github.com/genshinsim/gcsim at gcsim_commit — internal/characters/<key>/*.go (AGPL-3.0; MIT for code before 2026-09-19)",
+ "note": "Elemental Skill particles per cast for the formula estimate's energy model (DESIGN_team_math_fallback.md §2.11, TASKS 14). Each count is read off the QueueParticle call it cites; `lines` names each cited line and a substring it must contain, and tests/unit/test_formula_energy_data.py holds every entry to the committed snapshot of those lines (gcsim_lines.json, scripts/gcsim/snapshot_particle_lines.py). A random count is its expectation (2 + 0.25 for Bennett's tap). `collector` says who catches the particles: `caster` lands them while the caster is still on field (a teammate's are caught off field), `active` is an off-field generator whose particles the on-field character catches. Characters whose particles come from a summon's hits with a chance per hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele, Yae's totems) are not here: their count per cast is how many hits land, which nothing cited states. The estimate names them and takes the user's number.",
+ "characters": {
+  "Bennett": {
+   "gcsim_key": "bennett",
+   "sources": [
+    {"label": "Passion Overload (tap)", "per": "cast", "particles": 2.25, "collector": "caster",
+     "note": "2 particles, 3 with a 25% chance; a level-1 hold always gives 3 (skill.go:242).",
+     "lines": [["internal/characters/bennett/skill.go", 130, "count := 2.0"],
+               ["internal/characters/bennett/skill.go", 131, "< 0.25"],
+               ["internal/characters/bennett/skill.go", 132, "count = 3"],
+               ["internal/characters/bennett/skill.go", 134, "QueueParticle(c.Base.Key.String(), count, attributes.Pyro"]]}
+   ]
+  },
+  "Xingqiu": {
+   "gcsim_key": "xingqiu",
+   "sources": [
+    {"label": "Guhua Sword: Fatal Rainscreen", "per": "cast", "particles": 5, "collector": "caster",
+     "lines": [["internal/characters/xingqiu/skill.go", 99, "QueueParticle(c.Base.Key.String(), 5, attributes.Hydro"]]}
+   ]
+  },
+  "Yelan": {
+   "gcsim_key": "yelan",
+   "sources": [
+    {"label": "Lingering Lifeline", "per": "cast", "particles": 4, "collector": "caster",
+     "lines": [["internal/characters/yelan/skill.go", 169, "QueueParticle(c.Base.Key.String(), 4, attributes.Hydro"]]}
+   ]
+  },
+  "Xiangling": {
+   "gcsim_key": "xiangling",
+   "sources": [
+    {"label": "Guoba Attack", "per": "cast", "particles": 4, "hits": 4, "collector": "active",
+     "note": "Guoba lasts 7.3 s and shoots every 100 frames, one particle per hit on a 1 s ICD: four.",
+     "lines": [["internal/characters/xiangling/skill.go", 49, "lasts 7.3 seconds, shoots every 100 frames"],
+               ["internal/characters/xiangling/skill.go", 78, "AddStatus(particleICDKey, 1*60"],
+               ["internal/characters/xiangling/skill.go", 79, "QueueParticle(c.Base.Key.String(), 1, attributes.Pyro"]]}
+   ]
+  },
+  "Kaedehara Kazuha": {
+   "gcsim_key": "kazuha",
+   "sources": [
+    {"label": "Chihayaburu (tap)", "per": "cast", "particles": 3, "collector": "caster",
+     "note": "A hold gives 4 (skill.go:145).",
+     "lines": [["internal/characters/kazuha/skill.go", 73, "QueueParticle(c.Base.Key.String(), count, attributes.Anemo"],
+               ["internal/characters/kazuha/skill.go", 95, "c.makeParticleCB(3)"]]}
+   ]
+  },
+  "Kamisato Ayaka": {
+   "gcsim_key": "ayaka",
+   "sources": [
+    {"label": "Kamisato Art: Hyouka", "per": "cast", "particles": 4.5, "collector": "caster",
+     "note": "4 particles, 5 with a 50% chance.",
+     "lines": [["internal/characters/ayaka/skill.go", 69, "count := 4.0"],
+               ["internal/characters/ayaka/skill.go", 70, "< 0.5"],
+               ["internal/characters/ayaka/skill.go", 71, "count = 5"],
+               ["internal/characters/ayaka/skill.go", 73, "QueueParticle(c.Base.Key.String(), count, attributes.Cryo"]]}
+   ]
+  },
+  "Nahida": {
+   "gcsim_key": "nahida",
+   "sources": [
+    {"label": "Tri-Karma Purification", "per": "second", "particles": 3, "interval": 7, "collector": "active",
+     "note": "3 particles at most every 7 s, from Tri-Karma hits: a ceiling that assumes a trigger at every ICD expiry.",
+     "lines": [["internal/characters/nahida/skill.go", 128, "AddStatus(triKarmaParticleICD, 7*60"],
+               ["internal/characters/nahida/skill.go", 129, "QueueParticle(c.Base.Key.String(), 3, attributes.Dendro"]]}
+   ]
+  },
+  "Escoffier": {
+   "gcsim_key": "escoffier",
+   "sources": [
+    {"label": "Low-Temperature Cooking", "per": "cast", "particles": 4, "collector": "caster",
+     "lines": [["internal/characters/escoffier/skill.go", 116, "QueueParticle(c.Base.Key.String(), 4, attributes.Cryo"]]}
+   ]
+  },
+  "Citlali": {
+   "gcsim_key": "citlali",
+   "sources": [
+    {"label": "Dawnfrost Darkstar", "per": "cast", "particles": 5, "collector": "caster",
+     "lines": [["internal/characters/citlali/skill.go", 186, "QueueParticle(c.Base.Key.String(), 5, attributes.Cryo"]]}
+   ]
+  },
+  "Neuvillette": {
+   "gcsim_key": "neuvillette",
+   "sources": [
+    {"label": "O Tears, I Shall Repay", "per": "cast", "particles": 4, "collector": "caster",
+     "lines": [["internal/characters/neuvillette/skill.go", 25, "particleCount  = 4"],
+               ["internal/characters/neuvillette/skill.go", 113, "QueueParticle(c.Base.Key.String(), particleCount, attributes.Hydro"]]}
+   ]
+  },
+  "Jean": {
+   "gcsim_key": "jean",
+   "sources": [
+    {"label": "Gale Blade", "per": "cast", "particles": 2.67, "collector": "caster",
+     "note": "2 particles, and 1 more with a 67% chance.",
+     "lines": [["internal/characters/jean/skill.go", 76, "QueueParticle(c.Base.Key.String(), 2, attributes.Anemo"],
+               ["internal/characters/jean/skill.go", 87, "< 0.67"],
+               ["internal/characters/jean/skill.go", 88, "QueueParticle(c.Base.Key.String(), 1, attributes.Anemo"]]}
+   ]
+  },
+  "Chevreuse": {
+   "gcsim_key": "chevreuse",
+   "sources": [
+    {"label": "Short-Range Rapid Interdiction Fire", "per": "cast", "particles": 4, "collector": "caster",
+     "note": "A 10 s particle ICD: one cast's worth per 10 s at most.",
+     "lines": [["internal/characters/chevreuse/skill.go", 238, "AddStatus(particleICDKey, 10*60"],
+               ["internal/characters/chevreuse/skill.go", 239, "QueueParticle(c.Base.Key.String(), 4, attributes.Pyro"]]}
+   ]
+  },
+  "Mavuika": {
+   "gcsim_key": "mavuika",
+   "sources": [
+    {"label": "The Named Moment", "per": "cast", "particles": 5, "collector": "caster",
+     "lines": [["internal/characters/mavuika/skill.go", 340, "QueueParticle(c.Base.Key.String(), 5, attributes.Pyro"]]}
+   ]
+  },
+  "Skirk": {
+   "gcsim_key": "skirk",
+   "sources": [
+    {"label": "Havoc: Warp", "per": "cast", "particles": 4, "collector": "caster",
+     "note": "On her Cryo hits, with a 15 s particle ICD.",
+     "lines": [["internal/characters/skirk/skill.go", 26, "particleICD            = 15 * 60"],
+               ["internal/characters/skirk/skill.go", 157, "count := 4.0"],
+               ["internal/characters/skirk/skill.go", 158, "QueueParticle(c.Base.Key.String(), count, attributes.Cryo"]]}
+   ]
+  },
+  "Sucrose": {
+   "gcsim_key": "sucrose",
+   "sources": [
+    {"label": "Astable Anemohypostasis Creation-6308", "per": "cast", "particles": 4, "collector": "caster",
+     "lines": [["internal/characters/sucrose/skill.go", 81, "QueueParticle(c.Base.Key.String(), 4, attributes.Anemo"]]}
+   ]
+  },
+  "Navia": {
+   "gcsim_key": "navia",
+   "sources": [
+    {"label": "Ceremonial Crystalshot", "per": "cast", "particles": 3.5, "collector": "caster",
+     "note": "3 particles, 4 with a 50% chance.",
+     "lines": [["internal/characters/navia/skill.go", 229, "count := 3.0"],
+               ["internal/characters/navia/skill.go", 230, "< 0.5"],
+               ["internal/characters/navia/skill.go", 231, "count = 4"],
+               ["internal/characters/navia/skill.go", 233, "QueueParticle(c.Base.Key.String(), count, attributes.Geo"]]}
+   ]
+  },
+  "Furina": {
+   "gcsim_key": "furina",
+   "sources": [
+    {"label": "Salon Solitaire", "per": "second", "particles": 1, "interval": 3.25, "max_seconds": 28.933, "collector": "active",
+     "note": "One particle per Salon Member hit on a 2.5 s ICD (gcsim); KQM's Furina guide measures the average at about one per 3.25 s, which is used. The Salon lasts 1736 frames (28.9 s).",
+     "kqm": "keqingmains.com/furina/ — Mechanics: \"When a Salon member hits an enemy, it will produce 1 Hydro Particle, with a 2.5s particle ICD. This averages out to around 1 particle every ~3.25 seconds.\"",
+     "lines": [["internal/characters/furina/skill.go", 21, "skillMaxDuration = 1736"],
+               ["internal/characters/furina/skill.go", 331, "AddStatus(particleICDKey, 2.5*60"],
+               ["internal/characters/furina/skill.go", 332, "QueueParticle(c.Base.Key.String(), 1, attributes.Hydro"]]}
+   ]
+  }
+ }
+}

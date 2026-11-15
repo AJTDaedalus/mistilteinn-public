@@ -42,7 +42,13 @@ import {
   type FormulaSetTier,
   type FormulaSource,
   type FormulaTeam,
+  subjectEnergyRecharge,
 } from './formula-recipe';
+import {
+  artifactEnergyRequirement,
+  energyAssumptions,
+  type FormulaEnergy,
+} from './formula-energy';
 import type { Recipe } from './recipe';
 import type { SetBonus } from './search';
 
@@ -57,6 +63,13 @@ export const FORMULA_SCORE_LABEL = 'Damage for the chosen sequence';
 
 export interface FormulaCalibrationInput {
   rows: readonly FormulaRow[];
+  /**
+   * The energy model's team-level inputs (math-fallback P3, task 14; `formula-energy.ts`):
+   * everything but each recipe's own pre-artifact ER, which is read per recipe because a
+   * 4-piece state folds its set's static ER (Emblem's 20 %) into the base. Absent: no energy
+   * model, ER worth nothing, as before task 14.
+   */
+  energy?: Omit<FormulaEnergy, 'baseEnergyRecharge'>;
   team: FormulaTeam;
   resonances: readonly FormulaResonance[];
   setTiers: readonly FormulaSetTier[];
@@ -153,6 +166,7 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
   const noFourPiece = synthesizeRecipe(
     input.rows, resonances, input.team, teamState, characters, coverage, raised,
   );
+  attachEnergy(noFourPiece, input, input.rows, resonances, teamState, characters[0] ?? '');
   const byFourPieceSet = new Map<number, Recipe>();
   const withheld: { setId: number; reason: string }[] = [];
   for (const setId of input.fourPieceSetIds) {
@@ -166,10 +180,12 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
       (b) => b.setId === setId && b.piecesRequired <= 4 && Object.keys(b.stats).length > 0,
     );
     const conditional = tiers.filter((t) => t.pieces <= 4 && usable(t)).map(setSource);
+    const rows = input.rows.map((row) => withStatics(row, statics));
+    const sources = [...resonances, ...conditional];
     const recipe = synthesizeRecipe(
-      input.rows.map((row) => withStatics(row, statics)),
-      [...resonances, ...conditional], input.team, teamState, characters, coverage, raised,
+      rows, sources, input.team, teamState, characters, coverage, raised,
     );
+    attachEnergy(recipe, input, rows, sources, teamState, characters[0] ?? '');
     // The set's whole bonus is inside, so the search must not add its pools again.
     recipe.meta.calibratedSetIds = [setId];
     byFourPieceSet.set(setId, recipe);
@@ -189,6 +205,31 @@ export function formulaCalibration(input: FormulaCalibrationInput): FormulaCalib
     withheld,
     assumptions: noFourPiece.meta.formula?.assumptions ?? [],
   };
+}
+
+/**
+ * Give a formula recipe its energy model (task 14): the team-level inputs, this recipe's own
+ * pre-artifact ER, the artifact ER the requirement asks for as `minimumEnergyRecharge` (so the
+ * page's existing "needs N% more" warning reads it), and the model's sentences beside the
+ * recipe's other assumptions.
+ */
+function attachEnergy(
+  recipe: Recipe,
+  input: FormulaCalibrationInput,
+  rows: readonly FormulaRow[],
+  sources: readonly FormulaSource[],
+  teamState: ConditionState,
+  subject: string,
+): void {
+  if (!input.energy) return;
+  const model: FormulaEnergy = {
+    ...input.energy,
+    baseEnergyRecharge: subjectEnergyRecharge(rows, sources, input.team, teamState),
+  };
+  recipe.meta.formulaEnergy = model;
+  recipe.meta.minimumEnergyRecharge = artifactEnergyRequirement(model);
+  const formula = recipe.meta.formula;
+  if (formula) formula.assumptions = [...formula.assumptions, ...energyAssumptions(model, subject)];
 }
 
 /** Whether a recipe was synthesised from formulas rather than calibrated by gcsim. */
@@ -220,7 +261,7 @@ export interface ConditionGroup {
   inert?: boolean;
   /**
    * A **candidate weapon's** passive in a weapon comparison (owner ruling 2026-11-15,
-   * `DECISIONS.md` §46): its conditions are that candidate's own state, read only by its run,
+   * `DECISIONS.md` §47): its conditions are that candidate's own state, read only by its run,
    * so the panel reads and writes them by weapon id rather than under `sourceId`.
    */
   candidate?: { weaponId: string };

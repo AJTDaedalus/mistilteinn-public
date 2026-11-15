@@ -40,6 +40,7 @@ import {
   type RecipeHit,
   type TripleStat,
 } from './recipe';
+import { energyFactors } from './formula-energy';
 import { dpsAt } from './recipe-energy';
 
 /**
@@ -293,10 +294,28 @@ export function evaluateRecipe(recipe: Recipe, stats: CandidateStats): number {
   //
   // The ladder measures team DPS at each ER instead, which carries the buff, the delay and the
   // damage together without attributing any of them to a hit.
+  const formulaEnergy = recipe.meta.formulaEnergy;
+  if (formulaEnergy && formulaEnergy.mode !== 'off') return formulaEnergyTotal(recipe, stats);
   const ratio = energyRatio(recipe, stats);
   let total = 0;
   for (const hit of recipe.hits) total += evaluateHit(hit, stats);
   return ratio === 1 ? total : total * ratio;
+}
+
+/**
+ * A formula recipe's total under its closed-form energy model (task 14, `formula-energy.ts`):
+ * burst rows scaled by the bursts the candidate's ER funds (`skip`), or the whole sequence by
+ * the time the team waits for them (`wait`). Both factors are non-decreasing in ER, so the
+ * search's optimistic bound still dominates every completion.
+ */
+function formulaEnergyTotal(recipe: Recipe, stats: CandidateStats): number {
+  const { burst, all } = energyFactors(recipe.meta.formulaEnergy!, stats.energyRecharge);
+  let total = 0;
+  for (const hit of recipe.hits) {
+    const damage = evaluateHit(hit, stats);
+    total += hit.move === 'burst' ? damage * burst : damage;
+  }
+  return total * all;
 }
 
 /**
