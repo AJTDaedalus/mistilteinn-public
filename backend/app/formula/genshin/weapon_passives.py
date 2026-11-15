@@ -633,8 +633,10 @@ def resolve(
         unmodelled=tuple(unmodelled),
     )
     status = status_of(bonus)
-    if procs and not effects:
-        # A passive whose damage is its proc (Crescent Pike): the proc row is the effect.
+    if effects or procs:
+        # A proc is an effect (Crescent Pike's damage is its proc), and a part with no damage
+        # effect (Aquila's healing, a Skyward's attack speed) leaves nothing missing: the weapon
+        # comparison labels a weapon "partly modelled" only for a damage part not applied.
         status = "partial" if any(not u.reason.startswith(NO_DAMAGE) for u in unmodelled) \
             else "modelled"
     citation = f"GO {passive.go} @ {passive.go_commit[:8]}"
