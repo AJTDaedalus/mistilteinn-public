@@ -44,6 +44,8 @@ function score(f, sources) {
     // A reaction row and an additive talent row (math-fallback P3).
     reaction: r.reaction ?? null,
     additive: r.additive ?? null,
+    // A weapon proc row (owner approval 2026-11-14, DECISIONS §45).
+    proc: r.proc ?? null,
     context: {
       reactionLevelMultiplier: data.reaction_level_multiplier,
       base: f.base,
@@ -160,9 +162,15 @@ for (const f of data.fixtures) {
       flat_damage_from_atk: ['flat_damage', 'atk'], flat_damage_from_hp: ['flat_damage', 'hp'],
       flat_damage_from_def: ['flat_damage', 'def'], flat_damage_from_em: ['flat_damage', 'em'],
       flat_atk_from_def: ['flat_atk', 'def'], flat_atk_from_hp: ['flat_atk', 'hp'],
+      // The wielder conversions (owner approval 2026-11-14, DECISIONS §45).
+      atk_pct_from_er: ['atk_pct', 'er'], em_from_hp: ['elemental_mastery', 'hp'],
+      flat_atk_from_em: ['flat_atk', 'em'], dmg_bonus_from_def: ['dmg_bonus', 'def'],
     };
-    const zero = (stat) => (stat === 'em' ? f.base.elemental_mastery
-      : f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`]) + f.base[`flat_${stat}`]);
+    const zero = (stat) => {
+      if (stat === 'em') return f.base.elemental_mastery;
+      if (stat === 'er') return f.base.energy_recharge;
+      return f.base[`base_${stat}`] * (1 + f.base[`${stat}_pct`]) + f.base[`flat_${stat}`];
+    };
     const passes = (got) => Math.abs(got - f.expected) / f.expected <= TOLERANCE;
     const converting = (e) => e.stat in frozenAs;
     if (kits.some((s) => s.bonus.effects.some(converting))) {
@@ -197,6 +205,38 @@ for (const f of data.fixtures) {
       if (f.cap_state === 'below' && !passes(uncapped)) {
         failures.push(`${f.name} (stated below its cap, but the cap binds)`);
       }
+    }
+  }
+}
+
+for (const f of data.fixtures) {
+  // GO's non-stacking buffs (DECISIONS §45): with the names stripped every source applies, and
+  // a fixture stating a contested family must then miss — or it is not checking the rule.
+  if (f.non_stack !== undefined) {
+    const stripped = f.sources.map((s) => ({
+      ...s, bonus: { ...s.bonus, effects: s.bonus.effects.map(({ non_stack: _n, ...e }) => e) },
+    }));
+    const both = score(f, stripped);
+    if (Math.abs(both - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (passes with every non-stacking buff applied)`);
+    }
+    // And the tie-break reversed: the other wielder winning must miss too.
+    const ranks = f.sources.map((s) => s.stack_rank).filter(Boolean).sort();
+    const swapped = new Map(ranks.map((r, i) => [r, ranks[ranks.length - 1 - i]]));
+    const reversed = f.sources.map((s) => (s.stack_rank
+      ? { ...s, stack_rank: swapped.get(s.stack_rank) } : s));
+    const flipped = score(f, reversed);
+    if (Math.abs(flipped - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (passes with GO's tie-break reversed)`);
+    }
+  }
+  // A proc row (DECISIONS §45): the proc's multiplier 1% off must miss.
+  if (f.rows.some((r) => r.proc)) {
+    const off = f.sources.map((s) => (s.procs
+      ? { ...s, procs: s.procs.map((p) => ({ ...p, multiplier: p.multiplier * 1.01 })) } : s));
+    const got = score(f, off);
+    if (Math.abs(got - f.expected) / f.expected <= TOLERANCE) {
+      failures.push(`${f.name} (a proc 1% off still passes)`);
     }
   }
 }

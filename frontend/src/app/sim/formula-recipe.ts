@@ -64,8 +64,9 @@ import {
   type ConversionSource, type ConvertedTerm, type FormulaMove, type FormulaProvenance,
   type ReactionTerm, type Recipe, type RecipeHit, type RecipeScaling,
   type StatConversion,
+  type TripleStat,
 } from './recipe';
-import { evaluateHit, NO_STATS } from './recipe-eval';
+import { emTotal, evaluateHit, NO_STATS, totalFor } from './recipe-eval';
 import {
   FORMULA_ALL_DMG_BONUS,
   FORMULA_MOVE_BONUS_PREFIX,
@@ -125,6 +126,23 @@ export interface FormulaEffect {
   weapon_types?: string[] | null;
   /** `talent_level` only: the talent whose level it raises (`raiseRow`). */
   talent?: string | null;
+  /**
+   * GO's non-stacking buff name (`nonStackBuff`, owner approval 2026-11-14, `DECISIONS.md` §45):
+   * of the sources holding an effect with this name, **one** applies — the source whose
+   * `stack_rank` sorts first (GO `uiData.ts:_small`). Weapon passives only.
+   */
+  non_stack?: string | null;
+}
+
+/** A weapon's own damage instance at the wielder's refinement (`/formula/kit-buffs`, §45). */
+export interface FormulaProc {
+  key: string;
+  label: string;
+  multiplier: number;
+  scaling?: 'atk';
+  element: string;
+  /** GO's ATK read: `premod` (Aquila, Skyward Blade) or `total`. */
+  stat_layer: 'premod' | 'total';
 }
 
 export interface FormulaBonus {
@@ -143,6 +161,10 @@ export interface FormulaSource {
   label: string;
   bonus: FormulaBonus;
   citation: string;
+  /** A weapon source's wielder as GO keys them: GO's tie-break for `non_stack` (§45). */
+  stack_rank?: string | null;
+  /** The subject's weapon's damage instances, priced by a proc row (§45). */
+  procs?: FormulaProc[];
 }
 
 /** A conditional set tier as `/formula/set-effects` returns it. */
@@ -189,6 +211,10 @@ export interface FormulaKit {
    * math-fallback P3, task 12): the same vocabulary, applied alike. Absent is `kit`.
    */
   kind?: 'kit' | 'weapon';
+  /** A weapon's wielder's GO key, the non-stacking tie-break (§45). */
+  stack_rank?: string | null;
+  /** The subject's weapon's own damage instances (§45). */
+  procs?: FormulaProc[];
 }
 
 /**
@@ -269,6 +295,16 @@ export interface FormulaRow {
   reaction?: FormulaReaction | null;
   /** Spread or aggravate on this talent row's every hit: flat damage before its DMG bonus. */
   additive?: Additive | null;
+  /**
+   * A **proc row** (owner approval 2026-11-14, `DECISIONS.md` §45): `count` instances of a
+   * weapon's own damage instance — Aquila Favonia's Falcon, a Skyward proc — dealt by the
+   * optimized character, who wields it. `source` is the weapon's source id and `key` the proc.
+   * Its damage is the proc's multiplier × ATK through the whole chain, with no move: GO
+   * `customDmgNode(…, 'elemental', {hit: {ele}})`. A source the run does not carry (another
+   * weapon in a comparison) contributes nothing, and says so. The context's talent hit is not
+   * read; its base, target and level are.
+   */
+  proc?: { source: string; key: string } | null;
 }
 
 /** What a reaction row prices (`reactionRowHits`). */
@@ -444,9 +480,13 @@ interface Buffs {
    * HP (Hu Tao's Guide to Afterlife, capped at 400% of her base ATK). One source per hit: the
    * recipe resolves one conversion into flat ATK.
    */
-  atkFrom: ({ from: 'def' | 'hp'; perUnit: number; extra?: AtkPart[] } & Limits) | null;
+  atkFrom: ({ from: ConversionSource; perUnit: number; extra?: AtkPart[] } & Limits) | null;
   /** Capped self-conversions into DMG% or CRIT Rate (Nahida's, Furina's, Alhaitham's A4). */
   statConversions: StatConversion[];
+  /** ATK% from the hit owner's own ER, capped: Engulfing Lightning on its wielder (§45). */
+  atkPctFromEr: ({ perUnit: number } & Limits) | null;
+  /** EM from the hit owner's own Max HP, each priced alone: Key of Khaj-Nisut (§45). */
+  emFrom: ({ from: TripleStat; perUnit: number } & Limits)[];
   /** Base ATK, before the percentage (Mavuika's C2). */
   baseAtk: number;
   /** Added to the talent term's base-damage multiplier (GO `baseMulti`). */
@@ -465,7 +505,7 @@ interface Limits {
 }
 
 /** A further conversion into flat ATK, priced on its own (`ResolvedConversion.extra`). */
-type AtkPart = { from: 'def' | 'hp'; perUnit: number } & Limits;
+type AtkPart = { from: ConversionSource; perUnit: number } & Limits;
 
 function noBuffs(): Buffs {
   return {
@@ -473,7 +513,8 @@ function noBuffs(): Buffs {
     reactionBonus: 0, resistance: 0, flatDamage: 0, flatFrom: { atk: 0, hp: 0, def: 0, em: 0 },
     flatLimits: {}, erConversion: null,
     flatAtk: 0, bonusFromEm: 0, flatDef: 0, defReduction: 0, defIgnore: 0,
-    atkFrom: null, statConversions: [], baseAtk: 0, baseDmgBonus: 0,
+    atkFrom: null, statConversions: [], atkPctFromEr: null, emFrom: [], baseAtk: 0,
+    baseDmgBonus: 0,
     reactionCritRate: 0, reactionCritDmg: 0, lunarBaseDmgBonus: 0,
   };
 }
@@ -509,7 +550,7 @@ function addFlatFrom(
  * never summed before the cap binds.
  */
 function addAtkFrom(
-  buffs: Buffs, from: 'def' | 'hp', amount: number, limits: Limits, _source: string,
+  buffs: Buffs, from: ConversionSource, amount: number, limits: Limits, _source: string,
 ): void {
   if (buffs.atkFrom === null) {
     buffs.atkFrom = { from, perUnit: amount, ...limits };
@@ -553,6 +594,43 @@ interface HitScope {
    * simply does not reach it — rather than being reported as unapplied for an unknown move.
    */
   reactionRow?: boolean;
+  /** A proc row (§45): no move and no talent row, so move- and row-scoped effects miss it. */
+  procRow?: boolean;
+}
+
+/**
+ * For each GO non-stacking buff name, the one source whose effect of that name applies
+ * (owner approval 2026-11-14, `DECISIONS.md` §45: *"Millennial Movement: one"*).
+ *
+ * GO resolves `input.nonStacking[name]` with its `small` string accumulator over every member
+ * whose write condition holds (`SheetUtil.tsx:102-117`, `uiData.ts:266-276`): **the writer whose
+ * character key sorts first wins**, whatever its refinement — a deterministic rule, not the
+ * stronger buff. A source writes when one of its effects of that name has every `when` holding
+ * under this row's state (GO gates the write by the buff's own condition). A source with no
+ * rank sorts last; a tie keeps the first.
+ */
+function nonStackWinners(
+  sources: readonly FormulaSource[], rowState: ConditionState, teamState: ConditionState,
+): Map<string, FormulaSource> {
+  const out = new Map<string, FormulaSource>();
+  const LAST = String.fromCharCode(0xffff);
+  const rank = (s: FormulaSource): string => s.stack_rank ?? LAST;
+  for (const source of sources) {
+    const conditions = conditionsBy(source);
+    for (const effect of source.bonus.effects) {
+      if (!effect.non_stack) continue;
+      const holds = effect.when.every((w) => {
+        const condition = conditions.get(w.condition);
+        if (condition === undefined) throw new Error(`${source.id}: no condition ${w.condition}`);
+        return w.values.some((v) => v === valueOf(`${source.id}/${w.condition}`, condition,
+          rowState, teamState));
+      });
+      if (!holds) continue;
+      const held = out.get(effect.non_stack);
+      if (held === undefined || rank(source) < rank(held)) out.set(effect.non_stack, source);
+    }
+  }
+  return out;
 }
 
 /**
@@ -573,6 +651,7 @@ export function applySources(
 ): { buffs: Buffs; skipped: string[] } {
   const buffs = noBuffs();
   const skipped: string[] = [];
+  const winners = nonStackWinners(sources, rowState, teamState);
   for (const source of sources) {
     const conditions = conditionsBy(source);
     const state = (key: string): ConditionValue => {
@@ -585,7 +664,17 @@ export function applySources(
       if (!effect.when.every((w) => w.values.some((v) => v === state(w.condition)))) continue;
       const elements = elementsOf(effect, team, state);
       if (elements !== null && !elements.has(scope.element)) continue;
-      if (scope.reactionRow && (effect.moves || effect.rows)) continue;
+      if ((scope.reactionRow || scope.procRow) && (effect.moves || effect.rows)) continue;
+      // GO's non-stacking buffs (§45): only the winning source's effect of this name applies.
+      if (effect.non_stack && winners.get(effect.non_stack) !== source) {
+        const winner = winners.get(effect.non_stack);
+        if (winner) {
+          skipped.push(`${source.label}: ${effect.stat} not applied — ${winner.label} holds the `
+            + `same non-stacking buff (${effect.non_stack}); Genshin Optimizer applies one, the `
+            + 'wielder whose character key sorts first');
+        }
+        continue;
+      }
       if (effect.moves) {
         if (scope.move === null) {
           skipped.push(`${source.label}: ${effect.stat} for ${effect.moves.join('/')} not `
@@ -617,7 +706,8 @@ export function applySources(
         amount *= Math.min(teamCount(effect.per_team, team), effect.per_team_max ?? Infinity);
       }
       if (amount === 0 && effect.stat !== 'dmg_bonus_from_energy_recharge') continue;
-      if ((effect.stat === 'dmg_bonus_from_em' || effect.stat === 'dmg_bonus_from_hp')
+      if ((effect.stat === 'dmg_bonus_from_em' || effect.stat === 'dmg_bonus_from_hp'
+        || effect.stat === 'dmg_bonus_from_def')
         && elements === null && !effect.moves && !effect.rows) {
         // Not reachable from a sheet (Kazuha's A4 names its element, Alhaitham's and
         // Tighnari's their moves, Nahida's and Furina's their rows); refused rather than read as
@@ -664,6 +754,16 @@ export function applySources(
         case 'def_ignore': buffs.defIgnore += amount; break;
         case 'flat_atk_from_def': addAtkFrom(buffs, 'def', amount, limits, source.id); break;
         case 'flat_atk_from_hp': addAtkFrom(buffs, 'hp', amount, limits, source.id); break;
+        // The wielder conversions #389 withheld (owner approval 2026-11-14, §45).
+        case 'flat_atk_from_em': addAtkFrom(buffs, 'em', amount, limits, source.id); break;
+        case 'dmg_bonus_from_def':
+          addStatConversion(buffs, 'bonusDmg', 'def', amount, limits);
+          break;
+        case 'em_from_hp': buffs.emFrom.push({ from: 'hp', perUnit: amount, ...limits }); break;
+        case 'atk_pct_from_er':
+          if (buffs.atkPctFromEr) throw new Error(`${source.id}: two ATK% from ER conversions`);
+          buffs.atkPctFromEr = { perUnit: amount, ...limits };
+          break;
         case 'base_atk': buffs.baseAtk += amount; break;
         case 'base_dmg_bonus': buffs.baseDmgBonus += amount; break;
         case 'reaction_crit_rate': buffs.reactionCritRate += amount; break;
@@ -697,16 +797,18 @@ export function rowHits(
   sources: readonly FormulaSource[],
   team: FormulaTeam,
   teamState: ConditionState,
+  procRow = false,
 ): { hits: RecipeHit[]; skipped: string[] } {
   if (!(row.count > 0)) throw new Error(`row ${row.id}: a count must be positive`);
   if (row.reaction) return reactionRowHits(row, row.reaction, sources, team, teamState);
+  if (row.proc) return procRowHits(row, row.proc, sources, team, teamState);
   const { base, hit, target, characterLevel, dmgBonusQuantity } = row.context;
   const element = elementOfQuantity(dmgBonusQuantity);
   const additive = additiveOf(row, element, hit.amplifying);
   const { buffs, skipped } = applySources(
     sources, {
       element, move: row.move, amplifying: hit.amplifying, hit: row.hit ?? null,
-      reaction: hit.amplifying ?? additive?.reaction ?? null,
+      reaction: hit.amplifying ?? additive?.reaction ?? null, procRow,
     }, team, row.conditionals ?? {}, teamState,
   );
   const flatSources = (Object.keys(buffs.flatFrom) as ConversionSource[])
@@ -766,8 +868,9 @@ export function rowHits(
       ...(flatLimits.cap !== undefined ? { cap: flatLimits.cap * row.count } : {}),
     }
     : null;
-  const zeroTotal = (from: 'def' | 'hp'): number =>
-    calibratedBase[from] * (1 + calibratedPercent[from]) + calibratedFlat[from];
+  const zeroTotal = (from: ConversionSource): number => (from === 'em'
+    ? calibratedEm
+    : calibratedBase[from] * (1 + calibratedPercent[from]) + calibratedFlat[from]);
   const hits = terms.map((term, i): RecipeHit => {
     const scaling = RECIPE_SCALING[term.stat];
     const total = scaling === 'em'
@@ -825,6 +928,18 @@ export function rowHits(
       out.bonusFromEnergyRecharge = {
         ...buffs.erConversion, calibratedEnergyRecharge: b('energy_recharge') + buffs.er,
       };
+    }
+    // The wielder conversions (owner approval 2026-11-14, §45), each per candidate.
+    if (buffs.atkPctFromEr) {
+      out.atkPercentFromEnergyRecharge = {
+        ...buffs.atkPctFromEr, calibratedEnergyRecharge: b('energy_recharge') + buffs.er,
+      };
+    }
+    if (buffs.emFrom.length > 0) out.emFrom = buffs.emFrom.map((c) => ({ ...c }));
+    if (buffs.atkPctFromEr || buffs.emFrom.length > 0) {
+      // The zero-artifact total the replay reads, now that a conversion moves it.
+      out.calibratedScaling = scaling === 'em' ? emTotal(out, NO_STATS)
+        : totalFor(out, NO_STATS, scaling);
     }
     // **What this hit deals at zero artifacts**, under the name the recipe type gives it. On a
     // synthetic recipe nothing was simulated; consumers that freeze a teammate's hit at this
@@ -954,8 +1069,88 @@ export function reactionRowHits(
     gcsimAverageDamage: 0,
     reaction: term,
   };
+  // EM converted from Max HP (Key of Khaj-Nisut on its wielder, §45) reaches reaction damage.
+  if (buffs.emFrom.length > 0) {
+    out.emFrom = buffs.emFrom.map((c) => ({ ...c }));
+    out.calibratedBase = {
+      atk: b('base_atk') + buffs.baseAtk, hp: b('base_hp'), def: b('base_def'),
+    };
+    out.calibratedPercent = {
+      atk: b('atk_pct') + buffs.percent.atk, hp: b('hp_pct') + buffs.percent.hp,
+      def: b('def_pct') + buffs.percent.def,
+    };
+    out.calibratedFlat = {
+      atk: b('flat_atk') + buffs.flatAtk, hp: b('flat_hp'), def: b('flat_def') + buffs.flatDef,
+    };
+    out.calibratedScaling = emTotal(out, NO_STATS);
+  }
   out.gcsimAverageDamage = evaluateHit(out, NO_STATS);
   return { hits: [out], skipped };
+}
+
+/**
+ * One proc row's recipe entries (owner approval 2026-11-14, `DECISIONS.md` §45): `count`
+ * instances of the subject's weapon's own damage instance.
+ *
+ * Priced as a talent hit of the proc's multiplier on ATK in the proc's element, through the
+ * same `rowHits` — so DMG% for that element and every channel, CRIT, DEF, RES and every ATK
+ * buff reach it exactly as they reach a talent hit — with no move and no talent row, so a
+ * move- or row-scoped buff does not (GO `customDmgNode(…, 'elemental', {hit: {ele}})`,
+ * `dataUtil.tsx:113-138`; gcsim `AttackTagWeaponSkill`). A proc of a weapon the run does not
+ * carry — another weapon in a comparison — deals nothing, and the estimate says so.
+ */
+export function procRowHits(
+  row: FormulaRow,
+  ref: { source: string; key: string },
+  sources: readonly FormulaSource[],
+  team: FormulaTeam,
+  teamState: ConditionState,
+): { hits: RecipeHit[]; skipped: string[] } {
+  const source = sources.find((s) => s.id === ref.source);
+  const proc = source?.procs?.find((p) => p.key === ref.key);
+  if (source === undefined || proc === undefined) {
+    return {
+      hits: [],
+      skipped: [`${row.label}: not dealt — the optimized character's weapon in this run has no `
+        + `such proc (${ref.source} ${ref.key})`],
+    };
+  }
+  const synthetic: FormulaRow = {
+    ...row,
+    proc: null, reaction: null, additive: null, move: null, hit: null,
+    context: {
+      ...row.context,
+      hit: {
+        multiplier: proc.multiplier, scalingStat: 'atk', flatDamage: 0, baseDamageBonus: 0,
+        amplifying: null, reactionBonus: 0, extraTerms: [],
+      },
+      dmgBonusQuantity: `${proc.element}_dmg_bonus`,
+    },
+  };
+  return rowHits(synthetic, sources, team, teamState, true);
+}
+
+/** The assumption sentences a target's proc rows add (§45). */
+export function procAssumptions(
+  rows: readonly FormulaRow[], sources: readonly FormulaSource[], subject: string,
+): string[] {
+  const who = subject || 'the optimized character';
+  const out: string[] = [];
+  for (const row of rows) {
+    if (!row.proc) continue;
+    const proc = sources.find((s) => s.id === row.proc?.source)?.procs
+      ?.find((p) => p.key === row.proc?.key);
+    if (proc === undefined) continue;
+    out.push(`${row.count}× ${proc.label} dealt by ${who}: the count is your assumption (no `
+      + `proc chance, cooldown or uptime is simulated); ${proc.multiplier * 100}% ATK, `
+      + `${proc.element}, no move-scoped bonus.`);
+    if (proc.stat_layer === 'premod') {
+      out.push(`${proc.label}: Genshin Optimizer reads the wielder's pre-conversion ATK here; `
+        + 'the estimate reads total ATK, which differs only when an ATK-from-another-stat '
+        + 'buff is in play.');
+    }
+  }
+  return out;
 }
 
 /**
@@ -1165,6 +1360,7 @@ export function synthesizeRecipe(
     ...kitAssumptions(kits),
     ...weaponAssumptions(kits),
     ...reactionAssumptions(rows, characters[0] ?? ''),
+    ...procAssumptions(rows, sources, characters[0] ?? ''),
   ]);
   for (const row of rows) {
     const lifted = raiseRow(row, sources, teamState, raised);
@@ -1226,6 +1422,9 @@ export const kitSource = (k: FormulaKit): FormulaSource => ({
   label: k.label,
   bonus: k.bonus,
   citation: k.citation,
+  // A weapon's non-stacking tie-break and its procs (§45); absent on a kit.
+  ...(k.stack_rank ? { stack_rank: k.stack_rank } : {}),
+  ...(k.procs?.length ? { procs: k.procs } : {}),
 });
 
 /** `resonance:<key>`, in the shape `synthesizeRecipe` takes. */

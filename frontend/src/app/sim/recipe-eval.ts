@@ -112,12 +112,36 @@ function candidateParts(
  * and pretending otherwise would be a confident guess.
  */
 function rawTotal(hit: RecipeHit, stats: CandidateStats, stat: ConversionSource): number {
-  // EM has no base or percentage form, and nothing converts into it here: the hit's snapshot
-  // EM plus the candidate's — the same total an EM-scaling or amplifying hit reads below.
-  if (stat === 'em') return (hit.calibratedEm ?? 0) + stats.elementalMastery;
+  // EM has no base or percentage form: the hit's snapshot EM plus the candidate's — and any EM
+  // converted from another stat (Key of Khaj-Nisut's from Max HP, §45) — the same total an
+  // EM-scaling or amplifying hit reads below.
+  if (stat === 'em') return emTotal(hit, stats);
   const mine = candidateParts(stats, stat);
-  return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat] + mine.percent)
+  return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat] + mine.percent
+    + (stat === 'atk' ? atkPercentFromEnergyRecharge(hit, stats) : 0))
     + hit.calibratedFlat[stat] + mine.flat;
+}
+
+/**
+ * The hit owner's total EM for this candidate: the snapshot's, the candidate's, and each EM
+ * conversion from another stat priced alone (`RecipeHit.emFrom`, owner approval 2026-11-14,
+ * `DECISIONS.md` §45). A conversion reads its source through `rawTotal`, which never reads EM
+ * for a triple stat, so nothing recurses.
+ */
+export function emTotal(hit: RecipeHit, stats: CandidateStats): number {
+  let em = (hit.calibratedEm ?? 0) + stats.elementalMastery;
+  for (const part of hit.emFrom ?? []) {
+    em += cappedAmount(part.perUnit, rawTotal(hit, stats, part.from), part.threshold, part.cap);
+  }
+  return em;
+}
+
+/** Engulfing Lightning's ATK% from the hit owner's own Energy Recharge, capped (§45). */
+function atkPercentFromEnergyRecharge(hit: RecipeHit, stats: CandidateStats): number {
+  const c = hit.atkPercentFromEnergyRecharge;
+  if (c === undefined) return 0;
+  return cappedAmount(c.perUnit, c.calibratedEnergyRecharge + stats.energyRecharge,
+    c.threshold, c.cap);
 }
 
 /**
@@ -155,7 +179,8 @@ export function totalFor(
 ): number {
   const mine = candidateParts(stats, stat);
   const flat = resolvedTerm(hit, FLAT_TERM[stat], hit.calibratedFlat[stat], stats);
-  return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat] + mine.percent)
+  return hit.calibratedBase[stat] * (1 + hit.calibratedPercent[stat] + mine.percent
+    + (stat === 'atk' ? atkPercentFromEnergyRecharge(hit, stats) : 0))
     + flat + mine.flat;
 }
 
@@ -176,7 +201,7 @@ export function evaluateHit(hit: RecipeHit, stats: CandidateStats): number {
   // `calibratedEm` is the EM the hit carries before artifacts — gcsim's `em` for a calibrated
   // recipe, the summed buffs for a formula one. `?? 0` only for a recipe written before either
   // existed, which `SCHEMA` keeps out of the cache.
-  const em = (hit.calibratedEm ?? 0) + stats.elementalMastery;
+  const em = emTotal(hit, stats);
   // A reaction instance is not `talent × scaling`: its own function prices it (P3).
   if (hit.reaction !== undefined) return evaluateReaction(hit, hit.reaction, em, stats);
   const scaling = hit.scaling === 'em' ? em : totalFor(hit, stats, hit.scaling);

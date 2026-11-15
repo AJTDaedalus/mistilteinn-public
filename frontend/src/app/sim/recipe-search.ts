@@ -272,6 +272,7 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     // live) — never a DMG% or a scaling stat, so neither is made live for it.
     if (hit.reaction !== undefined) {
       live.add('elemental_mastery');
+      for (const part of hit.emFrom ?? []) for (const q of parts[part.from]) live.add(q);
       continue;
     }
     if (hit.additive !== undefined) live.add('elemental_mastery');
@@ -299,6 +300,11 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     for (const conversion of hit.statConversions ?? []) {
       for (const q of parts[conversion.from]) live.add(q);
     }
+    // The wielder conversions (owner approval 2026-11-14, §45): EM from Max HP reaches every EM
+    // reader, so its source is live wherever EM is read; ATK% from ER makes ER live on a hit
+    // that reads ATK. Both monotone, so the bound stays admissible.
+    for (const part of hit.emFrom ?? []) for (const q of parts[part.from]) live.add(q);
+    if (hit.atkPercentFromEnergyRecharge !== undefined) live.add('energy_recharge');
   }
   return [...live].sort();
 }

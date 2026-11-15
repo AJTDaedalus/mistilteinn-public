@@ -281,6 +281,23 @@ export interface RecipeHit {
   bonusFromEm?: number;
   /** Capped self-conversions into DMG% or CRIT Rate (`StatConversion`), each priced alone. */
   statConversions?: StatConversion[];
+  /**
+   * ATK% from the hit owner's own total Energy Recharge above `threshold`, capped — Engulfing
+   * Lightning on its wielder (owner approval 2026-11-14, `DECISIONS.md` §45; GO `min(x ×
+   * (premod.enerRech_ − 1), max)`). Lands in the ATK percentage, so every ATK read — the
+   * scaling stat and any conversion from ATK — takes it. `calibratedEnergyRecharge` is the ER
+   * before artifacts, the candidate's own added on top. Formula recipes only.
+   */
+  atkPercentFromEnergyRecharge?: {
+    perUnit: number; threshold?: number; cap?: number; calibratedEnergyRecharge: number;
+  };
+  /**
+   * Elemental Mastery converted from the hit owner's own stat, each part priced alone — Key of
+   * Khaj-Nisut's EM from Max HP on its wielder (§45; GO `prod(x, total.hp)`). Added to the EM
+   * every reader takes: an EM-scaling or amplifying term, a reaction, a conversion from EM.
+   * Never from EM itself, so it cannot recurse. Formula recipes only.
+   */
+  emFrom?: { from: TripleStat; perUnit: number; threshold?: number; cap?: number }[];
   // ── Reaction terms (math-fallback P3, task 13) ─────────────────────────────────────────
   //
   // Formula-only, like the fields above. A reaction instance is a hit of its own whose damage
