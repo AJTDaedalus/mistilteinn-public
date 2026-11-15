@@ -23,7 +23,7 @@
  * `npm run formula:verify`): a native sample of the owner's National team at the pin, where
  * Xiangling's steady rotation banks exactly the energy this module computes.
  *
- * ## What the score does with it — three modes, and the fork is the owner's
+ * ## What the score does with it — three modes, Wait the default (owner, 2026-11-15)
  *
  * `off` leaves the score as it was (ER worth nothing) and only reports the requirement. `skip`
  * and `wait` are the two models CLAUDE.md records for the gcsim path (owner, 2026-09-02:

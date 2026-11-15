@@ -63,7 +63,7 @@
  "unmodelled": [
   {
    "what": "Elemental Particles on a CRIT hit / skill reset",
-   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+   "reason": "no damage effect: its particles are counted by the energy model instead (task 14, DECISIONS §48)"
   }
  ]
 }

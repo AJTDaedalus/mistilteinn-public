@@ -357,10 +357,10 @@
                   </label>
                   @if (item.source.chance) {
                     <p class="assumptions__static">
-                      {{ (item.source.chance * 100).toFixed(0) }}% chance of a particle a hit
-                      @if (item.source.on === 'burst') {· counted per burst}
-                      @if (item.source.max_seconds) {· for up to {{ item.source.max_seconds }} s a
-                        {{ item.source.on === 'burst' ? 'burst' : 'cast' }}}
+                      {{ (item.source.chance * 100).toFixed(0) }}% chance of a particle a
+                      hit{{ item.source.on === 'burst' ? ' · counted per burst' : '' }}{{
+                        item.source.max_seconds ? ' · for up to ' + item.source.max_seconds
+                          + ' s a ' + (item.source.on === 'burst' ? 'burst' : 'cast') : '' }}
                     </p>
                   }
                   @if (item.source.note) {
