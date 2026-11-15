@@ -507,7 +507,8 @@
                         </select>
                       </label>
                       <span class="muted weapon-refinements__note">
-                        {{ pick.owned ? 'you own R' + pick.owned : 'not owned · R1 assumed unless set' }}
+                        {{ pick.owned ? 'you own R' + pick.owned
+                          : pick.chosen ? 'not owned' : 'not owned · R1 assumed' }}
                       </span>
                     </li>
                   }

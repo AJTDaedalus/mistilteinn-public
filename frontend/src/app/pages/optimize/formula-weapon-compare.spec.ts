@@ -206,6 +206,11 @@ describe('owner rulings of 2026-11-15 (DECISIONS §46)', () => {
     expect(asked).toContainEqual({ id: 'w2', refinement: 1 });
 
     call(page, 'setWeaponRefinement', 'w2', '5');
+    // Set by the user, so nothing is assumed about it any more; w3's still comes from owning it.
+    const picked = read(page, 'pickedWeapons') as { id: string; owned: number | null;
+      chosen: boolean; refinement: number }[];
+    expect(picked.find((p) => p.id === 'w2')).toMatchObject({ chosen: true, refinement: 5 });
+    expect(picked.find((p) => p.id === 'w3')).toMatchObject({ chosen: false, owned: 4 });
     kits.mockClear();
     await call(page, 'runFormula');
     asked = kits.mock.calls.map((c) => c[2]);

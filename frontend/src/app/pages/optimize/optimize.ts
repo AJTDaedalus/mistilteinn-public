@@ -734,6 +734,8 @@ export class OptimizePage implements OnInit {
       ...choice,
       name: this.weapons().find((w) => w.id === choice.id)?.name ?? 'weapon',
       owned: owned?.get(choice.id) ?? null,
+      /** The user set it: then nothing is assumed, and the note does not say R1 is. */
+      chosen: this.weaponRefinements().has(choice.id),
     }));
   });
 
