@@ -1147,12 +1147,14 @@ its default and citation:
   is 3, `skill.go:242`).
 - **Caught on field**: the subject's own particles caught while still casting (`caster`) 100 %;
   an off-field generator's (`active`: Guoba, Salon, Tri-Karma) and every teammate's 0 % — the
-  subject is assumed off field when others' particles land. Editable per source, as a share
+  subject is assumed off field when others' particles land (an on-field subject catches every
+  `active` source at 100 % since the refinements, below). Editable per source, as a share
   (Guoba in the gcsim sample: two of four on field).
 - **Enemy particles**: on, at the drip's rate, caught off field.
 - **Flat energy**: the kits' refunds and the team's Favonius procs are counted since the
   follow-ups (below). Still not counted unless entered: constellation refunds, Electro
-  resonance's particles, normal attacks' chance of 1 energy (`pkg/core/energy.go:30-90`).
+  resonance's particles (counted since the refinements, below), normal attacks' chance of 1 energy
+  (`pkg/core/energy.go:30-90`).
 
 The requirement also fills the recipe's `minimumEnergyRecharge` — the field the page's existing
 "This build has X Energy Recharge and the rotation needs Y" warning reads — so the ER floor UI is
@@ -1223,7 +1225,7 @@ summon counts only the hits it holds:
 | Zhongli's stele | 0.5 (`zhongli/stele.go:148`) | the first hit, then every 2 s for 30 s | 8.0 | KQM "50%:50%", "1.5s" ICD, "Resonance frequency is 2s" |
 
 Sara's Ambush is added too: 3 a cast (`sara/skill.go:78`), from the charged shot she fires in
-Cover. **Yae Miko stays with the user**, because the two sources disagree: gcsim drops one on a
+Cover. **Yae Miko stayed with the user** (curated at gcsim's rate since, "Refinements" below), because the two sources disagree: gcsim drops one on a
 totem hit with a 2.5 s ICD shared by her totems (about one every 2.5-3 s while they stand), and
 KQM's library says only each totem's first hit drops one. Her panel row says so. The panel shows
 each summon's chance, cadence, citation and the per-cast field, all editable.
@@ -1267,6 +1269,88 @@ particles per hit come back 0.67 (Oz), 0.45 (ring) and 0.67 (jellyfish) within f
 errors and Sara's A4 is exactly `1.2 × 1.5` a cast. The stele sits a little under 0.5 a hit,
 because its 1.5 s ICD eats a recast's first hit; its note says so. `formula:verify` holds the
 browser's module to the same events, with plants (a continuous A4, a refund times ER).
+
+#### Refinements: the owner's four rulings (2026-11-15, `DECISIONS.md` §49)
+
+Branch `feat/formula-er-refinements` (off `dev`; no direct commits to `dev`). Two statements
+above are superseded by it: Yae is no longer left to the user, and Electro resonance's particles
+are now counted.
+
+**1. Electro resonance's particles.** gcsim at the pin (`pkg/simulation/setup.go:181-207`): in a
+party of four with two or more Electro members (`:108`, `:118` — the tally `resonance.py`
+applies to damage), an Electro reaction on an enemy distributes **one Electro particle** to the
+team **at once** (`DistributeParticle`, no landing delay), at most once every **300 frames**
+(`:185`). The reactions it listens to are Overloaded, Superconduct and its Stellar-Conduct form,
+Electro-Charged and Lunar-Charged, Quicken, Aggravate and Hyperbloom (`:200-207`), so a team can
+trigger it only with a Pyro, Cryo, Hydro or Dendro member. KQM's resonance table
+(library.keqingmains.com/combat-mechanics/elemental-effects/elemental-resonance) agrees on the
+particle and the "CD: 5s" and names Superconduct, Overloaded, Electro-Charged and Swirl onto
+Electro; gcsim, the oracle here, adds the Dendro reactions and not Swirl, and its list is used.
+KQM's Energy library page does not mention the resonance.
+
+- **Proc assumption**: procs per rotation, editable, always `≤ rotation ÷ 5 s`. Default: that
+  ceiling — a qualifying reaction whenever the cooldown is up — when a member can react with
+  Electro, and none when no member can. **The ceiling is generous and says so**: both gcsim
+  Raiden teams below proc 3 times in a 25 s rotation, against the 5 it allows (Kokomi's
+  jellyfish covers about half of a rotation; Xingqiu's rain swords react only while Raiden
+  attacks).
+- **Value and collection**: an ordinary Electro particle (3 to an Electro receiver, 1 to
+  another; ER multiplies it), caught on field by whoever is active — by default 100 % for an
+  on-field subject (ruling 2) and 0 % otherwise; editable.
+- **Verified**: every `electro-res` event in #393's sample and in a new native sample
+  (`electro_res.txt`: Raiden, Fischl, Xingqiu, Bennett) — 96 events — is
+  `1 × value × field × ER`; no two procs closer than 300 frames; and #393's 72.58 to Raiden is
+  exactly `3 procs × 4 rotations × 3 × (8/12 + 4/12 × 0.6) × 2.3263` (Python and
+  `formula:verify`, with plants: every proc off field, and the ceiling, both miss).
+
+**2. An on-field subject catches the summons on field.** A summon's particle lands on whoever is
+active when it lands. So when the optimized character is on field, every **`active`-collector
+source** defaults to 100 % caught on field, whoever's it is: **Raiden's Eye, Oz (skill and
+burst), Kuki's ring, Kokomi's jellyfish (both entries), Zhongli's stele resonance, Yae's totems,
+Guoba, Furina's Salon and Nahida's Tri-Karma** — and Electro resonance's particle. Not moved: a
+teammate's `caster` particles (they land while that teammate is on field, still casting:
+Xingqiu's, Zhongli's stele's first hit), a teammate's Favonius (a proc needs its holder active,
+`favonius.go:44`), and the drip (an owner question below). Evidence: in #393's sample the
+on-field Raiden caught **all 24** of Oz's particles and **28 of her own Eye's 36** on field
+(`test_formula_energy_refinements_sample.py`); the 8 she missed fell while teammates took the
+field to cast, which a user enters as a share.
+
+**When the subject is on field**: the panel's toggle, defaulting from the rows — **on field
+when a row is a normal, charged or plunging attack, whichever talent publishes it** (the row's
+move, or a label naming one: Raiden's Musou Isshin attacks are burst-talent rows labelled
+`1-Hit DMG`, `Charged Attack DMG`). A row of skills and bursts alone (Xiangling's Guoba and
+Pyronado) reads as off field: cast and left. Reaction and proc rows are not the subject's
+attacks.
+
+**3. Favonius from each candidate's crit.** When the optimized character holds the Favonius,
+its procs are no longer a fixed source at the build's crit: the model carries
+`subjectFavonius`, and `energyFactors(model, artifactER, artifactCR)` prices
+`min(L ÷ cooldown, hits × clamp(base crit + artifact crit) × chance)`, the base being the
+recipe's own pre-artifact crit (`formula-recipe.ts:subjectCritRate`, the first row's base plus
+its flat kit crit buffs; crit converted from EM or HP is not added, which can only under-count
+procs). **The bound stays sound**: energy is non-decreasing in crit as in ER, both factors are
+monotone in each, and the search's bound completes a partial build with every remaining slot's
+most crit, so it still dominates every completion — and crit is always live. A spec searches a
+crit/ATK/ER inventory bounded against exhaustive at top 1, 3 and 10. The ER-floor requirement is
+**reported at the build's crit**; whether ER is live is asked **at the base crit** (the least a
+candidate can have), so ER is never pruned where a low-crit candidate would need it. A
+teammate's Favonius keeps their build's crit.
+
+**4. Yae Miko at gcsim's rate.** One particle on a totem's strike
+(`yaemiko/skill.go:47`, via the strike's callback, `kitsune.go:147`), behind a **2.5 s ICD held
+on the character** (`skill.go:43,46`) — shared by every totem. Each totem strikes every
+**176 frames** (`kitsune.go:166`; KQM's Yae guide: "the first Sesshou Sakura hit occurs about
+2s after you cast the Skill. Every following hit takes 3s"), so the ICD, shorter than the
+cadence, never binds one totem, and three totems standing together drop **no more** than one:
+one particle every 2.93 s while totems stand. Totems last **25 s** at the pin (`kitsuneDur`
+900 frames, `kitsune.go:13`, plus Edict of Cleansing's 10 s, `stellar.go:51`, on by default,
+`yaemiko.go:39`; ungated in our game data). Curated as a per-second source at 1 per 2.9333 s for
+up to 25 s with `shared_icd`, so skill casts do not multiply it. **KQM's library disagrees**
+("Each Sesshou Sakura hits up to 5 times, but only the first one generates Particles": about 3
+for a triple cast, against gcsim's 8 a totem set); the source's note says so. Verified on a new
+native sample (`yae_energy.txt`): one totem and three both drop one particle every 176 frames,
+8 a set at full length, while three totems strike three times as often; the per-second form
+counts 8.52 for a full set (gcsim's first strike lands 2 s in), within one particle, stated.
 
 #### Verification
 
