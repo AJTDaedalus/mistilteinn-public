@@ -116,6 +116,7 @@ _OWNED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ),
     # formula estimate — math-fallback P2: kit buffs read the caller's own builds
     ("GET", "/api/v1/formula/kit-buffs", None),
+    ("GET", "/api/v1/formula/energy", None),
     # artifacts — G.6b and D.1
     ("GET", "/api/v1/artifacts", None),
     ("GET", "/api/v1/artifacts/inventory", None),
