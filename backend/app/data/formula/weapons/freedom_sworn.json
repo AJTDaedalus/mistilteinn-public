@@ -8,7 +8,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/weapons/sword/freedom/freedom.go",
  "verified_by": [
-  "freedom_sworn_r1_on_kaeya"
+  "freedom_sworn_r1_on_kaeya",
+  "millennial_movement_one_freedom_sworn_over_elegy_on_xiangling_vape"
  ],
  "pins": {
   "1": [
@@ -87,6 +88,7 @@
    "label": "Song of Resistance: party ATK%",
    "receivers": "team",
    "stat": "atk_pct",
+   "non_stack": "millenialatk",
    "value": {
     "param": 4
    },
@@ -105,6 +107,7 @@
    "label": "Song of Resistance: party Normal, Charged and Plunging DMG",
    "receivers": "team",
    "stat": "dmg_bonus",
+   "non_stack": "millenialncpdmg",
    "value": {
     "param": 3
    },
@@ -122,13 +125,6 @@
     }
    ],
    "go": "14,27-41,47-58"
-  }
- ],
- "unmodelled": [
-  {
-   "what": "Millennial Movement / same-name buffs from two wielders",
-   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
-   "receiver": "teammate"
   }
  ]
 }

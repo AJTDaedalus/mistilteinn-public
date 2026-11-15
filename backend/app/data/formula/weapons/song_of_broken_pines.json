@@ -87,6 +87,7 @@
    "label": "Banner-Hymn: party ATK%",
    "receivers": "team",
    "stat": "atk_pct",
+   "non_stack": "millenialatk",
    "value": {
     "param": 4
    },
@@ -105,11 +106,6 @@
   {
    "what": "Banner-Hymn's Normal Attack SPD",
    "reason": "no damage effect in a static estimate: attack speed is a rotation's timing"
-  },
-  {
-   "what": "Millennial Movement / same-name buffs from two wielders",
-   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
-   "receiver": "teammate"
   }
  ]
 }

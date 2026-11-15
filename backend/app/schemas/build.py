@@ -525,6 +525,19 @@ class ExplainRequest(BaseModel):
     energy_recharge: float | None = None
 
 
+class SearchContextRequest(ExplainRequest):
+    """Body for `POST /builds/{id}/search-context`: `/explain`'s, plus a candidate weapon.
+
+    `weapon_id` scores the hit on a **candidate** weapon in place of the build's own (owner
+    approval 2026-11-14, `docs/DECISIONS.md` §45): the base takes the candidate's base ATK and
+    substat at the build's weapon level, as the gcsim weapon comparison does. Absent is the
+    equipped weapon. A subclass rather than a field on `ExplainRequest`, because `/explain`
+    explains the build as it stands and would otherwise accept a field it ignores.
+    """
+
+    weapon_id: str | None = None
+
+
 class ContributionRead(BaseModel):
     """One value and where it came from."""
 

@@ -91,6 +91,7 @@
    "label": "Party ATK% against a low-HP opponent",
    "receivers": "team",
    "stat": "atk_pct",
+   "non_stack": "wolf",
    "value": {
     "param": 1
    },
@@ -103,13 +104,6 @@
     }
    ],
    "go": "11,15-19,25-32"
-  }
- ],
- "unmodelled": [
-  {
-   "what": "Millennial Movement / same-name buffs from two wielders",
-   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
-   "receiver": "teammate"
   }
  ]
 }

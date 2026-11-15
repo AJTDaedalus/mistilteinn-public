@@ -129,6 +129,19 @@ REACTIONS: tuple[str, ...] = (
 #:   gcsim `ChildePassive`), Skirk's Mutual Weapons Mentorship and Lohen's High Spirits (+1
 #:   Elemental Skill). **Not a stat**: the browser reads the receiver's row at the raised level
 #:   from `/formula/kit-buffs`' `raised_talents`, for the formula estimate only (§42).
+#: - `atk_pct_from_er` — ATK% of `value` × the hit owner's own total Energy Recharge above
+#:   `threshold`, capped: Engulfing Lightning on its wielder (GO `min(prod(x,
+#:   sum(input.premod.enerRech_, percent(-1))), max)`; owner approval 2026-11-14, `DECISIONS.md`
+#:   §45). Into the ATK percentage, so every ATK-scaling term reads it.
+#: - `em_from_hp` — Elemental Mastery of `value` × the hit owner's own total HP: Key of
+#:   Khaj-Nisut on its wielder (GO `prod(x, input.total.hp)` into `total.eleMas`, and the party
+#:   share into `teamBuff.total.eleMas`), §45.
+#: - `flat_atk_from_em` — flat ATK of `value` × the hit owner's own total EM: Makhaira
+#:   Aquamarine and Wandering Evenstar on their wielder (GO `prod(x, input.premod.eleMas)` into
+#:   `total.atk`), §45.
+#: - `dmg_bonus_from_def` — DMG% of `value` × the hit owner's own total DEF, capped: Peak Patrol
+#:   Song's party bonus on its wielder (GO `prod(x, min(input.total.def, 3200), 1 / 1000)`; the
+#:   stat cap is carried as the value's own cap, `x × 3.2`), §45.
 #:
 #: **Capped self-conversions** (owner ruling 2026-11-14, `DECISIONS.md` §40). Each `*_from_*`
 #: stat a giver who is the subject emits may carry a `threshold` (the stat counts only above
@@ -150,6 +163,7 @@ EffectStat = Literal[
     "reaction_crit_rate", "reaction_crit_dmg", "lunar_base_dmg_bonus",
     "crit_rate_from_hp", "crit_dmg_from_hp",
     "talent_level",
+    "atk_pct_from_er", "em_from_hp", "flat_atk_from_em", "dmg_bonus_from_def",
 ]
 
 #: Stats that reach only the reactions they name, and so must name them.
@@ -165,6 +179,7 @@ CAPPABLE_CONVERSIONS: frozenset[str] = frozenset({
     "crit_rate_from_hp", "crit_dmg_from_hp",
     "flat_atk_from_def", "flat_atk_from_hp",
     "flat_damage_from_atk", "flat_damage_from_hp", "flat_damage_from_def", "flat_damage_from_em",
+    "atk_pct_from_er", "em_from_hp", "flat_atk_from_em", "dmg_bonus_from_def",
 })
 
 #: The talents a `talent_level` effect can raise, in `TalentType`'s spelling.
@@ -311,6 +326,10 @@ class Effect(_Model):
     #: `talent_level` only: the talent whose level it raises (`normal_attack`,
     #: `elemental_skill`, `elemental_burst`).
     talent: str | None = None
+    #: GO's non-stacking buff name (`SheetUtil.tsx:nonStackBuff`, e.g. `millenialatk`): of the
+    #: sources whose effects carry the same name and hold, **one** applies — the one whose
+    #: source `stack_rank` sorts first (GO `uiData.ts:_small`). Weapon passives only (§45).
+    non_stack: str | None = None
 
     @model_validator(mode="after")
     def _talent_level(self) -> Effect:
@@ -378,6 +397,36 @@ class Unmodelled(_Model):
 
     what: str
     reason: str
+
+
+class Proc(_Model):
+    """A weapon's own damage instance, resolved at the wielder's refinement (owner approval
+    2026-11-14, `DECISIONS.md` §45): Aquila Favonia's Falcon, the Skyward procs.
+
+    GO writes each as `customDmgNode(prod(x, input.<premod|total>.atk), 'elemental', {hit: {ele:
+    physical}})` (`Characters/dataUtil.tsx:113-138`): a hit of no talent move, so it takes the
+    whole damage chain — DMG% for its element and for every channel, CRIT, DEF, RES — and no
+    move-scoped bonus. gcsim queues each with `AttackTagWeaponSkill`. The estimate prices it as
+    a **proc row**: `count` instances dealt by the optimized character, who wields the weapon.
+    """
+
+    key: str
+    label: str
+    #: The talent-style multiplier: damage is `multiplier × scaling stat` before the chain.
+    multiplier: float
+    scaling: Literal["atk"] = "atk"
+    element: str
+    #: GO `input.premod.atk` (Aquila, Skyward Blade) or `input.total.atk` (the rest). Equal
+    #: wherever no total-only ATK conversion is in the team; said in the estimate otherwise.
+    stat_layer: Literal["premod", "total"] = "total"
+
+    @model_validator(mode="after")
+    def _channel(self) -> Proc:
+        if self.element not in tags.DAMAGE_CHANNELS:
+            raise ValueError(f"{self.element!r} is not one of {tags.DAMAGE_CHANNELS}")
+        if not self.multiplier > 0:
+            raise ValueError("a proc's multiplier is positive")
+        return self
 
 
 class Bonus(_Model):

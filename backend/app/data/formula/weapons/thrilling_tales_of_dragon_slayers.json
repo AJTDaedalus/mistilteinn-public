@@ -77,6 +77,7 @@
    "label": "ATK% for the character switched in",
    "receivers": "others",
    "stat": "atk_pct",
+   "non_stack": "ttds",
    "value": {
     "param": 0
    },

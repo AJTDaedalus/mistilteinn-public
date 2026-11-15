@@ -74,11 +74,20 @@
    "go": "19,42-45,50-55"
   }
  ],
- "unmodelled": [
+ "procs": [
   {
-   "what": "Skypiercing Might's additional Normal/Charged DMG (20% ATK)",
-   "reason": "a damage instance of the weapon's own: the target has no weapon-hit row kind yet"
-  },
+   "key": "skypiercing",
+   "label": "Skypiercing Might: additional 20% ATK Physical on a Normal or Charged Attack",
+   "multiplier": {
+    "param": 3
+   },
+   "element": "physical",
+   "stat_layer": "premod",
+   "go": "21,24-41,43-57",
+   "gcsim": "internal/weapons/sword/skyward/skyward.go:62,81-90"
+  }
+ ],
+ "unmodelled": [
   {
    "what": "Skypiercing Might's Movement and ATK SPD",
    "reason": "no damage effect in a static estimate: speed is a rotation's timing"

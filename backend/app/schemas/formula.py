@@ -72,6 +72,9 @@ class FormulaEffectRead(BaseModel):
     #: `talent_level` only: the talent whose level it raises (`FormulaTeamKitRead.
     #: raised_talents` carries the receiver's rows at the raised levels).
     talent: str | None = None
+    #: GO's non-stacking buff name: of the sources carrying it whose effect holds, one applies,
+    #: the one with the first `stack_rank` (`formula_effects.Effect.non_stack`, §45).
+    non_stack: str | None = None
 
 
 class FormulaUnmodelledRead(BaseModel):
@@ -144,6 +147,18 @@ class FormulaTeamResonanceRead(BaseModel):
     note: str | None = None
 
 
+class FormulaProcRead(BaseModel):
+    """A weapon's own damage instance at the wielder's refinement (`formula_effects.Proc`, §45):
+    a proc row the target may count, dealt by the optimized character."""
+
+    key: str
+    label: str
+    multiplier: float
+    scaling: Literal["atk"] = "atk"
+    element: str
+    stat_layer: Literal["premod", "total"]
+
+
 class FormulaKitSourceRead(BaseModel):
     """One team member's kit, resolved for the optimized character (math-fallback P2).
 
@@ -173,6 +188,11 @@ class FormulaKitSourceRead(BaseModel):
     #: `kit` for a member's sheet (`kit:<slug>`), `weapon` for a member's weapon passive
     #: (`weapon:<slug>`, task 12): the same vocabulary, applied alike.
     kind: Literal["kit", "weapon"] = "kit"
+    #: A weapon source's wielder as GO keys them: of two sources holding one non-stacking buff
+    #: (`FormulaEffectRead.non_stack`), the one sorting first applies (GO `uiData.ts:_small`).
+    stack_rank: str | None = None
+    #: The subject's weapon's own damage instances (§45); empty for a kit or a teammate's weapon.
+    procs: list[FormulaProcRead] = []
 
 
 class FormulaKitMemberRead(BaseModel):

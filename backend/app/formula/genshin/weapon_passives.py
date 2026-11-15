@@ -56,10 +56,12 @@ from app.formula.builder import const, max_, min_, prod_, read_, sum_, tag_
 from app.formula.genshin import sheets, tags
 from app.formula.genshin.formula_effects import (
     MOVES,
+    NO_DAMAGE,
     REACTIONS,
     Bonus,
     Effect,
     EffectStat,
+    Proc,
     Unmodelled,
     When,
     status_of,
@@ -73,6 +75,8 @@ if TYPE_CHECKING:
     from app.pando.calculator import NodeRegistry
 
 _DATA = Path(__file__).resolve().parents[2] / "data" / "formula" / "weapons"
+#: GO's non-stacking buff names per weapon sheet (`scripts/build_go_nonstack.py`).
+_NONSTACK = Path(__file__).resolve().parents[2] / "data" / "formula" / "weapon_nonstack_go.json"
 
 REFINEMENTS: tuple[int, ...] = (1, 2, 3, 4, 5)
 
@@ -170,6 +174,11 @@ class WeaponEffect(sheets._Strict):  # noqa: SLF001
     #: A `self` effect only: the browser counts against the optimized character's element.
     per_team: Literal["same_element_others", "different_element"] | None = None
     per_team_max: int | None = None
+    #: GO's `nonStackBuff` name for this buff (`SheetUtil.tsx:102-117`), when GO lets only one
+    #: of its kind apply: checked against the generated `weapon_nonstack_go.json`, never typed
+    #: from memory. Two sources holding the same name and both holding: the one whose wielder's
+    #: GO key sorts first applies (GO `uiData.ts:_small`; owner approval 2026-11-14, §45).
+    non_stack: str | None = None
     #: GO sheet lines (relative to the file's `go`).
     go: str
     #: gcsim file:lines at the pin, where gcsim implements the same buff.
@@ -196,6 +205,34 @@ class WeaponEffect(sheets._Strict):  # noqa: SLF001
             raise ValueError(f"{self.key}: the wielder's own element is a self effect's channel")
         if self.per_team is not None and self.receivers != "self":
             raise ValueError(f"{self.key}: a teammate count is read for the wielder's own buff")
+        return self
+
+
+class WeaponProc(sheets._Strict):  # noqa: SLF001
+    """A damage instance of the weapon's own (owner approval 2026-11-14, `DECISIONS.md` §45).
+
+    Priced as a proc row the user counts (`formula_effects.Proc`), only when the wielder is the
+    optimized character: a teammate's proc is their damage, a constant to every candidate, as a
+    teammate's hits are not rows.
+    """
+
+    key: str
+    label: str
+    #: The ATK multiplier: the wielder's refinement entry, or a cited constant (Skyward Harp's
+    #: 125%, GO `percent(1.25)`).
+    multiplier: WeaponValue
+    element: Literal["physical"]
+    #: GO's ATK read: `premod` or `total` (`formula_effects.Proc.stat_layer`).
+    stat_layer: Literal["premod", "total"]
+    go: str
+    gcsim: str
+
+    @model_validator(mode="after")
+    def _plain(self) -> WeaponProc:
+        ref = self.multiplier
+        if (ref.times_stat is not None or ref.cap is not None or ref.negate
+                or ref.times_param is not None):
+            raise ValueError(f"{self.key}: a proc's multiplier is one number")
         return self
 
 
@@ -227,6 +264,7 @@ class WeaponPassive(sheets._Strict):  # noqa: SLF001
     pins: dict[int, tuple[float, ...]]
     conditions: tuple[sheets.SheetCondition, ...] = ()
     effects: tuple[WeaponEffect, ...] = ()
+    procs: tuple[WeaponProc, ...] = ()
     unmodelled: tuple[WeaponUnmodelled, ...] = ()
 
     @model_validator(mode="after")
@@ -252,10 +290,34 @@ class WeaponPassive(sheets._Strict):  # noqa: SLF001
             for index in effect.value.params_read():
                 if any(index >= n for n in lengths):
                     raise ValueError(f"{self.slug}/{effect.key}: param {index} is not pinned")
+        self._check_procs(lengths)
         self._check_conditions()
-        if not self.effects and not self.unmodelled:
+        self._check_non_stack()
+        if not self.effects and not self.unmodelled and not self.procs:
             raise ValueError(f"{self.slug}: a passive with no effect says why in `unmodelled`")
         return self
+
+    def _check_procs(self, lengths: set[int]) -> None:
+        for proc in self.procs:
+            for index in proc.multiplier.params_read():
+                if any(index >= n for n in lengths):
+                    raise ValueError(f"{self.slug}/{proc.key}: param {index} is not pinned")
+        if len({p.key for p in self.procs}) != len(self.procs):
+            raise ValueError(f"{self.slug}: proc keys repeat")
+
+    def _check_non_stack(self) -> None:
+        """Every `non_stack` name is one GO's sheet for this weapon declares, and a sheet that
+        declares one has it on some effect (or says why not) — so the family is GO's."""
+        go_key = go_sheet_key(self.go)
+        declared = go_non_stack().get(go_key, {})
+        named = {e.non_stack for e in self.effects if e.non_stack is not None}
+        for name in named:
+            if not any(_matches(template, name) for template in declared):
+                raise ValueError(f"{self.slug}: GO's {go_key} declares no non-stacking buff "
+                                 f"{name!r} (it declares {sorted(declared)})")
+        if declared and not named and not any("non-stacking" in u.what for u in self.unmodelled):
+            raise ValueError(f"{self.slug}: GO's {go_key} declares non-stacking buffs "
+                             f"{sorted(declared)}; name them on their effects")
 
     def _check_conditions(self) -> None:
         read = ({w.condition for e in self.effects for w in e.when}
@@ -268,6 +330,28 @@ class WeaponPassive(sheets._Strict):  # noqa: SLF001
             if condition.max_raise is not None or condition.max_raise_cited is not None:
                 raise ValueError(f"{self.slug}/{condition.key}: a weapon has no constellation "
                                  "to raise a maximum")
+
+
+def go_sheet_key(go: str) -> str:
+    """GO's weapon key: the sheet's directory (`…/Weapons/Bow/ElegyForTheEnd/index.tsx`)."""
+    return Path(go).parent.name
+
+
+@cache
+def go_non_stack() -> dict[str, dict[str, list[str]]]:
+    """`{GO weapon key: {nonStackBuff name: [file:line]}}`, generated from GO's sheets."""
+    return json.loads(_NONSTACK.read_text(encoding="utf-8"))["weapons"]
+
+
+def _matches(template: str, name: str) -> bool:
+    """A GO name, or a GO template name (`hakushin${key}`) with its placeholder filled."""
+    if "${" not in template:
+        return template == name
+    head, _, rest = template.partition("${")
+    tail = rest.partition("}")[2]
+    middle = name[len(head):len(name) - len(tail)] if tail else name[len(head):]
+    return (name.startswith(head) and name.endswith(tail) and middle.isalpha()
+            and len(name) > len(head) + len(tail))
 
 
 @cache
@@ -308,6 +392,8 @@ class Wielder:
     #: The seeded `param_list` of the wielder's refinement.
     params: Sequence[float]
     registry: NodeRegistry
+    #: The wielder's GO character key, GO's tie-break for a non-stacking buff (§45).
+    stack_rank: str | None = None
 
 
 class _Withheld(Exception):  # noqa: N818 - control flow, not an error a caller sees
@@ -367,16 +453,19 @@ def _effect_node(params: Sequence[float], effect: WeaponEffect, *,
     unit = 1.0 if ref.stat_unit is None else ref.stat_unit.constant
     threshold = None if ref.threshold is None else _number(params, ref.threshold)
     if wielder_is_subject and reads not in sheets.STATIC_STATS:
-        if ref.stat_cap is not None:
-            msg = (f"it reads the wielder's own {reads} through a cap on the stat, which the "
-                   "recipe does not carry per candidate")
-            raise _Withheld(msg)
         converted = sheets.SELF_CONVERSIONS.get((effect.stat, reads))
         if converted is None:
             msg = (f"it reads the wielder's own {reads}, which moves with every candidate, and "
                    f"the recipe cannot carry {effect.stat} from {reads} per candidate yet")
             raise _Withheld(msg)
-        cap = None if ref.cap is None else _number(params, ref.cap)
+        caps = [] if ref.cap is None else [_number(params, ref.cap)]
+        if ref.stat_cap is not None:
+            # A cap on the counted stat is a cap on the value: `k × min(s, c)` is
+            # `min(k × s, k × c)` for k > 0, and above a threshold `k × (c − t)` (Peak Patrol
+            # Song's party DMG from DEF up to 3,200, owner approval 2026-11-14, §45). The sheet's
+            # own rule (`sheets._effect_node`).
+            caps.append(factor / unit * (_number(params, ref.stat_cap) - (threshold or 0.0)))
+        cap = min(caps) if caps else None
         return _Resolving(converted, const(factor / unit), cap, threshold)
     stat: AnyNode = sheets.GIVER_STATS[reads]
     if threshold is not None:
@@ -443,6 +532,31 @@ def _own_statics(passive: WeaponPassive, params: Sequence[float], wielder: Wield
         wielder.registry.register(tags.stat_tag(effect.stat), const(_constant(params, ref)))
 
 
+def _procs(passive: WeaponPassive, params: Sequence[float] | None, wielder: Wielder, *,
+           wielder_is_subject: bool, unmodelled: list[Unmodelled]) -> list[Proc]:
+    """The weapon's damage instances at the wielder's refinement, when the wielder is the
+    optimized character (§45). A teammate's proc is their own damage, a constant to every
+    candidate as a teammate's hits are, so it is said rather than silently absent."""
+    if params is None or not passive.procs:
+        return []
+    if not wielder_is_subject:
+        unmodelled += [Unmodelled(
+            what=proc.label,
+            reason=f"no damage effect on the optimized character: {wielder.name}'s own hit",
+        ) for proc in passive.procs]
+        return []
+    out: list[Proc] = []
+    for proc in passive.procs:
+        try:
+            multiplier = _number(params, proc.multiplier)
+        except _Withheld as why:
+            unmodelled.append(Unmodelled(what=proc.label, reason=f"withheld: {why}"))
+            continue
+        out.append(Proc(key=proc.key, label=proc.label, multiplier=multiplier,
+                        element=proc.element, stat_layer=proc.stat_layer))
+    return out
+
+
 def source_id(passive: WeaponPassive) -> str:
     """`weapon:<slug>`; condition keys are `<id>/<condition>`, as a kit's."""
     return f"weapon:{passive.slug}"
@@ -494,7 +608,7 @@ def resolve(
             stat=made.stat, value=value, elements=elements, moves=effect.moves,
             reactions=effect.reactions, when=effect.when, per=effect.per, cap=made.cap,
             per_team=effect.per_team, per_team_max=effect.per_team_max,
-            threshold=made.threshold,
+            threshold=made.threshold, non_stack=effect.non_stack,
         ))
         used.update(w.condition for w in effect.when)
         if effect.per is not None:
@@ -510,13 +624,22 @@ def resolve(
             what="every part of this passive",
             reason=f"no damage effect on the optimized character: it is {wielder.name}'s own",
         )]
+    procs = _procs(passive, params, wielder, wielder_is_subject=wielder_is_subject,
+                   unmodelled=unmodelled)
+    applied += [p.key for p in procs]
     bonus = Bonus(
         conditions=tuple(c for c in conditions if c.key in used),
         effects=tuple(effects),
         unmodelled=tuple(unmodelled),
     )
+    status = status_of(bonus)
+    if procs and not effects:
+        # A passive whose damage is its proc (Crescent Pike): the proc row is the effect.
+        status = "partial" if any(not u.reason.startswith(NO_DAMAGE) for u in unmodelled) \
+            else "modelled"
     citation = f"GO {passive.go} @ {passive.go_commit[:8]}"
     lines = [f"{e.key} :{e.go}" for e in passive.effects if e.key in applied]
+    lines += [f"{p.key} :{p.go} (gcsim {p.gcsim})" for p in passive.procs if p.key in applied]
     if lines:
         citation += " — " + "; ".join(lines)
     if passive.gcsim and passive.gcsim_commit:
@@ -528,7 +651,9 @@ def resolve(
         bonus=bonus,
         citation=citation,
         verified=bool(passive.verified_by),
-        status=status_of(bonus),
+        status=status,
+        procs=tuple(procs),
+        stack_rank=wielder.stack_rank,
     )
 
 

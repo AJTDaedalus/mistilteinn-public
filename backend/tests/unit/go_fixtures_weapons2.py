@@ -156,27 +156,25 @@ def five_star_fixtures() -> list[dict[str, Any]]:
 
 
 def _engulfing() -> dict[str, Any]:
-    """Engulfing Lightning: its Energy Recharge feeds Emblem's burst bonus; its ATK% from ER is
-    **withheld by name** on the wielder (the recipe carries no ATK% from ER per candidate), so
-    GO's figure carries it and ours does not: the recorded divergence."""
+    """Engulfing Lightning: its Energy Recharge feeds Emblem's burst bonus and its own ATK% from
+    ER, per candidate since the owner's approval of 2026-11-14 (`DECISIONS.md` §45). It was
+    withheld by name on the wielder in #389, GO's figure carrying it and ours not; now both
+    agree."""
     emblem = base._set_source(15020, 4, [0.25, 0.75, 0, 0, 0, 0, 0, 0], [])
     er_total = 1.0 + 0.2 + 0.3
     emblem_dmg = min(0.25 * er_total, 0.75)
-    ours = w._figure(XB, XA, base.PYRONADO, "pyro", {"dmg": emblem_dmg})
     gos = w._figure(XB, XA, base.PYRONADO, "pyro",
                     {"dmg": emblem_dmg, "atk_pct": min(0.28 * (er_total - 1), 0.8)})
     fixture = w._fx(
         "engulfing_lightning_r1_on_xiangling_emblem",
-        "a self Energy Recharge after the burst (stated on), read by Emblem's burst bonus; the "
-        "ATK% from Energy Recharge withheld by name on the wielder",
+        "a self Energy Recharge after the burst (stated on), read by Emblem's burst bonus and "
+        "by the wielder's own ATK% from Energy Recharge, per candidate",
         [w.FORMULA, f"{w.WEAPONS}Polearm/EngulfingLightning/index.tsx:16-52",
          "libs/gi/sheets/src/Artifacts/EmblemOfSeveredFate/index.tsx:13-24"],
         w._wielder("Xiangling", "Engulfing Lightning", 1, w.SUBJECT), XTEAM, XB, XA, "pyro",
         [w.NADO], w.weapon_source("13509", 1, "Xiangling", XB, subject=True),
         {"weapon:engulfing_lightning/dream": 1},
-        lambda c: (ours if c == base.OUR_EM_COEFFICIENT else gos)(c),
-        "withheld: GO's ATK% from Energy Recharge above 100% (0.28 x 0.5 = 14%) is not priced "
-        "per candidate here; the passive says so")
+        gos)
     fixture["sources"].append(emblem)
     fixture["set_pools"] = [{"energy_recharge": 0.2}]
     return fixture

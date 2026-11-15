@@ -80,6 +80,7 @@ from app.schemas.build import (
     RefusedHitRead,
     ScalingTermRead,
     SearchContextRead,
+    SearchContextRequest,
     SetEffectRead,
     SimulationNoteRead,
     StatAccountRead,
@@ -400,10 +401,11 @@ async def build_refused_hits(
 async def search_context(
     request: Request,  # slowapi reads the client address off it
     build_id: str,
-    body: ExplainRequest,
+    body: SearchContextRequest,
     builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
     artifacts: Annotated[ArtifactRepository, Depends(get_owned_artifact_repo)],
     enemies: Annotated[EnemyProfileRepository, Depends(get_enemy_profile_repo)],
+    weapons: _Weapons,
 ) -> SearchContextRead:
     """Everything the browser kernel needs to search, except the inventory.
 
@@ -430,7 +432,11 @@ async def search_context(
     # which kept only the last contribution to each quantity — the kernel scored Neuvillette
     # on his ascension HP bonus alone, 4,697.8 of 14,695. Found driving math-fallback P0.
     base: dict[str, float] = {}
-    for contribution in _base_contributions(build):
+    contributions = (
+        _base_contributions(build) if body.weapon_id is None
+        else await _candidate_base(build, body.weapon_id, weapons)
+    )
+    for contribution in contributions:
         base[contribution.quantity] = base.get(contribution.quantity, 0.0) + contribution.value
 
     # Every set the caller owns a piece of, not only the sets currently worn: the search is
@@ -927,6 +933,35 @@ def _base_contributions(build: "Build") -> "tuple[Contribution, ...]":
         return build_assembler.base_contributions(build)
     except (BuildAssemblyError, StatInputError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+async def _candidate_base(
+    build: "Build", weapon_id: str, weapons: WeaponRepository,
+) -> "tuple[Contribution, ...]":
+    """The base with a candidate weapon in place of the build's own (§45).
+
+    Resolved, never trusted: a weapon id that silently fell back to the equipped weapon would
+    rank every candidate at the worn weapon's number — #240's flat ranking. The level is the
+    build's weapon level, as the gcsim comparison's `SubstituteWeapon` rules.
+    """
+    weapon = await weapons.get_by_id(weapon_id)
+    if weapon is None:
+        raise HTTPException(status_code=404, detail=f"weapon {weapon_id} not found")
+    _require_wieldable(build, weapon)
+    try:
+        return build_assembler.base_contributions_with_weapon(build, weapon)
+    except (BuildAssemblyError, StatInputError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def _require_wieldable(build: "Build", weapon: "Weapon") -> None:
+    """A candidate weapon of the build's character's weapon class, or a 422 saying so."""
+    if build.character is not None and weapon.weapon_type != build.character.weapon_type:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{build.character.name} cannot wield {weapon.name} "
+                   f"({weapon.weapon_type}, not {build.character.weapon_type})",
+        )
 
 
 def _hit_levels(build: "Build") -> dict[str, int]:

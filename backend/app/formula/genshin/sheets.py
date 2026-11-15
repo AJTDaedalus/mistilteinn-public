@@ -67,6 +67,7 @@ from app.formula.genshin.formula_effects import (
     ConditionKind,
     Effect,
     EffectStat,
+    Proc,
     TalentRowScope,
     Unmodelled,
     When,
@@ -160,6 +161,14 @@ SELF_CONVERSIONS: dict[tuple[str, str], EffectStat] = {
     # final.hp, 1 / 1000), percent(max))`).
     ("crit_rate", tags.Q_HP): "crit_rate_from_hp",
     ("crit_dmg", tags.Q_HP): "crit_dmg_from_hp",
+    # The weapon conversions #389 withheld on the wielder (owner approval 2026-11-14,
+    # `DECISIONS.md` §45): Engulfing Lightning's ATK% from ER above 100%, Key of Khaj-Nisut's EM
+    # from Max HP, Makhaira Aquamarine's and Wandering Evenstar's ATK from EM, and Peak Patrol
+    # Song's party DMG from DEF (its stat cap carried as the value's cap).
+    ("atk_pct", tags.Q_ENERGY_RECHARGE): "atk_pct_from_er",
+    ("elemental_mastery", tags.Q_HP): "em_from_hp",
+    ("flat_atk", tags.Q_ELEMENTAL_MASTERY): "flat_atk_from_em",
+    ("dmg_bonus", tags.Q_DEF): "dmg_bonus_from_def",
 }
 
 DefaultBy = Literal["self", "situational", "giver_is_subject"]
@@ -947,6 +956,12 @@ class ResolvedKit:
     verified: bool
     #: `modelled` / `partial` / `unmodelled` / `no_damage_effect`, from `status_of`.
     status: str
+    #: A weapon's own damage instances, when its wielder is the optimized character
+    #: (`weapon_passives`, §45): each a proc row the target may count. Empty for a kit.
+    procs: tuple[Proc, ...] = ()
+    #: GO's tie-break for a non-stacking buff (`Effect.non_stack`): the wielder's GO character
+    #: key; of two sources holding the same buff, the one sorting first applies. Weapons only.
+    stack_rank: str | None = None
 
 
 #: Merged into a sheet formula's context before it is evaluated: `None` removes the axis.

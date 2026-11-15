@@ -8,7 +8,8 @@
  "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
  "gcsim": "internal/weapons/claymore/aquamarine/aquamarine.go",
  "verified_by": [
-  "makhaira_aquamarine_r1_on_xiangling"
+  "makhaira_aquamarine_r1_on_xiangling",
+  "makhaira_aquamarine_r1_atk_from_em_on_xiangling"
  ],
  "pins": {
   "1": [
