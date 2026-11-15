@@ -81,7 +81,8 @@ uptime, a stack count, a reaction) is something the user can see and change.
   path when gcsim refuses, and an explicit opt-in otherwise.
 - **No rotation timing, energy flow or buff-uptime modelling.** Those are exactly what the
   static approach cannot see; GO's own documentation and KQM say the same
-  (`RESEARCH_go_team_math.md` §6). ER is a user-set floor, as in GO, until G13.
+  (`RESEARCH_go_team_math.md` §6). ER is a user-set floor, as in GO, until G13 — now §2.10,
+  a closed-form energy model from particle data.
 - **Results are not comparable across teams.** The score has no time axis, so it is
   "damage per chosen sequence", never DPS.
 
@@ -732,7 +733,7 @@ be his own skill only.*
 ### 2.7 Reactions (P3, task 13; built 2026-11-14)
 
 **Owner, 2026-11-14: "Start P3: reactions."** Branch `feat/formula-reactions`; rulings and choices
-in `DECISIONS.md` §43. Weapon passives (task 12) are §2.8; ER from particles (task 14) is not started.
+in `DECISIONS.md` §43. Weapon passives (task 12) are §2.8; ER from particles (task 14) is §2.10.
 
 **Where it lives.** `backend/app/formula/genshin/reactions.py` (the chain),
 `app/data/yuanshen/snapshot/reaction_level_multipliers.json` (the level table), `damage.ts`
@@ -1036,6 +1037,126 @@ Engulfing Lightning emblem fixture, whose ATK% from ER was a recorded withholdin
 `formula:verify` 233/233 (worst 8.5e-8) with new plants: each new conversion frozen at the
 zero-artifact build must fail; the non-stacking names stripped, and the tie-break reversed, must
 each fail; a proc's multiplier 1% off must fail.
+
+### 2.10 Energy Recharge from particle data (P3, task 14; built 2026-11-15)
+
+**Owner, 2026-11-15: "ER from particles."** Branch `feat/formula-er-particles` (off `dev`; no
+direct commits to `dev`). Until now the estimate had no energy model, so ER was worth nothing to
+it — the pre-`DESIGN_energy_in_the_optimizer` behaviour, and §2.1's "ER is a user-set floor, as
+in GO, until G13". G13 is this section.
+
+#### The model, and where each part comes from
+
+A closed form in the spirit of KQM's ER methodology, with every constant gcsim's at the pin and
+cross-checked against KQM's Energy library page (library.keqingmains.com/combat-mechanics/energy):
+
+| part | rule | cited to |
+|---|---|---|
+| particle value | 3 own element, 2 clear, 1 other | gcsim `pkg/core/player/character/energy.go:61-71`; KQM's table (Same 3.0, Clear 2.0, Different 1.0) |
+| off field | `1 − 0.1 × party size`: 0.6 in four, 0.7 in three, 0.8 in two | `energy.go:58-60`; KQM ("In a party of 4 … 60% … parties of 3, 70%; parties of 2, 80%") |
+| ER | multiplies particles only: `amt * er * p.Num` | `energy.go:72-77`; KQM ("flat energy … is not affected by Energy Recharge") |
+| flat energy | added as-is | `energy.go:35-43` (`AddEnergy`) |
+| who receives | every member, on- or off-field by who is active | `pkg/core/player/player.go:197-200` |
+| requirement | `max((cost − flat) / raw particle energy, 1)` | gcsim's own substat optimizer, `pkg/optimization/optstats/energy_stats.go:85` |
+| enemy particles | one clear particle every 599.5 frames (≈ 10 s) | the same `ENERGY_DRIP` the waiting model emits (`gcsim_config.py`, five community configs, `DESIGN_waiting_for_energy.md`), as the mean of `pkg/simulation/setup.go:522-531` (`start + Intn(end − start)`) |
+
+So over a rotation of `L` seconds the subject banks `E(ER) = ER × Σ particles × value × field +
+flat`, and needs `ER ≥ (cost − flat) / Σ particles × value × field`. The cost is the game data's
+(`Character.burst_energy_cost`).
+
+**Particle counts are curated, not imported.** `character_energy_drops` (#369) publishes the
+game's per-drop entries, not a count per cast — Kazuha's `per_drop` is 1 where his tap drops 3,
+Xingqiu's is 1 with 2 applications where a cast drops 5 — so they cannot be read as counts. The
+counts are gcsim's, each read off its `QueueParticle` call:
+`backend/app/data/formula/energy/particles.json`, 17 characters (Bennett 2.25 tap, Xingqiu 5,
+Yelan 4, Xiangling 4, Kazuha 3 tap, Ayaka 4.5, Nahida 3 per 7 s, Escoffier 4, Citlali 5,
+Neuvillette 4, Jean 2.67, Chevreuse 4, Mavuika 5, Skirk 4, Sucrose 4, Navia 3.5, Furina one per
+3.25 s — KQM's measured average; gcsim's 2.5 s ICD is the ceiling). A random count is its
+expectation. **Every cited line is snapshotted** (`gcsim_lines.json`,
+`scripts/gcsim/snapshot_particle_lines.py`) and `test_formula_energy_data.py` holds each count to
+the literal on its line. Characters whose particles come from a summon's hits with a chance per
+hit (Raiden's Eye, Oz, Kuki's ring, Kokomi's jellyfish, Zhongli's stele, Yae's totems) are **not
+curated**: their count per cast is how many hits land, which nothing cited states. The panel names
+them and takes the user's number; none are counted until then.
+
+#### The assumptions, all in the panel
+
+`/formula/energy` serves each member's burst cost, burst cooldown (the burst's own `CD` row) and
+curated sources. The panel's **Energy** section shows the requirement and every input, each with
+its default and citation:
+
+- **Rotation length**: the subject's burst cooldown (game data). It times per-second sources
+  (Furina's Salon, Nahida's Tri-Karma, capped by a duration) and the drip.
+- **Skill casts per rotation**, per member: 1 — KQM's Bennett guide's baseline playstyle ("1 E per
+  Q"). A target row's count is not used: rows count hits, not casts (Guoba lands four).
+- **Particles per cast**, per source: the table's (a hold is entered here: Bennett's level-1 hold
+  is 3, `skill.go:242`).
+- **Caught on field**: the subject's own particles caught while still casting (`caster`) 100 %;
+  an off-field generator's (`active`: Guoba, Salon, Tri-Karma) and every teammate's 0 % — the
+  subject is assumed off field when others' particles land. Editable per source, as a share
+  (Guoba in the gcsim sample: two of four on field).
+- **Enemy particles**: on, at the drip's rate, caught off field.
+- **Flat energy**: 0. Not counted unless entered: Favonius procs, a kit's flat refund (Raiden's
+  burst), normal attacks' chance of 1 energy (`pkg/core/energy.go:30-90`).
+
+The requirement also fills the recipe's `minimumEnergyRecharge` — the field the page's existing
+"This build has X Energy Recharge and the rotation needs Y" warning reads — so the ER floor UI is
+unchanged and now speaks for the formula estimate too, net of the recipe's own ER (base 100 %,
+weapon, ascension, kit ER buffs, a 4-piece state's static set ER).
+
+#### What the score does with it: the owner's fork
+
+CLAUDE.md records the owner's ruling for the gcsim path (2026-09-02): skipping by default,
+**waiting as an option**, and that the two disagree by a factor — ER worth +7.3 % skipping
+against +44.4 % waiting on their own Furina, because **a skipped burst costs no time**. The
+closed form can price either, and they mean different things:
+
+- **skip** — a burst the energy cannot fund is not cast. Energy carries between rotations, so in
+  the long run the burst lands `min(1, E(ER) / cost)` as often, and **the burst rows** are scaled
+  by it. Like gcsim's skipping, it is blind to what the burst does beyond its own hits: a skipped
+  Bennett burst still buffs every row, Furina's 98 % skill damage does not move
+  (`recipe-eval.ts:evaluateRecipe`'s own note), and a self-buff from the subject's burst stays on.
+- **wait** — the team holds the rotation until the burst is funded, as a player at a keyboard does.
+  The deficit `cost − E(ER)` is paid by the drip alone (the team stands still), so the rotation
+  takes `L + wait` and **every row** is scaled by `L / (L + wait)`. It prices ER the way the
+  owner's question did ("without the ER she doesn't burst on time making the DPS drop"), and it
+  needs the drip, as gcsim's waiting model does; with the drip off it steps back to skip and says
+  so.
+
+The honest model is **wait** for the question this estimate answers — damage of the chosen
+sequence, which a player performs by waiting rather than by silently dropping the burst — and it
+carries the delay to every row, as the gcsim ladder's DPS does. **But which one the score uses
+by default changes what every formula score means**, so it is not picked here: the default is a
+third mode, **off** (report the requirement; ER still worth nothing), which leaves today's scores
+unchanged, and both priced modes are a choice in the panel. *Owner question (TASKS 14): default
+to off, skip or wait?*
+
+Both priced factors are non-decreasing in ER, so the search's optimistic bound stays admissible;
+`liveQuantitiesFor` makes ER live exactly when a priced mode leaves the requirement unmet (the
+same rule the gcsim ladder follows, so an ER sands is no longer Pareto-pruned before it is
+scored). The model lives in `sim/formula-energy.ts`, read by `recipe-eval.ts:formulaEnergyTotal`
+and attached per recipe in `formula-calibration.ts`; nothing in `formula-recipe.ts` changes but
+one added function (`subjectEnergyRecharge`).
+
+#### Verification
+
+GO has no energy model (ER is a user floor there), so D-F4's comparator has nothing to compare;
+KQM publishes ER requirements as **ranges** per team archetype (Furina C0 solo Hydro "~200-260%")
+with no stated inputs, and its library page publishes no worked example, so neither gives a
+fixture. The oracle is **gcsim's own energy events**: a native build at the pin
+(`backend/tests/fixtures/formula/energy/`, PROVENANCE beside it) running the owner's National
+team (Xiangling, Xingqiu, Bennett, Yelan) with `ignore_burst_energy=true`, so four identical
+rotations, and no drip.
+
+- **All 112 particle events** are exactly `count × value × field × ER`, in Python
+  (`test_formula_energy_gcsim_sample.py`) and through `formula-energy.ts` (`formula:verify`).
+- **Particles per cast** are the table's: Xingqiu 5, Yelan 4, Guoba 1 a hit × 4 a cast.
+- **Xiangling's steady rotation banks 39.97176** at her 195.94 % ER — 1.9594 × 20.4 (Bennett 3
+  Pyro off field 5.4, Guoba 4 Pyro two on field and two off 9.6, Xingqiu 5 Hydro off 3.0, Yelan 4
+  Hydro off 2.4), built from the table rather than the log — and gcsim's drain reads 39.97176. Her
+  requirement for that rotation, gcsim's formula, is 80 / 20.4 = 392.2 %.
+- Plants that must miss the drain: every particle caught on field, an off-element particle valued
+  as same-element, Guoba all off field.
 
 ## 3. Phases
 

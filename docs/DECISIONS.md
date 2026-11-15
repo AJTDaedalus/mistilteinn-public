@@ -1754,3 +1754,41 @@ Choices made, each reversible:
 
 GO agreement: 11 new fixtures (233), all exact except the recorded 2.78 vs 25/9 on the two
 amplified ones; the #389 Engulfing Lightning fixture, a recorded withholding, is now exact.
+
+## 46. ER from particles in the formula estimate: the model built, its default left open (2026-11-15)
+
+**Owner, 2026-11-15: "ER from particles."** The go-ahead for P3 task 14 (G13). Built on
+`feat/formula-er-particles` (DESIGN §2.10, TASKS 14).
+
+**The model (chosen, reversible).** A closed form: over a rotation the optimized character banks
+`ER × Σ particles × value × field + flat`, with gcsim's rules at the pin (value 3/2/1,
+`1 − 0.1 × party` off field, ER on particles only — `energy.go:35-77`) and gcsim's own
+requirement `max((cost − flat) / raw, 1)` (`energy_stats.go:85`), each cross-checked against
+KQM's Energy library page. Rejected: deriving the requirement by sweeping ER (the gcsim ladder's
+method) — the estimate has no simulation to sweep, and the closed form is the same quantity
+gcsim's optimizer computes per burst.
+
+Choices made on the way, each reversible:
+
+1. **Particle counts are curated from gcsim's Go, not imported** from `character_energy_drops`,
+   whose `per_drop` is per drop event (Kazuha 1 where a tap gives 3). 17 characters; each count
+   held to a snapshot of the line it is read off. Summon-and-chance characters (Raiden, Fischl,
+   Kuki, Kokomi, Zhongli, Yae) are not curated: named, the user's number, none until entered.
+2. **Furina's Salon at KQM's measured one per 3.25 s**, not gcsim's 2.5 s ICD (a ceiling).
+3. **Defaults**: one skill cast per member per rotation (KQM's "1 E per Q" baseline), the
+   rotation as long as the subject's burst cooldown, the subject's own on-cast particles caught on
+   field and everything else off field, the drip on, no flat energy. All editable in the panel.
+4. **The requirement fills `minimumEnergyRecharge`**, so the existing ER-floor warning speaks for
+   the formula estimate; the floor UI itself is unchanged.
+5. **Verified against gcsim's own events**, not GO (GO has no energy model) and not KQM (its
+   guides publish ranges with no inputs): a native sample of the owner's National team at the
+   pin; every particle event exact, Xiangling's steady rotation exactly the closed form
+   (39.97176).
+
+**Left to the owner — it changes what the score means:** whether a priced mode is the default.
+Both are built, mirroring the gcsim path's ruling (2026-09-02, skip default, waiting an option):
+**skip** scales burst rows by `min(1, energy / cost)` (blind to a burst's buffs and to time, as
+gcsim's skipping is); **wait** scales every row by `L / (L + wait)`, the drip paying the deficit
+(the model DESIGN §2.10 argues is the honest one for this estimate). The default is **off**:
+the requirement is reported and ER is worth nothing, so no existing score changes until the
+owner says. *Owner question: default off, skip or wait?*
