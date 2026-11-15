@@ -1,0 +1,93 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "\"The Catch\"",
+ "nanoka_id": "13415",
+ "slug": "the_catch",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/TheCatch/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/catch/catch.go",
+ "verified_by": [
+  "the_catch_r5_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.16,
+   0.06,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.2,
+   0.075,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.24,
+   0.09,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.28,
+   0.105,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.32,
+   0.12,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "effects": [
+  {
+   "key": "burst_dmg",
+   "label": "Elemental Burst DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "burst"
+   ],
+   "go": "10,12,15-20"
+  },
+  {
+   "key": "burst_cr",
+   "label": "Elemental Burst CRIT Rate",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "param": 1
+   },
+   "moves": [
+    "burst"
+   ],
+   "go": "11,13,15-20"
+  }
+ ]
+}

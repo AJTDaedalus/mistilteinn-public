@@ -132,10 +132,14 @@ function resolvedTerm(
 ): number {
   const conversion = hit.conversions[term];
   if (conversion === undefined) return frozen;
+  let extra = 0;
+  for (const part of conversion.extra ?? []) {
+    extra += cappedAmount(part.perUnit, rawTotal(hit, stats, part.from), part.threshold, part.cap);
+  }
   return cappedAmount(
     conversion.perUnit, rawTotal(hit, stats, conversion.from), conversion.threshold,
     conversion.cap,
-  ) + (conversion.offset ?? 0);
+  ) + extra + (conversion.offset ?? 0);
 }
 
 /**

@@ -1,0 +1,87 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Skyward Spine",
+ "nanoka_id": "13502",
+ "slug": "skyward_spine",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/SkywardSpine/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/skyward/skyward.go",
+ "verified_by": [
+  "skyward_spine_r5_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.08,
+   0.12,
+   0.5,
+   0.4,
+   2.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.1,
+   0.12,
+   0.5,
+   0.55,
+   2.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.12,
+   0.12,
+   0.5,
+   0.7,
+   2.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.14,
+   0.12,
+   0.5,
+   0.85,
+   2.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.16,
+   0.12,
+   0.5,
+   1.0,
+   2.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "effects": [
+  {
+   "key": "cr",
+   "label": "CRIT Rate",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "param": 0
+   },
+   "go": "19,22,40-44"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "the vacuum blade proc",
+   "reason": "a damage instance of the weapon's own: the target has no weapon-hit row kind yet"
+  },
+  {
+   "what": "Normal ATK SPD +12%",
+   "reason": "no damage effect in a static estimate: speed is a rotation's timing"
+  }
+ ]
+}

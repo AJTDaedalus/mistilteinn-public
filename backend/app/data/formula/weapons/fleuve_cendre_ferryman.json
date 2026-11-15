@@ -1,0 +1,107 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Fleuve Cendre Ferryman",
+ "nanoka_id": "11426",
+ "slug": "fleuve_cendre_ferryman",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/FleuveCendreFerryman/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/fleuvecendreferryman/fleuvecendreferryman.go",
+ "verified_by": [
+  "fleuve_cendre_ferryman_r1_on_ayaka"
+ ],
+ "pins": {
+  "1": [
+   0.08,
+   0.16,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.1,
+   0.2,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.12,
+   0.24,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.14,
+   0.28,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.16,
+   0.32,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "after_skill",
+   "label": "After an Elemental Skill",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "15"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill_cr",
+   "label": "Elemental Skill CRIT Rate",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "skill"
+   ],
+   "go": "10,13,22-27"
+  },
+  {
+   "key": "er",
+   "label": "After a skill: Energy Recharge",
+   "receivers": "self",
+   "stat": "energy_recharge",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "11,15-21,22-27"
+  }
+ ]
+}

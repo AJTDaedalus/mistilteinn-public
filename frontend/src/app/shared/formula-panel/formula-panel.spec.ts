@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { FormulaEstimateService } from '../../pages/optimize/formula-estimate.service';
 import type { ConditionGroup } from '../../sim/formula-calibration';
-import { FormulaLabel, kitGivers } from './formula-label';
+import { FormulaLabel, kitGivers, weaponPassives } from './formula-label';
 import { FormulaPanel } from './formula-panel';
 
 /**
@@ -210,7 +210,15 @@ describe('FormulaLabel, given the estimate\'s assumptions', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent!;
     expect(text).toContain('Kit buffs applied from Bennett, Kaedehara Kazuha');
     expect(text).not.toContain('No kit buffs');
+    expect(text).toContain('no weapon passives');
     expect(kitGivers(['No kit buffs modelled: talents, passives.'])).toEqual([]);
+  });
+
+  it('names the weapon passives the estimate applied (task 12)', () => {
+    expect(weaponPassives([
+      'Weapon passive "The Catch" R5 (Xiangling): verified against Genshin Optimizer.',
+      'No weapon passive modelled for The Flute R1 (Bennett): base ATK and substat only.',
+    ])).toEqual(['"The Catch" R5 (Xiangling)']);
   });
 });
 

@@ -1,0 +1,115 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Wolf's Gravestone",
+ "nanoka_id": "12502",
+ "slug": "wolfs_gravestone",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/WolfsGravestone/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/wolf/wolf.go",
+ "verified_by": [
+  "wolfs_gravestone_r1_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.4,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   0.5,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   0.6,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   0.7,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   0.8,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "low_hp_enemy",
+   "label": "An opponent below 30% HP was hit",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: an opponent below 30% HP is the end of a fight, not its usual state"
+   },
+   "go": "12,14"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "go": "10,13,22-24"
+  },
+  {
+   "key": "team_atk",
+   "label": "Party ATK% against a low-HP opponent",
+   "receivers": "team",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "low_hp_enemy",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "11,15-19,25-32"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Millennial Movement / same-name buffs from two wielders",
+   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
+   "receiver": "teammate"
+  }
+ ]
+}

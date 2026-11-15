@@ -1,0 +1,101 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Forest Regalia",
+ "nanoka_id": "12417",
+ "slug": "forest_regalia",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/ForestRegalia/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/forestregalia/forestregalia.go",
+ "verified_by": [
+  "forest_regalia_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   60.0,
+   12.0,
+   20.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   75.0,
+   12.0,
+   20.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   90.0,
+   12.0,
+   20.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   105.0,
+   12.0,
+   20.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   120.0,
+   12.0,
+   20.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "leaf",
+   "label": "Leaf of Consciousness picked up",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "18,20"
+  }
+ ],
+ "effects": [
+  {
+   "key": "em",
+   "label": "Leaf of Consciousness: the active character's EM",
+   "receivers": "active",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "leaf",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,21-26,28-37"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Millennial Movement / same-name buffs from two wielders",
+   "reason": "GO lets only one of a kind apply (nonStackBuff); two wielders in one team are both applied here, which overstates that rare team",
+   "receiver": "teammate"
+  }
+ ]
+}

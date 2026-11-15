@@ -1,0 +1,118 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Key of Khaj-Nisut",
+ "nanoka_id": "11511",
+ "slug": "key_of_khaj_nisut",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/KeyOfKhajNisut/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/keyofkhajnisut/keyofkhajnisut.go",
+ "verified_by": [
+  "key_of_khaj_nisut_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.0012,
+   20.0,
+   0.3,
+   0.002,
+   20.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   0.0015,
+   20.0,
+   0.3,
+   0.0025,
+   20.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   0.0018,
+   20.0,
+   0.3,
+   0.003,
+   20.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   0.0021,
+   20.0,
+   0.3,
+   0.0035,
+   20.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   0.0024,
+   20.0,
+   0.3,
+   0.004,
+   20.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "stacks",
+   "label": "Grand Hymn stacks (after an Elemental Skill hits)",
+   "kind": "stacks",
+   "default_by": "giver_is_subject",
+   "max": 3,
+   "go": "29"
+  }
+ ],
+ "effects": [
+  {
+   "key": "hp",
+   "label": "HP%",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "param": 0
+   },
+   "go": "22-27,65-67"
+  },
+  {
+   "key": "self_em",
+   "label": "Grand Hymn: wielder EM from Max HP per stack",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "per": "stacks",
+   "value": {
+    "param": 1,
+    "times_stat": "hp"
+   },
+   "go": "19,30-50,68-70"
+  },
+  {
+   "key": "team_em",
+   "label": "Grand Hymn at 3 stacks: party EM from the wielder's Max HP",
+   "receivers": "team",
+   "stat": "elemental_mastery",
+   "when": [
+    {
+     "condition": "stacks",
+     "values": [
+      3
+     ]
+    }
+   ],
+   "value": {
+    "param": 4,
+    "times_stat": "hp"
+   },
+   "go": "20,52-60,71-78"
+  }
+ ]
+}

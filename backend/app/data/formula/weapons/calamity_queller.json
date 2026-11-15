@@ -1,0 +1,138 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Calamity Queller",
+ "nanoka_id": "13507",
+ "slug": "calamity_queller",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/CalamityQueller/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/calamity/calamity.go",
+ "verified_by": [
+  "calamity_queller_r1_on_xiangling",
+  "calamity_queller_r5_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.12,
+   1.0,
+   0.032,
+   6.0,
+   20.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.15,
+   1.0,
+   0.04,
+   6.0,
+   20.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.18,
+   1.0,
+   0.048,
+   6.0,
+   20.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.21,
+   1.0,
+   0.056,
+   6.0,
+   20.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.24,
+   1.0,
+   0.064,
+   6.0,
+   20.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "stacks",
+   "label": "Consummation stacks (per second after an Elemental Skill)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 6,
+   "go": "23,41-45"
+  },
+  {
+   "key": "off_field",
+   "label": "Wielder off-field (Consummation doubled)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: the optimized character deals the target's hits, so is on the field; an off-field hit's row may state it"
+   },
+   "go": "34-40"
+  }
+ ],
+ "effects": [
+  {
+   "key": "ele",
+   "label": "Elemental DMG, every element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "go": "25,28-33,49-54"
+  },
+  {
+   "key": "atk",
+   "label": "Consummation: ATK% per stack",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2
+   },
+   "per": "stacks",
+   "go": "26,34-47,49-54"
+  },
+  {
+   "key": "atk_off",
+   "label": "Consummation doubled off-field: ATK% per stack again",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2
+   },
+   "per": "stacks",
+   "when": [
+    {
+     "condition": "off_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "34-40"
+  }
+ ]
+}

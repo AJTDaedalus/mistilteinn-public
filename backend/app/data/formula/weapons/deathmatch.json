@@ -1,0 +1,139 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Deathmatch",
+ "nanoka_id": "13405",
+ "slug": "deathmatch",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/Deathmatch/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/deathmatch/deathmatch.go",
+ "verified_by": [
+  "deathmatch_r1_one_opponent_on_xiangling",
+  "deathmatch_r5_two_opponents_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   2.0,
+   0.24,
+   0.16,
+   0.16,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   2.0,
+   0.3,
+   0.2,
+   0.2,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   2.0,
+   0.36,
+   0.24,
+   0.24,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   2.0,
+   0.42,
+   0.28,
+   0.28,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   2.0,
+   0.48,
+   0.32,
+   0.32,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "opponents",
+   "label": "Opponents nearby",
+   "kind": "choice",
+   "default_by": "self",
+   "options": [
+    "one_or_none",
+    "more_than_one"
+   ],
+   "usual": {
+    "value": "one_or_none",
+    "reason": "One: the estimate models one target"
+   },
+   "go": "18"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk_one",
+   "label": "Fewer than 2 opponents: ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "opponents",
+     "values": [
+      "one_or_none"
+     ]
+    }
+   ],
+   "go": "20-28,35-40"
+  },
+  {
+   "key": "atk_more",
+   "label": "2 or more opponents: ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "opponents",
+     "values": [
+      "more_than_one"
+     ]
+    }
+   ],
+   "go": "19,21-28,35-40"
+  },
+  {
+   "key": "def_more",
+   "label": "2 or more opponents: DEF%",
+   "receivers": "self",
+   "stat": "def_pct",
+   "value": {
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "opponents",
+     "values": [
+      "more_than_one"
+     ]
+    }
+   ],
+   "go": "19,29-33,35-40"
+  }
+ ]
+}

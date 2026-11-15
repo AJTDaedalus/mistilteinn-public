@@ -1638,14 +1638,15 @@ TASKS 13). Weapon passives (task 12) and ER from particles (task 14) wait.
    weights them 0.6/0.3/0.05/0.05 (`lunarcharged.go:22`); GO prices the character's whole
    contribution. Default weight 1 (GO, the comparator); the recipe accepts a stated weight, which
    the panel does not offer yet. *Owner question: offer the weight, or default to gcsim's 0.6
-   for a solo Lunar trigger?*
+   for a solo Lunar trigger?* **Answered 2026-11-14 (§44 (ii)): 0.6.**
 5. **Refused by name, not approximated:** Lunar-Bloom (no reaction-triggered instance in either
    oracle at its pin), Stellar-Conduct (a kit's direct hit on Polestar stacks), Stellar Swirl
    (outside the P3 list as given). Each is in `reactions.REFUSED` with its reason, and every set
    or kit part that reads one stays named.
 6. **Mona's C1 swirl bonus follows GO** (every swirl), where gcsim and her text limit it to a Hydro
    swirl (`mona/cons.go:71-80`); the effect's label says so. The Klee C2 / Bennett precedent
-   (§38: GO is the comparator). *Owner question: scope it to Hydro?*
+   (§38: GO is the comparator). *Owner question: scope it to Hydro?* **Answered 2026-11-14
+   (§44 (iii)): Hydro only.**
 7. **Crittable reactions crit only from reaction-specific stats** (Nahida C2), never the
    character's CRIT, in both oracles; a CRIT on overloaded, electro-charged, superconduct or
    shattered is refused by the vocabulary.
@@ -1657,3 +1658,56 @@ TASKS 13). Weapon passives (task 12) and ER from particles (task 14) wait.
 bonuses from a giver's stat (a target-row kind of their own), Nilou's Bountiful Cores (her sheet
 is on a concurrent branch), swirl's amplified and aggravated variants, the remaining
 reaction-led sheets (Kaveh, Dori, Mizuki, Zibai, Sandrone, Ineffa, Ifa).
+
+## 44. Weapon passives in the formula estimate, and two P3 choices changed (2026-11-14)
+
+**Owner, 2026-11-14: "Weapon passives"**, and two of §43's choices changed: *"Lunar weight 0.6
+solo"* and *"Mona C1 Hydro-only swirl"*. Built on `feat/formula-weapon-passives` (DESIGN §2.8,
+TASKS 12).
+
+**(i) Weapon passives (task 12).** A per-weapon data file read by one evaluator, values indexing
+the wielder's refinement `param_list`, pinned per refinement, structure cited to GO's WR weapon
+sheets at `2c13fc40` and gcsim at `b107b5dc`. Its own small file format, because a refinement
+index fits none of a kit sheet's value kinds; conditions (and so §41's default rule), team gates,
+giver stats, the subject's per-candidate conversions and the resolution on the wielder's pass-1
+registry are the sheet's own. Resolved for every member through `/formula/kit-buffs` and applied
+in the browser as a kit. 72 files out of 253 released weapons: 46 modelled, 16 partial, 9 with no
+damage effect, 1 unmodelled; the other 181 are named as "no weapon passive modelled". 73 GO
+fixtures, 66 exact.
+
+Choices made, each reversible, for the owner:
+
+1. **The formula estimate scores the equipped weapon only.** The weapon comparison is offered on
+   the rotation objective; extending it to the estimate needs a candidate weapon id on
+   `/search-context` and `/formula/kit-buffs`. *Owner question: offer weapon comparison under the
+   formula estimate?*
+2. **A weapon's own unconditional stats enter the stats its values read** (Key of Khaj-Nisut's
+   party EM from an HP that carries its own +20%), as GO computes it; §2.6 rule 1 (no weapon
+   passive in pass 1) still holds for every other source.
+3. **Two wielders of one Millennial Movement weapon both apply**, where GO's `nonStackBuff` lets
+   one; each such file names it.
+4. **A target-state, shield, kill or off-field condition is situational and off**, with its
+   reason; a wielder-triggered stack is on at its maximum (`self`); a teammate wielder's team buff
+   is on at its maximum (`teammate`). The Widsith's random song defaults to none; Deathmatch to one
+   opponent (the estimate's one target).
+5. **Not carried per candidate on the wielder, named:** ATK% from ER (Engulfing Lightning), EM
+   from HP (Key of Khaj-Nisut), ATK from EM (Makhaira Aquamarine, Wandering Evenstar), a party DMG
+   from DEF through a stat cap (Peak Patrol Song). Each is a number when a teammate wields it.
+   *Owner question: build the ER → ATK% conversion (Raiden's Engulfing Lightning) next?*
+6. **Weapon damage instances** (Aquila Favonia, the Skywards' procs) are named, not applied: the
+   target has no weapon-hit row kind.
+
+**(ii) Lunar contributor weight: gcsim's 0.6 for a solo trigger.** A Lunar reaction row's
+contribution defaults to 0.6, gcsim's weight for the top-ranked contributor
+(`pkg/reactable/lunarcharged.go:22,171-184`, `lunarcrystallize.go:27,220-230`), where §43 (4)
+followed GO's whole contribution. Fixture impact: `lunar_charged_flins_night_of_the_skys_unveiling`
+18,100.71 against GO's 30,167.54, and `lunar_crystallize_aubade_mona_c4` 19,094.58 against
+31,823.98 — ours 0.6 of GO's each (and GO's transformative DEF, 1 − 1e-5), recorded per fixture.
+A stated `weight` still overrides.
+
+**(iii) Mona's C1 Swirl DMG: a Hydro swirl only**, as gcsim (`internal/characters/mona/cons.go:
+71-80`, `AttackTagSwirlHydro`) and her text have it, where §43 (6) followed GO (every swirl). New
+fixture `mona_c1_hydro_swirl_on_kazuha` — a Pyro and a Hydro swirl by Kazuha with a C1 Mona's
+Omen — 9,789.57 against GO's 9,906.67 (1.2%): the bonus reaches the Hydro swirl and not the Pyro
+one. `lunar_crystallize_aubade_mona_c4`'s Mona source changes shape (the swirl effect names Hydro)
+and its figure does not.

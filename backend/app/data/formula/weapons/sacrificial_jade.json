@@ -1,0 +1,116 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Sacrificial Jade",
+ "nanoka_id": "14424",
+ "slug": "sacrificial_jade",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/SacrificialJade/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/sacrificialjade/sacrificialjade.go",
+ "verified_by": [
+  "sacrificial_jade_r1_on_kokomi_burst"
+ ],
+ "pins": {
+  "1": [
+   10.0,
+   5.0,
+   0.32,
+   40.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   10.0,
+   5.0,
+   0.4,
+   50.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   10.0,
+   5.0,
+   0.48,
+   60.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   10.0,
+   5.0,
+   0.56,
+   70.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   10.0,
+   5.0,
+   0.64,
+   80.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "off_field",
+   "label": "Off the field for more than 5s",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: the optimized character deals the target's hits on the field"
+   },
+   "go": "14"
+  }
+ ],
+ "effects": [
+  {
+   "key": "hp",
+   "label": "Off-field: HP%",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "off_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "11,15-19,26-31"
+  },
+  {
+   "key": "em",
+   "label": "Off-field: Elemental Mastery",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "off_field",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "12,20-25,26-31"
+  }
+ ]
+}

@@ -150,15 +150,15 @@
 
     @if (!groups().length) {
       <p class="hint">
-        No conditional set bonus, resonance or kit buff applies to this team and these sets.
+        No conditional set bonus, resonance, kit buff or weapon passive applies to this team and these sets.
       </p>
     }
 
     @for (group of groups(); track group.sourceId) {
-      <fieldset class="assumptions__group" [class.assumptions__group--nokit]="group.kind === 'no-kit'">
+      <fieldset class="assumptions__group" [class.assumptions__group--nokit]="group.kind === 'no-kit' || group.kind === 'no-weapon'">
         <legend>
           {{ group.label }}
-          @if (group.kind === 'kit') {
+          @if (group.kind === 'kit' || group.kind === 'weapon') {
             <span class="assumptions__badge" [class.assumptions__badge--unverified]="!group.verified">
               {{ group.verified ? 'Verified against GO' : 'Unverified' }}
             </span>
@@ -217,7 +217,8 @@
             </span>
           </div>
         }
-        @if (!group.conditions.length && group.kind !== 'no-kit') {
+        @if (!group.conditions.length && group.kind !== 'no-kit' && group.kind !== 'no-weapon'
+          && !group.inert) {
           <p class="assumptions__static">Applied whenever it is active; nothing to set.</p>
         }
         @for (part of group.unmodelled; track part.what) {
@@ -247,7 +248,12 @@
         } @else {
           <li>No kit buffs: talents, passives, constellations and teammates' buffs are absent.</li>
         }
-        <li>No weapon passives.</li>
+        @if (hasWeapons()) {
+          <li>Weapon passives: each member's weapon as listed above, or "no weapon passive
+            modelled" where it says so.</li>
+        } @else {
+          <li>No weapon passives.</li>
+        }
         <li>Reactions: only the rows above. Add a reaction row, or spread/aggravate on an
           ability, to count transformative, additive or Lunar reaction damage.</li>
       </ul>

@@ -1710,6 +1710,9 @@ def build() -> dict[str, Any]:
     # Math-fallback P3, task 13: transformative, additive and Lunar reactions.
     from tests.unit.go_fixtures_reactions import reaction_fixtures
     fixtures.extend(reaction_fixtures())
+    # Math-fallback P3, task 12: weapon passives.
+    from tests.unit.go_fixtures_weapons import weapon_fixtures
+    fixtures.extend(weapon_fixtures())
     # No fixture relies on a default (DECISIONS §40 (ii) changed them): every condition each
     # one reads is stated, the older ones' through `STATED`.
     from tests.unit.go_fixtures_stated import STATED

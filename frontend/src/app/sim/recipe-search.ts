@@ -290,6 +290,7 @@ export function liveQuantitiesFor(...recipes: readonly Recipe[]): string[] {
     if (hit.bonusFromEm !== undefined) live.add('elemental_mastery');
     for (const conversion of Object.values(hit.conversions)) {
       for (const q of parts[conversion.from]) live.add(q);
+      for (const part of conversion.extra ?? []) for (const q of parts[part.from]) live.add(q);
     }
     // A capped self-conversion (Nahida's A4, Furina's A4) reads its source stat on a hit that
     // may not scale off it. Below its cap the source buys damage; past it, nothing — but a piece

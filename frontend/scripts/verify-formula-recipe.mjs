@@ -125,9 +125,12 @@ for (const f of data.fixtures) {
   // Math-fallback P2, task 10 — **a planted wrong kit buff must fail.** Every kit effect 1 %
   // off, and the classic self-buff mistake (the subject's own EM frozen at his zero-artifact
   // value instead of moving with the candidate), each have to leave the tolerance.
-  const kits = f.sources.filter((s) => s.id.startsWith('kit:'));
+  // A weapon passive (P3, task 12) is planted exactly as a kit is: same vocabulary, same
+  // resolution in the wielder's context, same per-candidate conversions on the subject's own.
+  const isKit = (s) => s.id.startsWith('kit:') || s.id.startsWith('weapon:');
+  const kits = f.sources.filter(isKit);
   if (kits.length > 0) {
-    const planted = (mutate) => f.sources.map((s) => (s.id.startsWith('kit:')
+    const planted = (mutate) => f.sources.map((s) => (isKit(s)
       ? { ...s, bonus: { ...s.bonus, effects: s.bonus.effects.map(mutate) } }
       : s));
     // The cap too, or a figure past its cap would not notice (DECISIONS §40).

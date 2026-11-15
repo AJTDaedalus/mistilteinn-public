@@ -158,9 +158,24 @@ describe("Hu Tao's ATK from her Max HP, capped at 400% of her base ATK", () => {
       kernel(context({}, { flat_atk: 800 + 2860 }), stats));
   });
 
-  it('refuses a second conversion into flat ATK on the same hit', () => {
-    expect(() => synthesizeRecipe([row(context())],
-      [KIT(fx, { stat: 'flat_atk_from_def', value: 0.5 })], TEAM)).toThrow(/two conversions/);
+  it('prices a second conversion into flat ATK on its own: Staff of Homa beside Paramita', () => {
+    // Task 12: a weapon's uncapped ATK from HP (Homa R1, 0.8%) beside her capped one. Summed
+    // before the cap they would be `min((0.06256 + 0.008) × HP, 2,860)`, the wrong number.
+    const homa = { stat: 'flat_atk_from_hp', value: 0.008 };
+    const recipe = synthesizeRecipe([row(context())], [KIT(fx, homa)], TEAM);
+    expect(recipe.hits[0].conversions.flatAtk?.extra).toEqual([{ from: 'hp', perUnit: 0.008 }]);
+    for (const stats of [{ hp_pct: 0.466, flat_hp: 4780 }, { hp_pct: 3, flat_hp: 4780 }]) {
+      const hp = hpTotal(stats.hp_pct, stats.flat_hp);
+      close(evaluateRecipe(recipe, candidateStatsFrom([stats])),
+        kernel(context({}, { flat_atk: Math.min(0.06256 * hp, 2860) + 0.008 * hp }), stats));
+    }
+  });
+
+  it('keeps a conversion from DEF apart from her capped one from HP', () => {
+    const recipe = synthesizeRecipe([row(context())],
+      [KIT(fx, { stat: 'flat_atk_from_def', value: 0.5 })], TEAM);
+    expect(recipe.hits[0].conversions.flatAtk?.extra).toEqual([{ from: 'def', perUnit: 0.5 }]);
+    expect(liveQuantitiesFor(recipe)).toEqual(expect.arrayContaining(['def_pct', 'hp_pct']));
   });
 });
 

@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from app.models.artifact import Artifact, ArtifactSet
 from app.models.build import Build
 from app.models.character import Character, Talent
+from app.models.weapon import Weapon
 from app.repositories.base import BaseRepository
 
 if TYPE_CHECKING:
@@ -153,6 +154,8 @@ class BuildRepository(BaseRepository[Build]):
             *_full_build(),
             selectinload(Build.character).selectinload(Character.constellations),
             selectinload(Build.character).selectinload(Character.ascension_passives),
+            # Task 12: a weapon passive reads the wielder's refinement `param_list`.
+            selectinload(Build.weapon).selectinload(Weapon.refinements),
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

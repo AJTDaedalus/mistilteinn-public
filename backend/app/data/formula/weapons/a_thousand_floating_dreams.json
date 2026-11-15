@@ -1,0 +1,102 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "A Thousand Floating Dreams",
+ "nanoka_id": "14511",
+ "slug": "a_thousand_floating_dreams",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/AThousandFloatingDreams/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/athousandfloatingdreams/athousandfloatingdreams.go",
+ "verified_by": [
+  "a_thousand_floating_dreams_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   32.0,
+   0.1,
+   40.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   40.0,
+   0.14,
+   42.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   48.0,
+   0.18,
+   44.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   56.0,
+   0.22,
+   46.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   64.0,
+   0.26,
+   48.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "effects": [
+  {
+   "key": "self_em",
+   "label": "EM per teammate of the wielder's element",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0
+   },
+   "per_team": "same_element_others",
+   "per_team_max": 3,
+   "go": "23,27-41,67-71"
+  },
+  {
+   "key": "self_dmg",
+   "label": "DMG for the wielder's element per teammate of another element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "per_team": "different_element",
+   "per_team_max": 3,
+   "own_element": true,
+   "go": "24,37,42-56,67-71"
+  },
+  {
+   "key": "team_em",
+   "label": "The other party members' EM",
+   "receivers": "others",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 2
+   },
+   "go": "25,58-65,72-77"
+  }
+ ]
+}

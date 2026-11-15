@@ -28,7 +28,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from app.formula.genshin import sheets
+from app.formula.genshin import sheets, weapon_passives
 from app.pando.calculator import Calculator
 from app.services import artifact_optimizer, build_assembler
 from app.services.talent_boosts import TalentBoostError
@@ -59,6 +59,24 @@ class MemberKit:
 
 
 @dataclass(frozen=True, slots=True)
+class MemberWeapon:
+    """One member's weapon in the estimate: whether its passive is modelled (task 12)."""
+
+    build_id: str
+    wielder: str
+    #: The weapon's name, or None for a build with no weapon.
+    weapon: str | None
+    refinement: int | None
+    #: A passive file's status, or `no_passive_data` when nobody has written one — said as
+    #: "no weapon passive modelled" — or `no_weapon` for a build that wields none.
+    status: str
+    verified: bool
+    is_subject: bool
+    #: The source id its buffs travel under, when it has a file.
+    source_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class TeamKit:
     """Every sheet's resolution for the subject, and every member's coverage."""
 
@@ -71,6 +89,8 @@ class TeamKit:
     #: The subject's rows at each level the team's talent-level raises can reach (`DECISIONS.md`
     #: §42); empty when no kit raises a talent of theirs.
     raised_talents: list[RaisedTalent] = field(default_factory=list)
+    #: Every member's weapon and whether its passive reaches the estimate (task 12).
+    weapons: list[MemberWeapon] = field(default_factory=list)
 
 
 def pass_one(build: Build) -> NodeRegistry:
@@ -198,6 +218,77 @@ def _team_max(members: Sequence[Build], subject_build_id: str) -> dict[str, floa
     return out
 
 
+def wielder_of(build: Build, registry: NodeRegistry) -> weapon_passives.Wielder | None:
+    """A build as the wielder its weapon's passive resolves against, or None without one."""
+    weapon = build.weapon
+    if weapon is None:
+        return None
+    refinement = int(build.refinement or 1)
+    row = next((r for r in weapon.refinements if r.level == refinement), None)
+    name = build.character.name if build.character is not None else "Build"
+    return weapon_passives.Wielder(
+        name=name, refinement=refinement,
+        params=list(row.param_list or []) if row is not None else [],
+        registry=registry,
+    )
+
+
+def team_weapons(
+    members: Sequence[Build], subject_build_id: str, elements: Sequence[str | None],
+    subject_element: str | None,
+) -> tuple[list[sheets.ResolvedKit], list[MemberWeapon], dict[str, dict[str, float]],
+           dict[str, str]]:
+    """Every member's weapon passive resolved for the subject (task 12), in the wielder's
+    pass-1 context like a kit sheet; and every member's weapon coverage.
+
+    Two members wielding the same weapon each give their own source: the first is
+    `weapon:<slug>`, the next `weapon:<slug>:2`, so their conditions stay apart.
+    """
+    sources: list[sheets.ResolvedKit] = []
+    coverage: list[MemberWeapon] = []
+    stats: dict[str, dict[str, float]] = {}
+    builds: dict[str, str] = {}
+    seen: dict[str, int] = {}
+    for build in members:
+        is_subject = str(build.id) == subject_build_id
+        name = build.character.name if build.character is not None else "Build"
+        weapon = build.weapon
+        if weapon is None:
+            coverage.append(MemberWeapon(
+                build_id=str(build.id), wielder=name, weapon=None, refinement=None,
+                status="no_weapon", verified=False, is_subject=is_subject))
+            continue
+        passive = weapon_passives.passive_for(weapon.nanoka_id)
+        refinement = int(build.refinement or 1)
+        if passive is None:
+            coverage.append(MemberWeapon(
+                build_id=str(build.id), wielder=name, weapon=weapon.name, refinement=refinement,
+                status="no_passive_data", verified=False, is_subject=is_subject))
+            continue
+        wielder = wielder_of(build, pass_one(build))
+        assert wielder is not None
+        resolved = weapon_passives.resolve(
+            passive, wielder, wielder_is_subject=is_subject,
+            receiver_element=subject_element, team_elements=elements,
+        )
+        base_id = resolved.source_id
+        seen[base_id] = seen.get(base_id, 0) + 1
+        if seen[base_id] > 1:
+            resolved = sheets.ResolvedKit(
+                source_id=f"{base_id}:{seen[base_id]}", label=resolved.label,
+                giver=resolved.giver, bonus=resolved.bonus, citation=resolved.citation,
+                verified=resolved.verified, status=resolved.status,
+            )
+        sources.append(resolved)
+        stats[resolved.source_id] = weapon_passives.stats_read(passive, wielder)
+        builds[resolved.source_id] = str(build.id)
+        coverage.append(MemberWeapon(
+            build_id=str(build.id), wielder=name, weapon=weapon.name, refinement=refinement,
+            status=resolved.status, verified=resolved.verified, is_subject=is_subject,
+            source_id=resolved.source_id))
+    return sources, coverage, stats, builds
+
+
 def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
     """Pass 1 for every member with a sheet, then pass 2 for the subject as receiver."""
     if not any(str(b.id) == subject_build_id for b in members):
@@ -237,7 +328,13 @@ def team_kit(members: Sequence[Build], subject_build_id: str) -> TeamKit:
             verified=resolved.verified, is_subject=is_subject,
         ))
     subject = next(b for b in members if str(b.id) == subject_build_id)
+    raised = subject_raised_talents(subject, sources)
+    # Weapon passives (task 12) after the kits: the same receiver, the same pass-1 contexts.
+    weapon_sources, weapons, weapon_stats, weapon_builds = team_weapons(
+        members, subject_build_id, elements, subject_element)
     return TeamKit(
-        sources=sources, members=coverage, giver_stats=giver_stats, giver_builds=giver_builds,
-        raised_talents=subject_raised_talents(subject, sources),
+        sources=[*sources, *weapon_sources], members=coverage,
+        giver_stats={**giver_stats, **weapon_stats},
+        giver_builds={**giver_builds, **weapon_builds},
+        raised_talents=raised, weapons=weapons,
     )

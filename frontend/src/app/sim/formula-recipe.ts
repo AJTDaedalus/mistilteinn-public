@@ -41,8 +41,8 @@
  *
  * `meta.formula` marks the recipe as a formula estimate, not gcsim-calibrated, and lists every
  * assumption: each condition's value and why, every unmodelled part of a bonus, every row whose
- * move is unknown. No kit buffs (talents, passives, constellations, teammates' sheets) and no
- * weapon passives are modelled in P1, and the recipe says so.
+ * move is unknown. Kit sheets (P2) and weapon passives (P3, task 12) arrive as sources like any
+ * other, and the recipe names whose are modelled and whose are not.
  */
 
 import {
@@ -184,6 +184,11 @@ export interface FormulaKit {
   citation: string;
   /** The giver's pass-1 value of each stat an effect read. */
   giver_stats: Record<string, number>;
+  /**
+   * `kit` for a member's sheet, `weapon` for a member's weapon passive (`weapon:<slug>`,
+   * math-fallback P3, task 12): the same vocabulary, applied alike. Absent is `kit`.
+   */
+  kind?: 'kit' | 'weapon';
 }
 
 /**
@@ -215,6 +220,14 @@ export interface KitCoverage {
   modelled: { name: string; verified: boolean }[];
   /** Members with no sheet: base stats, sets and resonance only. */
   missing: string[];
+  /**
+   * Weapon passives (task 12): the ones applied (`<weapon> R<r> (<wielder>)`), and the members'
+   * weapons with no passive data. Absent: the estimate says no weapon passive is modelled.
+   */
+  weapons?: {
+    modelled: { name: string; verified: boolean; inert?: boolean }[];
+    missing: string[];
+  };
 }
 
 /** `{ "<source id>/<condition key>": value }`. */
@@ -264,11 +277,17 @@ export interface FormulaReaction {
   /** A swirl's element; required for a swirl, refused for anything else. */
   swirled?: string | null;
   /**
-   * A Lunar contribution's weight: 1 is GO's whole contribution (the default); gcsim ranks
-   * every contributor and weights them 0.6/0.3/0.05/0.05 (`lunarcharged.go:22`).
+   * A Lunar contribution's weight. **Default 0.6, gcsim's weight for a solo (top-ranked)
+   * contributor** (owner ruling 2026-11-14, `DECISIONS.md` §44): gcsim ranks every contributor
+   * and weights them 0.6/0.3/0.05/0.05 (`pkg/reactable/lunarcharged.go:22,171-184`,
+   * `lunarcrystallize.go:27,220-230`). GO prices the whole contribution (1), a recorded
+   * divergence; a stated weight in (0, 1] overrides.
    */
   weight?: number;
 }
+
+/** gcsim's weight for the top-ranked (here: the only priced) Lunar contributor. */
+export const LUNAR_SOLO_WEIGHT = 0.6;
 
 export interface FormulaTeam {
   /** The optimized character's element, lower case — `wearer` in an effect. */
@@ -425,7 +444,7 @@ interface Buffs {
    * HP (Hu Tao's Guide to Afterlife, capped at 400% of her base ATK). One source per hit: the
    * recipe resolves one conversion into flat ATK.
    */
-  atkFrom: ({ from: 'def' | 'hp'; perUnit: number } & Limits) | null;
+  atkFrom: ({ from: 'def' | 'hp'; perUnit: number; extra?: AtkPart[] } & Limits) | null;
   /** Capped self-conversions into DMG% or CRIT Rate (Nahida's, Furina's, Alhaitham's A4). */
   statConversions: StatConversion[];
   /** Base ATK, before the percentage (Mavuika's C2). */
@@ -444,6 +463,9 @@ interface Limits {
   threshold?: number;
   cap?: number;
 }
+
+/** A further conversion into flat ATK, priced on its own (`ResolvedConversion.extra`). */
+type AtkPart = { from: 'def' | 'hp'; perUnit: number } & Limits;
 
 function noBuffs(): Buffs {
   return {
@@ -480,18 +502,31 @@ function addFlatFrom(
   buffs.flatFrom[from] += amount;
 }
 
-/** Flat ATK from the hit owner's own DEF or HP: one per hit. */
+/**
+ * Flat ATK from the hit owner's own DEF or HP. Two uncapped ones from the same stat sum; any
+ * other pair is kept apart and each priced alone (`ResolvedConversion.extra`), so a kit's capped
+ * ATK from HP and a weapon's uncapped one (Hu Tao's Paramita beside Staff of Homa, task 12) are
+ * never summed before the cap binds.
+ */
 function addAtkFrom(
-  buffs: Buffs, from: 'def' | 'hp', amount: number, limits: Limits, source: string,
+  buffs: Buffs, from: 'def' | 'hp', amount: number, limits: Limits, _source: string,
 ): void {
-  if (buffs.atkFrom !== null) {
-    if (buffs.atkFrom.from !== from || isLimited(limits) || isLimited(buffs.atkFrom)) {
-      throw new Error(`${source}: two conversions into flat ATK on one hit`);
-    }
+  if (buffs.atkFrom === null) {
+    buffs.atkFrom = { from, perUnit: amount, ...limits };
+    return;
+  }
+  if (buffs.atkFrom.from === from && !isLimited(limits) && !isLimited(buffs.atkFrom)) {
     buffs.atkFrom.perUnit += amount;
     return;
   }
-  buffs.atkFrom = { from, perUnit: amount, ...limits };
+  const same = (buffs.atkFrom.extra ?? []).find(
+    (p) => p.from === from && !isLimited(p) && !isLimited(limits),
+  );
+  if (same) {
+    same.perUnit += amount;
+    return;
+  }
+  buffs.atkFrom.extra = [...(buffs.atkFrom.extra ?? []), { from, perUnit: amount, ...limits }];
 }
 
 /** A conversion into DMG% or CRIT Rate, priced alone (`StatConversion`). */
@@ -740,6 +775,8 @@ export function rowHits(
       : calibratedBase[scaling] * (1 + calibratedPercent[scaling]) + calibratedFlat[scaling]
         + (scaling === 'atk' && atkFrom
           ? cappedAmount(atkFrom.perUnit, zeroTotal(atkFrom.from), atkFrom.threshold, atkFrom.cap)
+            + (atkFrom.extra ?? []).reduce((sum, p) => sum
+              + cappedAmount(p.perUnit, zeroTotal(p.from), p.threshold, p.cap), 0)
           : 0);
     const flatDamage = i === 0 ? (hit.flatDamage + buffs.flatDamage) * row.count : 0;
     const out: RecipeHit = {
@@ -881,7 +918,7 @@ export function reactionRowHits(
       critRate: buffs.reactionCritRate, critDmg: buffs.reactionCritDmg, count: row.count,
     };
   } else {
-    const weight = reaction.weight ?? 1;
+    const weight = reaction.weight ?? LUNAR_SOLO_WEIGHT;
     if (!(weight > 0 && weight <= 1)) throw new Error(`row ${row.id}: a weight is in (0, 1]`);
     term = {
       kind: 'lunar', reaction: name as Lunar, levelBase, reactionBonus: buffs.reactionBonus,
@@ -946,8 +983,9 @@ export function reactionAssumptions(rows: readonly FormulaRow[], subject: string
       + 'for them is about 1 - 1e-5, a recorded divergence.');
   }
   if (reactionRows.some((r) => isLunar(r.reaction!.reaction))) {
-    out.push(`Lunar reactions: ${who}'s own contribution, as Genshin Optimizer prices it; gcsim `
-      + 'ranks every contributor and weights them 0.6/0.3/0.05/0.05.');
+    out.push(`Lunar reactions: ${who}'s own contribution at gcsim's solo weight 0.6 (gcsim ranks `
+      + 'every contributor 0.6/0.3/0.05/0.05); Genshin Optimizer prices the whole contribution, '
+      + 'a recorded divergence.');
   }
   return out;
 }
@@ -993,6 +1031,30 @@ export function kitAssumptions(coverage: KitCoverage | undefined): string[] {
       ? 'verified against Genshin Optimizer' : 'unverified (cited to Genshin Optimizer)'}.`);
   }
   for (const name of coverage.missing) out.push(`No kit buffs modelled for ${name}.`);
+  return out;
+}
+
+/**
+ * The assumption sentences about weapon passives (task 12): whose are applied, whether each is
+ * verified, and which members' weapons have no passive data — those contribute their base ATK
+ * and substat only.
+ */
+export function weaponAssumptions(coverage: KitCoverage | undefined): string[] {
+  const weapons = coverage?.weapons;
+  if (weapons === undefined) return ['No weapon passives modelled.'];
+  const out: string[] = [];
+  for (const w of weapons.modelled) {
+    // A teammate's Homa or Aquila: every part is the wielder's own (found driving it).
+    if (w.inert) {
+      out.push(`${w.name}: no damage effect on the optimized character (the wielder's own).`);
+      continue;
+    }
+    out.push(`Weapon passive ${w.name}: ${w.verified
+      ? 'verified against Genshin Optimizer' : 'unverified (cited to Genshin Optimizer)'}.`);
+  }
+  for (const name of weapons.missing) {
+    out.push(`No weapon passive modelled for ${name}: base ATK and substat only.`);
+  }
   return out;
 }
 
@@ -1101,7 +1163,7 @@ export function synthesizeRecipe(
   const assumptions = new Set<string>([
     'Formula estimate: no simulation. Not calibrated by gcsim.',
     ...kitAssumptions(kits),
-    'No weapon passives modelled.',
+    ...weaponAssumptions(kits),
     ...reactionAssumptions(rows, characters[0] ?? ''),
   ]);
   for (const row of rows) {

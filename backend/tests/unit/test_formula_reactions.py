@@ -47,13 +47,25 @@ def test_every_reaction_family_has_a_fixture():
             "lunar_charged", "lunar_crystallize", "spread", "aggravate"} <= priced
 
 
-def test_the_only_divergence_is_gos_transformative_def_term():
+def test_the_only_divergences_are_gos_transformative_def_and_the_lunar_weight():
     """GO's `enemy.transDef` (`formula.ts:502-509`) against gcsim's ignored DEF: exactly
-    `1 - transDef` on every reaction-instance fixture, 0 on an additive one."""
+    `1 - transDef` on every reaction-instance fixture, 0 on an additive one; and on a Lunar
+    row, gcsim's solo contributor weight 0.6 against GO's whole contribution (owner ruling
+    2026-11-14), so ours is `0.6 / transDef` of GO's."""
     gap = 1 - fx.GO_TRANS_DEF
     for name, fixture in _fixtures().items():
         has_instance = any(r.get("reaction") for r in fixture["rows"])
+        lunar = any((r.get("reaction") or {}).get("reaction", "").startswith("lunar_")
+                    for r in fixture["rows"])
         expected_gap = gap / fx.GO_TRANS_DEF if has_instance else 0.0
+        if lunar:
+            expected_gap = 1 - fx.LUNAR_SOLO_WEIGHT / fx.GO_TRANS_DEF
+        if name == "mona_c1_hydro_swirl_on_kazuha":
+            # The other ruling: her C1 on a Hydro swirl only, where GO adds it to the Pyro one.
+            ours = fx._mona_c1_swirl(base.OUR_EM_COEFFICIENT)
+            expected_gap = abs(ours - fx._mona_c1_swirl(base.GO_EM_COEFFICIENT)) / (
+                fx._mona_c1_swirl(base.GO_EM_COEFFICIENT))
+            assert expected_gap > 0.01, name
         got = fixture["relative_divergence_from_go"]
         assert got == pytest.approx(expected_gap, abs=1e-12), name
 

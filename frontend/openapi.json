@@ -8608,6 +8608,15 @@
             },
             "type": "object",
             "title": "Giver Stats"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "kit",
+              "weapon"
+            ],
+            "title": "Kind",
+            "default": "kit"
           }
         },
         "type": "object",
@@ -8917,6 +8926,14 @@
             "type": "array",
             "title": "Raised Talents",
             "default": []
+          },
+          "weapons": {
+            "items": {
+              "$ref": "#/components/schemas/FormulaWeaponMemberRead"
+            },
+            "type": "array",
+            "title": "Weapons",
+            "default": []
           }
         },
         "type": "object",
@@ -8986,6 +9003,83 @@
         ],
         "title": "FormulaUnmodelledRead",
         "description": "A part of a bonus the estimate does not apply, and why."
+      },
+      "FormulaWeaponMemberRead": {
+        "properties": {
+          "build_id": {
+            "type": "string",
+            "title": "Build Id"
+          },
+          "wielder": {
+            "type": "string",
+            "title": "Wielder"
+          },
+          "weapon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weapon"
+          },
+          "refinement": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refinement"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "modelled",
+              "partial",
+              "unmodelled",
+              "no_damage_effect",
+              "no_passive_data",
+              "no_weapon"
+            ],
+            "title": "Status"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "is_subject": {
+            "type": "boolean",
+            "title": "Is Subject"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "build_id",
+          "wielder",
+          "weapon",
+          "refinement",
+          "status",
+          "verified",
+          "is_subject"
+        ],
+        "title": "FormulaWeaponMemberRead",
+        "description": "Whether one member's weapon passive reaches the estimate (math-fallback P3, task 12)."
       },
       "FormulaWhenRead": {
         "properties": {

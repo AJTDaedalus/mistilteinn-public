@@ -170,6 +170,9 @@ class FormulaKitSourceRead(BaseModel):
     citation: str
     #: The giver's pass-1 value of every stat an effect read, so a number can be redone by hand.
     giver_stats: dict[str, float]
+    #: `kit` for a member's sheet (`kit:<slug>`), `weapon` for a member's weapon passive
+    #: (`weapon:<slug>`, task 12): the same vocabulary, applied alike.
+    kind: Literal["kit", "weapon"] = "kit"
 
 
 class FormulaKitMemberRead(BaseModel):
@@ -182,6 +185,24 @@ class FormulaKitMemberRead(BaseModel):
     status: Literal["modelled", "partial", "unmodelled", "no_damage_effect", "no_sheet"]
     verified: bool
     is_subject: bool
+
+
+class FormulaWeaponMemberRead(BaseModel):
+    """Whether one member's weapon passive reaches the estimate (math-fallback P3, task 12)."""
+
+    build_id: str
+    wielder: str
+    #: The weapon's name; null for a build that wields none.
+    weapon: str | None
+    refinement: int | None
+    #: A passive file's status, `no_passive_data` (nobody has written one: "no weapon passive
+    #: modelled") or `no_weapon`.
+    status: Literal["modelled", "partial", "unmodelled", "no_damage_effect", "no_passive_data",
+                    "no_weapon"]
+    verified: bool
+    is_subject: bool
+    #: The source its buffs travel under (`weapon:<slug>`), when it has a file.
+    source_id: str | None = None
 
 
 class FormulaScalingTermRead(BaseModel):
@@ -249,3 +270,6 @@ class FormulaTeamKitRead(BaseModel):
     members: list[FormulaKitMemberRead]
     #: The optimized character's rows at the levels the team's talent-level raises reach.
     raised_talents: list[FormulaRaisedTalentRead] = []
+    #: Every member's weapon, and whether its passive is modelled (task 12). A weapon with a
+    #: file has its source in `sources` (`kind: weapon`).
+    weapons: list[FormulaWeaponMemberRead] = []

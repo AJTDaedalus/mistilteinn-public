@@ -112,6 +112,10 @@ export class FormulaPanel {
 
   /** Whether the groups say anything about kits (P2): then they, not a blanket line, do. */
   protected readonly hasKits = computed(() => this.groups().some((g) => g.kind !== undefined));
+  /** A weapon passive or a weapon without one is listed (task 12). */
+  protected readonly hasWeapons = computed(
+    () => this.groups().some((g) => g.kind === 'weapon' || g.kind === 'no-weapon'),
+  );
 
   /** Groups that carry a control, for the per-row overrides. */
   protected readonly conditional = computed(
@@ -218,7 +222,8 @@ export class FormulaPanel {
       ? (condition.default ? 'on' : 'off')
       : condition.default === '' ? 'none' : String(condition.default);
     // A kit's own condition is triggered by the character, not by whoever wears a set.
-    const who = group?.kind === 'kit' ? 'the character triggers it' : 'the wearer triggers it';
+    const who = group?.kind === 'kit' ? 'the character triggers it'
+      : group?.kind === 'weapon' ? 'the wielder triggers it' : 'the wearer triggers it';
     return `Default ${shown} — ${defaultWhy(condition, who)}`;
   }
 
