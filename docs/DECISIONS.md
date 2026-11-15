@@ -1711,3 +1711,46 @@ fixture `mona_c1_hydro_swirl_on_kazuha` — a Pyro and a Hydro swirl by Kazuha w
 Omen — 9,789.57 against GO's 9,906.67 (1.2%): the bonus reaches the Hydro swirl and not the Pyro
 one. `lunar_crystallize_aubade_mona_c4`'s Mona source changes shape (the swirl effect names Hydro)
 and its figure does not.
+
+## 45. Four approvals after #389: weapon comparison under the estimate, wielder conversions, Millennial Movement one, weapon proc rows (2026-11-14)
+
+**Owner, 2026-11-14**, answering §44's questions: (1) **weapon comparison under the formula
+estimate**, so any team — including ones gcsim cannot run — can pick a weapon; (2) **per-build
+stat conversions** for the weapons the optimized character holds (Engulfing Lightning's ATK%
+from ER, Key of Khaj-Nisut's EM from HP, Makhaira Aquamarine's / Wandering Evenstar's ATK from
+EM, and any other effect #389 withheld for that reason); (3) **"Millennial Movement: one"** — two
+wielders of that family apply one, as GO does, with the family derived from GO and the winner
+documented; (4) **weapon proc rows** — a target row for a weapon's own damage instance, cited to
+GO and gcsim. Built on `feat/formula-weapon-compare` (DESIGN §2.9, TASKS 12b).
+
+Choices made, each reversible:
+
+1. **The candidate takes the build's weapon level and refinement**, as the gcsim comparison's
+   `SubstituteWeapon` does. The API accepts a refinement (`subject_weapon_refinement`); the page
+   does not offer one yet.
+2. **The picker is the gcsim path's**: every weapon of the character's class, KQM-tiered. OQ-W2
+   (owned only?) stays open and the formula path follows whatever the gcsim path does.
+3. **A candidate's passive conditions take their §41 defaults**; the assumptions panel's toggles
+   are the equipped weapon's. A toggle per candidate is not offered.
+4. **Peak Patrol Song's party bonus on its wielder reads the Ode's own DEF%** (GO `total.def`);
+   on a teammate wielder it still does not (pass 1 carries no conditional weapon stat, §2.8).
+5. **Non-stacking is applied to every GO `nonStackBuff` family, not only Millennial Movement**
+   (`ttds`, `wolf`, `key`, `patrol`, `starcaller`, `hakushin<element>`, and `leafCon` shared by
+   Forest Regalia and Sapwood Blade) — it is one mechanism in GO and one here. The Millennial
+   family is GO's `millenial*` names: Freedom-Sworn, Song of Broken Pines, Elegy for the End.
+6. **Which one wins: GO's rule** — the writer whose GO character key sorts first
+   (`uiData.ts:266-276`, the `small` accumulator), so Kazuha's Freedom-Sworn beats Venti's Elegy
+   whatever their refinements. It is arbitrary, not "the stronger"; followed because GO is the
+   comparator (D-F4). A character with no GO sheet sorts after every GO key. *Owner question:
+   keep GO's rule, or apply the stronger buff?*
+7. **Proc rows only for the optimized character's own weapon**, priced through the talent-hit
+   path with no move (GO `customDmgNode(…, 'elemental')`); GO reads Aquila's and Skyward Blade's
+   procs off `premod.atk` and the estimate off total ATK, equal unless an ATK-from-another-stat
+   buff is in play (said per row). A proc row names its weapon, so in a comparison it deals
+   nothing under any other weapon.
+8. **A weapon whose only unapplied parts deal no damage is `modelled`** (Aquila's healing, a
+   Skyward's attack speed); a proc counts as an effect. The comparison labels a weapon "passive
+   partly modelled" only for a damage part not applied.
+
+GO agreement: 11 new fixtures (233), all exact except the recorded 2.78 vs 25/9 on the two
+amplified ones; the #389 Engulfing Lightning fixture, a recorded withholding, is now exact.

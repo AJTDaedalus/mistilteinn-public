@@ -1,6 +1,6 @@
 # DESIGN: a formula fallback, so every team can be optimized
 
-**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43), and its weapon passives on `feat/formula-weapon-passives` (2026-11-14, §2.8; `DECISIONS.md` §44). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
+**Status: P0 merged; P1 complete and merged (#367–#371). P3's reactions built on `feat/formula-reactions` (2026-11-14, §2.7; owner go-ahead `DECISIONS.md` §43), and its weapon passives on `feat/formula-weapon-passives` (2026-11-14, §2.8; `DECISIONS.md` §44). Weapon comparison under the estimate, the wielder conversions, GO's non-stacking and weapon proc rows on `feat/formula-weapon-compare` (2026-11-14, §2.9; `DECISIONS.md` §45). P2 foundation built on `feat/math-fallback-p2-sheets` (2026-11-13): the sheet schema, the two-pass team evaluation, GO fixtures, and sheets for Bennett and Kazuha (§2.6). Plunges no longer make a character `partial` (owner, 2026-11-13). Owner rulings in `DECISIONS.md` §38: the estimate is opt-in for every team (D-F3), and Genshin Optimizer, not gcsim, is the accuracy comparator for the fallback (D-F4).** §2.4 below predates D-F4. Read "gcsim" there as "GO" for sheet verification; gcsim remains the oracle for the damage chain itself. The owner asked for two things:
 - an evaluation of carrying each character's gcsim status in its catalogue entry;
 - a plan for a Genshin Optimizer-style fallback that uses closed-form math instead of
   simulation, so every team can be optimized whatever its gcsim status.
@@ -877,7 +877,7 @@ The formula estimate scores **the build's equipped weapon**: `/search-context` p
 and substat in each row's base, and `/formula/kit-buffs` resolves its passive. The weapon picker
 (`DESIGN_weapons_in_the_optimizer.md`) is offered on the rotation objective only; a formula search
 runs one weapon, as before. Comparing weapons under the estimate would need `/search-context` and
-`/formula/kit-buffs` to take a candidate weapon id — an owner question, not built.
+`/formula/kit-buffs` to take a candidate weapon id — an owner question, not built. *Built since: §2.9.*
 
 **Staff of Homa beside Hu Tao's Paramita.** Both are flat ATK from her Max HP; hers is capped at
 400% of her base ATK, Homa's is not, and summed before the cap they would be the wrong number. The
@@ -926,6 +926,116 @@ six amplified ones (2.78 vs 25/9, ~2e-4) and Engulfing Lightning's (its withheld
 recorded). `formula:verify` plants on weapon sources as on kits: every effect 1% off must fail, a
 frozen self-conversion must fail where it reaches the row, a cap ignored must fail past it
 (Finale of the Deep below and past its 150).
+
+### 2.9 Weapon comparison, wielder conversions, non-stacking and proc rows (P3; built 2026-11-14)
+
+**Owner, 2026-11-14, after #389**: weapon comparison under the formula estimate; the per-build
+conversions #389 withheld on the wielder; *"Millennial Movement: one"*; weapon proc rows. Branch
+`feat/formula-weapon-compare`; the four approvals and the choices made are `DECISIONS.md` §45.
+§2.8's "a formula search runs one weapon", its "Not carried per candidate on the wielder" list,
+its Millennial note and its "weapon damage instances: named" are superseded by what follows.
+
+#### Weapon comparison: the data flow
+
+```
+Optimize (formula) ──"Compare other weapons too"── selected ids (the gcsim picker, unchanged)
+   │  for each of [equipped, ...selected]:
+   ├─ POST /builds/{id}/search-context {…, weapon_id}  → base: candidate base ATK + substat at
+   │                                                      the build's weapon level (#240's guard:
+   │                                                      resolved, never trusted; 404 / 422)
+   ├─ GET  /formula/kit-buffs ?subject_weapon_id=&subject_weapon_refinement=
+   │        → the candidate's passive instead of the equipped one's; the subject's pass 1 on the
+   │          candidate (their own kit's base-ATK reads, the passive's stat reads); teammates
+   │          unchanged; `weapons[]` names the subject's weapon and its status
+   ├─ formulaCalibration → one recipe per 4-piece state
+   └─ searchRecipe — one full search per weapon (H1 of DESIGN_weapons_in_the_optimizer: the
+      Pareto filter stays inside each call)
+   → weaponRanking (the gcsim path's list): best-against-best, equipped first and marked,
+     "passive not modelled" / "passive partly modelled" per weapon
+```
+
+| rule | |
+|---|---|
+| refinement and level | the build's own, as the gcsim comparison's `SubstituteWeapon` rules; the API takes a refinement (1–5) and the page does not offer one yet |
+| which weapons | the gcsim picker's list, unchanged: every weapon of the character's class, KQM-tiered (OQ-W2 is still open; the formula path follows the gcsim path, as asked) |
+| a weapon with no passive file | competes on base ATK and substat, labelled "passive not modelled" in the ranking and named in the assumptions |
+| the build | `kit_buffs.WeaponSwap`, a read-only view; the session-attached ORM row is never assigned to (the integration test reads the build back) |
+| cache keys | `FormulaEstimateService.kitCache` keyed by subject, team **and weapon + refinement** (`kitKey`); `/search-context` is not cached. #240 shipped flat rankings because a key lacked the weapon: `formula-weapon-compare.spec.ts` asserts two weapons are asked for separately and never answered from each other, and that three weapons give three different scores; `test_formula_weapon_compare.py` asserts two candidates' bases differ |
+| conditions | a candidate's passive conditions take their §41 defaults; the panel's toggles are the equipped weapon's (a candidate's own toggles are not shown) |
+
+#### The wielder conversions
+
+`sheets.SELF_CONVERSIONS` gains four pairs, so a weapon value reading one of the wielder's
+artifact-moved stats becomes a per-candidate term instead of being withheld:
+
+| effect stat | from | weapon (GO) | recipe term |
+|---|---|---|---|
+| `atk_pct_from_er` | ER above 100%, capped | Engulfing Lightning (`min(x × (premod.enerRech_ − 1), max)`) | `RecipeHit.atkPercentFromEnergyRecharge`, into the ATK percentage of every ATK read |
+| `em_from_hp` | total HP (with the weapon's own HP%) | Key of Khaj-Nisut, self per stack and the party share (`total.hp`) | `RecipeHit.emFrom`, into the EM every reader takes (amplifying, reactions, conversions from EM) |
+| `flat_atk_from_em` | EM | Makhaira Aquamarine, Wandering Evenstar (`premod.eleMas`) | the flat-ATK conversion (`ResolvedConversion`), now from EM too |
+| `dmg_bonus_from_def` | total DEF, to 3,200 | Peak Patrol Song's party bonus (`min(total.def, 3200) / 1000`) | a `StatConversion`; the **stat** cap becomes the value's cap, `x × 3.2` (`k × min(s, c) = min(k × s, k × c)`) |
+
+Each is monotone in its source, which the Pareto layer makes live (ER for the first, HP for the
+second, EM, DEF), so the bound stays admissible. Peak Patrol Song on its wielder now reads the
+Ode's own DEF% (GO's `total.def`); a teammate wielder's still does not (§2.8).
+
+#### Millennial Movement: one (GO's non-stacking)
+
+**The families are GO's, generated, never typed.** `scripts/build_go_nonstack.py` reads every
+`Weapons/<Type>/<Key>/index.tsx` at `2c13fc40` for `nonStackBuff(name, …)` and commits
+`app/data/formula/weapon_nonstack_go.json` (16 weapons). Each passive file names the buff on its
+effects (`non_stack`), and the schema refuses a name GO does not declare for that sheet and a
+sheet GO marks without one. The Millennial Movement series is GO's `millenial*` names:
+`millenialatk` (Freedom-Sworn, Song of Broken Pines, Elegy for the End), `millenialncpdmg`
+(Freedom-Sworn), `millenialelemas` (Elegy). The other families are a weapon's own (`ttds`,
+`wolf`, `key`, `patrol`, `starcaller`, `hakushin<element>`) or a pair (`leafCon`: Forest Regalia
+and Sapwood Blade), and the same rule applies to them.
+
+**Which one wins, and why.** GO resolves `input.nonStacking[name]` with its `small` string
+accumulator (`uiData.ts:217-218,266-276`) over every member whose write condition holds: **the
+wielder whose GO character key sorts first** — `KaedeharaKazuha` before `Venti` — whatever the
+refinement. It is GO's rule, deterministic and arbitrary; it is not "the stronger buff", and the
+GO fixture is built to show it (Kazuha's R1 Freedom-Sworn 20% applies, Venti's R5 Elegy 40% does
+not). Followed because GO is the comparator (D-F4). Each weapon source carries its wielder's key
+as `stack_rank` (`talent_boosts.go_character_key`, the cased key from GO's committed sheet list;
+a character without a GO sheet sorts after every cased key). The browser applies the rule per row
+(`formula-recipe.ts:nonStackWinners`): a source writes only when its effect's `when` holds, as
+GO's write is gated, so a winner toggled off hands the buff to the other. The loser is named in
+the assumptions.
+
+#### Proc rows
+
+A **proc row** is `count` instances of the subject's weapon's own damage instance:
+`proc.multiplier × ATK` in the proc's element, through `rowHits` with no move and no talent row —
+DMG% for its element and every channel, CRIT, DEF, RES and every ATK buff reach it; a move- or
+row-scoped buff does not (GO `customDmgNode(…, 'elemental', {hit: {ele: physical}})`,
+`dataUtil.tsx:113-138`; gcsim `AttackTagWeaponSkill`). Seven weapons carry one, each cited to GO
+and gcsim lines (`procs` in the file): Aquila Favonia (Falcon, 200–320%), Skyward Atlas (160–320%),
+Skyward Blade (20–40%), Skyward Harp (125%), Skyward Pride (80–160%), Skyward Spine (40–100%),
+Crescent Pike (20–40%). The multiplier is the refinement's seeded entry, pinned like every value.
+Only the wielder-subject's weapon offers procs (a teammate's proc is a constant, as their hits
+are, and is named). A proc row of a weapon not in the run — a candidate in a comparison — deals
+nothing and says so. **Recorded:** GO reads Aquila's and Skyward Blade's procs off `premod.atk`;
+the estimate reads total ATK, equal unless an ATK-from-another-stat buff is in play (said per row).
+
+#### Status
+
+A weapon whose only unapplied parts deal no damage (Aquila's healing, a Skyward's attack speed)
+is now `modelled`, and a proc counts as an effect: as a wielder-subject at R1, **57 modelled, 5
+partial** (Alley Hunter's decay, Kagura's Verity's Stellar-Conduct, Light of Foliar Incision's
+instance limit, Polar Star's R4 value, Starcaller's Watch's EM), 9 no damage effect, 1 with
+nothing for its wielder (Thrilling Tales).
+
+#### GO agreement
+
+11 new fixtures (`go_fixtures_weapon_compare.py`; 233 in all): Engulfing Lightning's ATK% from ER
+below and past its cap, Key of Khaj-Nisut's EM from HP (vaporize), Makhaira and Evenstar's ATK
+from EM, Peak Patrol Song's DMG from DEF below and past its 3,200 cap, the Millennial pair, and
+Aquila/Harp/Pride proc rows. All exact but the two amplified ones (2.78 vs 25/9). The #389
+Engulfing Lightning emblem fixture, whose ATK% from ER was a recorded withholding, is now exact.
+`formula:verify` 233/233 (worst 8.5e-8) with new plants: each new conversion frozen at the
+zero-artifact build must fail; the non-stacking names stripped, and the tie-break reversed, must
+each fail; a proc's multiplier 1% off must fail.
 
 ## 3. Phases
 

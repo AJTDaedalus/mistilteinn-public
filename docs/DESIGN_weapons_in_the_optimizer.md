@@ -326,3 +326,15 @@ picker would otherwise filter to. Leaning yes, marked, and off by default.
 **OQ-W3 — how are cross-weapon results presented?** One list of `(weapon, artifacts, damage)`
 rows, or a winner per weapon with the artifact detail behind an expander. The second is closer
 to how the question is asked and is the current lean.
+
+## Under the formula estimate (2026-11-14)
+
+The same picker, the same "one full search per weapon, equipped first", the same ranking — now
+also on the formula objective (owner approval 2026-11-14, `DECISIONS.md` §45;
+`DESIGN_team_math_fallback.md` §2.9). Each weapon is an estimate rather than a calibration:
+`/search-context` takes the candidate's `weapon_id` (its base) and `/formula/kit-buffs` its
+`subject_weapon_id` (its passive), so a weapon costs requests, not minutes. **H1 holds** (the
+Pareto filter stays inside each `searchRecipe` call); **H2 does not arise** (no energy ladder in
+the estimate). The kit cache is keyed by weapon — #240's lesson — and a weapon with no passive
+file is ranked on base stats and labelled "passive not modelled". OQ-W2 and OQ-W3 are unchanged:
+the formula path follows the gcsim path's answers.
