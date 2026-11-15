@@ -27,18 +27,22 @@ from app.repositories.character import CharacterRepository
 from app.repositories.weapon import WeaponRepository
 from app.schemas.formula import (
     FormulaBonusRead,
+    FormulaDripRead,
+    FormulaEnergyMemberRead,
     FormulaKitMemberRead,
     FormulaKitSourceRead,
+    FormulaParticleSourceRead,
     FormulaProcRead,
     FormulaRaisedTalentRead,
     FormulaResonanceRead,
     FormulaSetEffectsRead,
     FormulaSetTierRead,
+    FormulaTeamEnergyRead,
     FormulaTeamKitRead,
     FormulaTeamResonanceRead,
     FormulaWeaponMemberRead,
 )
-from app.services import kit_buffs
+from app.services import formula_energy, kit_buffs
 from app.services.build_assembler import BuildAssemblyError
 from app.services.stat_calculator import StatInputError
 
@@ -204,4 +208,55 @@ async def kit_buffs_route(
             )
             for w in team.weapons
         ],
+    )
+
+
+@router.get("/energy", response_model=FormulaTeamEnergyRead)
+async def energy_route(
+    builds: Annotated[BuildRepository, Depends(get_owned_build_repo)],
+    subject_build_id: str,
+    member_build_id: Annotated[list[str], Query(max_length=_MAX_MEMBERS)],
+) -> FormulaTeamEnergyRead:
+    """The team's energy data for the formula estimate (math-fallback P3, task 14).
+
+    Each member's burst cost and cooldown (game data) and Elemental Skill particles per cast
+    (curated, each count cited to gcsim at the pin), and the drip gcsim's waiting model emits.
+    A member with no curated count is listed as `no_particle_data`, never omitted. The
+    browser's `formula-energy.ts` does the arithmetic; nothing here multiplies anything.
+    """
+    if len(set(member_build_id)) != len(member_build_id):
+        raise HTTPException(status_code=422, detail="a build appears in a team once")
+    members = []
+    for build_id in member_build_id:
+        build = await builds.get_full(build_id)
+        if build is None:
+            raise HTTPException(status_code=404, detail=f"No build {build_id!r}")
+        members.append(build)
+    try:
+        team = formula_energy.team_energy(members, subject_build_id)
+    except formula_energy.FormulaEnergyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    drip = team.drip or formula_energy.drip()
+    return FormulaTeamEnergyRead(
+        members=[
+            FormulaEnergyMemberRead(
+                build_id=m.build_id, name=m.name, element=m.element,
+                burst_energy_cost=m.burst_energy_cost, burst_cooldown=m.burst_cooldown,
+                is_subject=m.is_subject, status=m.status,
+                sources=[
+                    FormulaParticleSourceRead(
+                        label=s.label, per=s.per, particles=s.particles,
+                        collector=s.collector, interval=s.interval,
+                        max_seconds=s.max_seconds, note=s.note, citation=s.citation,
+                    )
+                    for s in m.sources
+                ],
+            )
+            for m in team.members
+        ],
+        drip=FormulaDripRead(
+            particles=drip.particles, interval_seconds=drip.interval_seconds,
+            config=drip.config, citation=drip.citation,
+        ),
+        gcsim_commit=team.gcsim_commit,
     )

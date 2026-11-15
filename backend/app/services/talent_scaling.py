@@ -330,6 +330,32 @@ def energy_cost(desc: list[str] | None, param: list[float] | None) -> int | None
     return None
 
 
+#: The row whose first value is a talent's cooldown in seconds (`CD|{param6:F1}s`; Bennett's
+#: skill publishes three, `CD|{param7:F1}/{param8:F1}/{param9:F1}s`, tap first).
+_COOLDOWN = "CD"
+
+
+def cooldown(desc: list[str] | None, param: list[float] | None) -> float | None:
+    """A talent's cooldown in seconds, the first value of its `CD` row; `None` for none.
+
+    The formula estimate's energy model (TASKS 14) defaults a rotation to the optimized
+    character's burst cooldown. `None` rather than zero: a talent with no `CD` row has no
+    cooldown to default to, and a zero-second rotation would be a confident wrong number.
+    """
+    for entry in desc or []:
+        if not entry:
+            continue
+        label, _, spec = entry.partition("|")
+        if label != _COOLDOWN:
+            continue
+        found = _PARAM.search(spec)
+        if found is None:
+            msg = f"{_COOLDOWN!r} row has no param: {entry!r}"
+            raise TalentScalingError(msg)
+        return _value(found.group(1), param or [], entry)
+    return None
+
+
 class _RefusedError(Exception):
     """Internal: this row is damage, and it will not be scored. Becomes a `RefusedHit`."""
 

@@ -293,3 +293,58 @@ class FormulaTeamKitRead(BaseModel):
     #: Every member's weapon, and whether its passive is modelled (task 12). A weapon with a
     #: file has its source in `sources` (`kind: weapon`).
     weapons: list[FormulaWeaponMemberRead] = []
+
+
+# ── Energy (math-fallback P3, task 14) ────────────────────────────────────────────────────
+
+
+class FormulaParticleSourceRead(BaseModel):
+    """One Elemental Skill particle source, cited to the gcsim line its count is read off."""
+
+    label: str
+    #: `cast`: `particles` per cast. `second`: `particles` every `interval` seconds, for at
+    #: most `max_seconds` of a rotation.
+    per: Literal["cast", "second"]
+    particles: float
+    #: `caster`: caught by the caster while still on field. `active`: an off-field generator,
+    #: caught by whoever is on field.
+    collector: Literal["caster", "active"]
+    interval: float | None = None
+    max_seconds: float | None = None
+    note: str | None = None
+    citation: str
+
+
+class FormulaEnergyMemberRead(BaseModel):
+    """One member's energy data: burst cost and cooldown (game data), skill particles."""
+
+    build_id: str
+    name: str
+    #: Lower case, as the estimate's team elements are.
+    element: str | None = None
+    burst_energy_cost: int | None = None
+    #: Seconds, the burst talent's own `CD` row: the default rotation length for the subject.
+    burst_cooldown: float | None = None
+    is_subject: bool
+    #: `no_particle_data`: no curated count; the estimate names the member and takes the
+    #: user's number.
+    status: Literal["curated", "no_particle_data"]
+    sources: list[FormulaParticleSourceRead] = []
+
+
+class FormulaDripRead(BaseModel):
+    """The enemy-particle drip gcsim's waiting model emits, as its mean."""
+
+    particles: float
+    interval_seconds: float
+    config: str
+    citation: str
+
+
+class FormulaTeamEnergyRead(BaseModel):
+    """The team's energy data for the formula estimate's energy model (DESIGN §2.10)."""
+
+    members: list[FormulaEnergyMemberRead]
+    drip: FormulaDripRead
+    #: The gcsim commit the particle counts are cited at.
+    gcsim_commit: str
