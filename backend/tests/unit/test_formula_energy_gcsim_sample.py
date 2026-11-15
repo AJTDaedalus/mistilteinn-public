@@ -38,7 +38,9 @@ def test_the_sample_is_at_the_pin() -> None:
     assert len(SAMPLE["particles"]) > 100
 
 
-@pytest.mark.parametrize("event", SAMPLE["particles"], ids=lambda e: f"{e['frame']}-{e['receiver']}")
+@pytest.mark.parametrize(
+    "event", SAMPLE["particles"], ids=lambda e: f"{e['frame']}-{e['receiver']}",
+)
 def test_every_particle_is_count_times_value_times_field_times_er(event: dict) -> None:
     field = 1.0 if event["is_active"] else 1.0 - 0.1 * event["party_count"]
     expected = event["count"] * _value(event["receiver"], event["ele"]) * field * event["er"]
@@ -65,9 +67,9 @@ def _drops(source: str) -> list[float]:
 
 
 def test_particles_per_cast_are_the_tables() -> None:
-    table = {name: sources[0].particles for name, sources in formula_energy.particle_table().items()}
-    # Four rotations; the first Guoba's last particle lands after the run ends nowhere — count
-    # the per-drop numbers instead.
+    table = {name: sources[0].particles
+             for name, sources in formula_energy.particle_table().items()}
+    # Counted per drop, once each: a drop reaches every member, so per-event counts repeat.
     assert set(_drops("xingqiu")) == {5}
     assert len(_drops("xingqiu")) == 4
     assert table["Xingqiu"] == 5
