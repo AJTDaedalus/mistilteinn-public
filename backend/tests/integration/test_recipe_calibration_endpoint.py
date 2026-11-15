@@ -13,6 +13,7 @@ which one a frozen term came from.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -457,6 +458,32 @@ async def test_a_named_weapon_is_calibrated_instead_of_the_build_s_own(
     assert 'weapon="dullblade"' in worn["baseline"]
     assert 'weapon="mistsplitterreforged"' in swapped["baseline"]
     assert worn["baseline"] != swapped["baseline"]
+
+
+async def test_a_candidate_takes_the_refinement_asked_for(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """Owner ruling 2026-11-15 (`docs/DECISIONS.md` §46): a refinement per candidate.
+
+    Absent, the candidate is emitted at the build's own refinement (R5 here), as before; named,
+    at that one. Two refinements are two configs, so the recipe cache — keyed by the config's
+    context and the weapon and refinement (#240) — can never hand one the other's numbers.
+    """
+    default = (await _calibrate(authed_client, scene, weapon_id=scene.candidate_id)).json()
+    r1 = (await _calibrate(authed_client, scene, weapon_id=scene.candidate_id,
+                           weapon_refinement=1)).json()
+
+    assert re.search(r'weapon="mistsplitterreforged" lvl=\d+/90 refine=5;', default["baseline"])
+    assert re.search(r'weapon="mistsplitterreforged" lvl=\d+/90 refine=1;', r1["baseline"])
+
+
+async def test_a_refinement_without_a_candidate_is_refused(
+    authed_client: AsyncClient, scene: Scene,
+):
+    """A refinement for the equipped weapon would be an edit to the build in disguise."""
+    response = await _calibrate(authed_client, scene, weapon_refinement=2)
+    assert response.status_code == 422, response.text
+    assert "refinement" in response.json()["detail"]
 
 
 async def test_an_unknown_weapon_is_refused_rather_than_ignored(

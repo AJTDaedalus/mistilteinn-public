@@ -1170,7 +1170,8 @@ async def compare_weapons_gcsim_configs(
             continue
         try:
             config = _config(
-                SubstituteWeapon(weapon=weapon, level=build.weapon_level, refinement=1),
+                SubstituteWeapon(weapon=weapon, level=build.weapon_level,
+                                 refinement=body.weapon_refinements.get(weapon_id, 1)),
             )
         except (GcsimKeyError, GcsimConfigError) as exc:
             refused.append(RefusedCandidate(weapon_id=weapon_id, reason=str(exc)))
@@ -1284,9 +1285,14 @@ async def calibrate_recipe(
     # weapon's number — which reads as "these are equivalent" rather than as a bug, and is a
     # conclusion a user would believe. `SubstituteWeapon` states the same argument at length.
     #
-    # The refinement is the build's own, and the level is too: ranking a level-90 worn weapon
-    # against a level-1 candidate measures levelling rather than weapons.
+    # The level is the build's own: ranking a level-90 worn weapon against a level-1 candidate
+    # measures levelling rather than weapons. The refinement is the one asked for (owner ruling
+    # 2026-11-15, `docs/DECISIONS.md` §46), else the build's own.
     substitute: SubstituteWeapon | None = None
+    if body.weapon_refinement is not None and body.weapon_id is None:
+        raise HTTPException(
+            status_code=422, detail="a refinement is for a candidate weapon; name the weapon",
+        )
     if body.weapon_id is not None and body.weapon_id != str(
         build.weapon.id if build.weapon else "",
     ):
@@ -1296,7 +1302,7 @@ async def calibrate_recipe(
         substitute = SubstituteWeapon(
             weapon=candidate,
             level=build.weapon_level,
-            refinement=build.refinement,
+            refinement=body.weapon_refinement or build.refinement,
         )
 
     def _config(calibration: Calibration, extra: str | None = None) -> str:
