@@ -446,6 +446,65 @@ for (const e of YAE.particles) {
   if (Math.abs(got - e.amt) > 1e-9 * e.amt) failures.push(`Yae event ${e.frame}/${e.receiver}`);
 }
 
+// ── Small calls (owner rulings 2026-11-15, DECISIONS §50) ──────────────────────────────────
+//
+// Electro resonance's default is the samples' rate (`default_procs_per_second`): at a 25 s
+// rotation it is #393's 3 procs, so the closed form at that default reproduces Raiden's 72.58.
+// The drip: every `drop` particle in a native sample with the drip on is a clear particle
+// valued at the active member's full share. Venti's absorbed 15 and the counted constellation
+// refunds: gcsim's flat energy per receiver is the table's amount × count × triggers.
+if (Math.abs(4 * energyAt(resonanceModel(highVoltage.default_procs_per_second * 25, 8 / 12), resEr)
+  - resTotal) > 1e-9) {
+  failures.push(`resonance default rate: ${highVoltage.default_procs_per_second} a second does not give gcsim's 3 procs`);
+}
+const fixture = (name) => JSON.parse(readFileSync(join(FRONTEND, '..', 'backend', 'tests',
+  'fixtures', 'formula', 'energy', name), 'utf8'));
+const VENTI = fixture('venti_cons_energy_sample.json');
+const KLEE = fixture('klee_cons_energy_sample.json');
+const fullTable = JSON.parse(readFileSync(TABLE, 'utf8'));
+const drops = VENTI.particles.filter((e) => e.source === 'drop');
+for (const e of drops) {
+  const got = particleValue(VENTI.elements[e.receiver], null)
+    * fieldMultiplier(e.is_active ? 1 : 0, e.party_count) * e.er;
+  if (Math.abs(got - e.amt) > 1e-9 * e.amt) failures.push(`drip event ${e.frame}/${e.receiver}`);
+}
+const burstsOf = (sample, who) => sample.casts.filter(
+  (c) => c.character === who && c.action === 'burst').length;
+const gotFlat = (sample, source, receiver) => sample.flat
+  .filter((f) => f.source === source && f.receiver === receiver).reduce((s, f) => s + f.amt, 0);
+const flatChecks = [];
+const absorbedRefund = fullTable.characters.Venti.refunds.find((r) => r.recipients === 'absorbed');
+const carried = new Set(Object.entries(VENTI.elements).filter(([w]) => w !== 'venti').map(([, e]) => e));
+const absorbed = absorbedRefund.absorbs.find((e) => carried.has(e));
+for (const [who, element] of Object.entries(VENTI.elements)) {
+  if (who === 'venti') continue;
+  const expected = element === absorbed
+    ? flatSourceAt({ energy: absorbedRefund.amount * absorbedRefund.count * burstsOf(VENTI, 'venti'),
+      scaling: 'none' }, 1) : 0;
+  flatChecks.push([`venti-a4 → ${who}`, expected, gotFlat(VENTI, 'venti-a4', who)]);
+}
+const cons = (name) => fullTable.constellation_refunds[name].refunds.find((r) => r.basis === 'kit');
+for (const [sample, who, name, source] of [[VENTI, 'kaeya', 'Kaeya', 'kaeya-c6'],
+  [VENTI, 'thoma', 'Thoma', 'thoma-c4'], [KLEE, 'diona', 'Diona', 'diona-c1']]) {
+  const r = cons(name);
+  flatChecks.push([source, r.amount * r.count * burstsOf(sample, who), gotFlat(sample, source, who)]);
+}
+const klee = cons('Klee');
+for (const who of Object.keys(KLEE.elements)) {
+  const expected = who === 'klee' ? 0 : klee.amount * klee.count * burstsOf(KLEE, 'klee');
+  flatChecks.push([`klee-c6 → ${who}`, expected, gotFlat(KLEE, 'klee-c6', who)]);
+}
+for (const [what, expected, got] of flatChecks) {
+  if (Math.abs(expected - got) > 1e-9) failures.push(`${what}: table ${expected}, gcsim ${got}`);
+}
+// Plants: Venti absorbing Kaeya's Cryo, or Klee's C6 reaching Klee too, must miss gcsim.
+if (gotFlat(VENTI, 'venti-a4', 'kaeya') === absorbedRefund.amount * burstsOf(VENTI, 'venti')) {
+  failures.push('Venti plant: a Cryo absorption still matches gcsim');
+}
+if (gotFlat(KLEE, 'klee-c6', 'klee') === klee.amount * klee.count * burstsOf(KLEE, 'klee')) {
+  failures.push('Klee plant: a refund to Klee herself still matches gcsim');
+}
+
 if (failures.length > 0) {
   console.error(`formula recipe diverges from the GO-cited figures: ${failures.join(', ')}`);
   process.exit(1);
@@ -466,4 +525,9 @@ console.log(
   `Electro resonance matches gcsim's ${resonanceChecked} events and Raiden's ${resTotal.toFixed(4)} `
     + `(2 plants miss); Yae's totems one per ${(totems.interval * 60).toFixed(0)} frames, `
     + `${YAE.particles.length} events (1 plant misses)`,
+);
+console.log(
+  `small calls: the resonance's default rate gives gcsim's 3 procs; ${drops.length} drip events `
+    + `exact; ${flatChecks.length} flat totals (Venti absorbing ${absorbed}, Kaeya, Thoma, Diona, `
+    + 'Klee) equal the table (2 plants miss)',
 );

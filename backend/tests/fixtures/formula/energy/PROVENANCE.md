@@ -78,3 +78,29 @@ What the tests read (`tests/unit/test_formula_energy_refinements_sample.py`), to
   as often: the shared ICD.
 
 `npm run formula:verify` holds `formula-energy.ts` to the same events.
+
+# The small calls: Venti's absorbed element, constellation refunds, the drip (TASKS 14, DECISIONS §50)
+
+Two more configs on the same native build at the pin (Go 1.27, `go build ./cmd/gcsim` in a
+checkout at `b107b5dc`), each `gcsim -c <file> -out out.json -sample sample.json` (20 iterations;
+the sample's seed is in the file), keeping every `particle`, `adding energy` and `draining energy`
+event, the casts, and Venti's `infusion check` lines:
+
+| file | from | what it is |
+|---|---|---|
+| `venti_cons_energy_sample.json` | `venti_cons_energy.txt` (seed `15325029959068778551`) | Venti (C0, A4), Xiangling, Kaeya C6, Thoma C4, bursts free, **with** the drip (`energy every interval=480,720 amount=1`): Venti's absorption and both halves of his A4, Kaeya's and Thoma's burst refunds, and every drip particle |
+| `klee_cons_energy_sample.json` | `klee_cons_energy.txt` (seed `2622578390594857073`) | Klee C6, Diona C1, Furina C4, Barbara C1: Klee's 3 to every other member three times a burst, Diona's 15 at her burst's end, Furina's 4 under a 5 s ICD, Barbara's 1 every 10 s |
+
+What the tests read (`tests/unit/test_formula_energy_small_calls_sample.py`, and
+`npm run formula:verify` for the same totals):
+
+- Venti's burst absorbs **Pyro** each time — the first of gcsim's order (Pyro, Hydro, Electro,
+  Cryo) that a teammate carries, the browser's default — and his A4 gives 15 to himself and 15
+  to each Pyro member (Xiangling, Thoma), none to Kaeya;
+- Kaeya's C6 and Thoma's C4 are 15 once a burst, Diona's C1 15 once a burst; Klee's C6 is 3 to
+  each other member three times a burst and nothing to Klee;
+- Furina's C4 procs never come inside 300 frames; the Salon's hits land on a grid, so they come
+  about every 5.4 s, under the per-second form's one per 5 s (an upper bound, stated);
+- Barbara's C1 is 1 every 600 frames from frame 601, for the whole fight;
+- each drip `drop` reaches every member at once, a clear particle, `2 × field × ER`, exactly one
+  receiver on field — which is why an on-field subject catches it on field.

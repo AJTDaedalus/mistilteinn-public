@@ -1229,10 +1229,11 @@ its default and citation:
   subject is assumed off field when others' particles land (an on-field subject catches every
   `active` source at 100 % since the refinements, below). Editable per source, as a share
   (Guoba in the gcsim sample: two of four on field).
-- **Enemy particles**: on, at the drip's rate, caught off field.
+- **Enemy particles**: on, at the drip's rate, caught off field (on field for an on-field subject since the small calls, below).
 - **Flat energy**: the kits' refunds and the team's Favonius procs are counted since the
-  follow-ups (below). Still not counted unless entered: constellation refunds, Electro
-  resonance's particles (counted since the refinements, below), normal attacks' chance of 1 energy
+  follow-ups (below). Still not counted unless entered: constellation refunds (counted since the
+  small calls, below), Electro resonance's particles (counted since the refinements, below),
+  normal attacks' chance of 1 energy
   (`pkg/core/energy.go:30-90`).
 
 The requirement also fills the recipe's `minimumEnergyRecharge` — the field the page's existing
@@ -1332,12 +1333,13 @@ each summon's chance, cadence, citation and the per-cast field, all editable.
   Restoration" at the build's level × `1 + 0.006 × ⌊(ER − 1) × 100⌋` of **her** ER (her A4,
   `raiden/asc.go:42`); Sara's A4, `1.2 × her ER` to every member once a cast; Jean's A4, 16 to
   herself a burst; Venti's A4, 15 to himself a burst (the 15 to the absorbed element's members is
-  not counted: which element is absorbed depends on the fight). An A4 needs ascension 4, and a
+  counted since the small calls, below). An A4 needs ascension 4, and a
   build below it is told so. When the giver is the optimized character, the ER-scaled refunds
   move with the candidate's ER, and the requirement is found by bisection (energy is still
   non-decreasing in ER, so the search's bound holds); a teammate's is applied at their build's
-  ER. Other `AddEnergy` lines at the pin are constellation effects or conditional on the fight
-  (Dori's connector, Tartaglia's ranged burst, Ayato's below-40 regen) and are not counted.
+  ER. Other `AddEnergy` lines at the pin are constellation effects (curated since the small
+  calls, below) or conditional on the fight (Dori's connector, Tartaglia's ranged burst, Ayato's
+  below-40 regen) and are not counted.
 
 **Verified against gcsim** (`backend/tests/fixtures/formula/energy/`, PROVENANCE beside it): a
 sample of Raiden (Favonius Lance R3), Fischl, Kokomi and Zhongli — all 464 particle events exact,
@@ -1430,6 +1432,75 @@ for a triple cast, against gcsim's 8 a totem set); the source's note says so. Ve
 native sample (`yae_energy.txt`): one totem and three both drop one particle every 176 frames,
 8 a set at full length, while three totems strike three times as often; the per-second form
 counts 8.52 for a full set (gcsim's first strike lands 2 s in), within one particle, stated.
+
+#### Small calls: the owner's three rulings (2026-11-15, `DECISIONS.md` §50)
+
+Branch `feat/formula-er-small-calls` (off `dev`; no direct commits to `dev`). Three statements
+above are superseded: the resonance's default is no longer the ceiling, the drip follows the
+on-field toggle, and Venti's absorbed-element 15 and constellation refunds are counted.
+
+**1. Electro resonance defaults to the samples' rate.** `resonances.electro.default_procs_per_second`
+is **0.12** a second of rotation: both committed Raiden-team samples (#393's
+`summon_energy_sample.json`, #394's `electro_res_sample.json`) proc 3 times a rotation, their
+Raiden bursts 1500-1518 frames apart, so 3 per 25 s. Procs = `min(rotation ÷ 5 s, 0.12 ×
+rotation)` when a member can react with Electro, still editable; the panel's default line cites
+the samples. A rate rather than a count so a longer rotation counts more. At a 25 s rotation the
+default is exactly 3, and the closed form at it reproduces #393's 72.58 to Raiden (Python and
+`formula:verify`).
+
+**2. The drip follows on field.** gcsim's `energy every` queues a `DistributeParticle`
+(`setup.go:527`), which hands every member the particle with `active == i`
+(`player.go:197-200`): the active member catches it at full value. So the drip's on-field share
+defaults to **100 % when the subject is on field** (the same toggle #394 added, from the rows by
+default) and 0 % otherwise, and the waiting model's drip rate uses the same share. The panel
+shows the share, editable. Verified: every `drop` particle in a native sample with the drip on
+(`venti_cons_energy_sample.json`) reaches all four members at once, exactly one on field, at
+`2 × field × ER`.
+
+**3. Venti's absorbed element and constellation refunds.**
+
+- **Venti's A4, the absorbed half** (`venti/asc.go:14-19`): when his burst ends, 15 flat to
+  every member whose element the vortex absorbed. The burst absorbs the first of **Pyro, Hydro,
+  Electro, Cryo** (`burst.go:102`, gcsim's order) that an enemy inside it carries as an aura
+  (`combat/absorb.go:17`). **Assumed**: the first in that order that a teammate carries — an
+  enemy carries what the team puts on it — editable per refund, including none
+  (`recipients: absorbed`, `absorbs`). The native sample agrees: Venti with Xiangling, Kaeya and
+  Thoma absorbs Pyro every burst, and Xiangling and Thoma get 15 each, Kaeya nothing.
+- **Constellation refunds**: every `AddEnergy` in gcsim's character packages at the pin (93
+  calls, inventoried in `gcsim_lines.json` `add_energy` by the snapshot script) is either cited
+  by a refund or listed in `uncurated_add_energy` with why — and a test fails on a call that is
+  neither, so the next re-pin's new one arrives red. **61 constellation refunds over 54
+  characters** (`constellation_refunds`), each read off its line and the line that triggers it,
+  each held to the snapshot with its constellation gate (`Cons >= N`), served **only to a build
+  with that constellation** (a build below it is not shown it at all):
+  - **counted (`kit`), 9**: a fixed number a burst or a cast, the kit's alone — Kaeya C6 (15 a
+    burst), Thoma C4 (15 a burst), Diona C1 (15 a burst, at its end), Ororon C4 (8 a burst),
+    Heizou C4 (9 a burst: gcsim grants it on the aura-check hit, before the Iris), Aino C4 (10 a
+    cast; ICD = skill CD), Klee C6 (3 to **every other member**, three ticks a burst; Klee must
+    stay on field), Furina C4 (4 under a 5 s ICD while the Salon stands: a per-second source,
+    an upper bound — gcsim's sample procs every ~5.4 s), Barbara C1 (1 every 10 s for the whole
+    fight, `on: rotation`);
+  - **toggles (`assumption`), 30**: they depend on the fight, but a cited assumption makes them
+    countable — each **off by default**, its assumption shown beside the toggle (Navia's C1 at
+    the 3-shrapnel cap, Xingqiu's C6 at the maximum wave rate, Chevreuse's C1 to the on-field
+    character, Qiqi's C1 with full talisman cover, …);
+  - **listed, never counted (`fight`), 22**: on a kill (Tartaglia C2), returning what an
+    uncounted drain took (Sethos C6), per charged shot or plunge (Ganyu C1, Varesa C2/C6, Kokomi
+    C4, Barbara C4, Kinich C4, Lisa C1), team-composition amounts (Itto C2, Xilonen C2), a
+    gcsim ICD that is set and never read (an upstream bug, its reason says so), and others whose
+    count no assumption pins.
+  - **Not curated**: the Travelers' (the catalogue names every Traveler "Traveler", so a table
+    keyed by name cannot tell which element's refund is which) and the talents' refunds outside
+    this sweep (Dori, Razor, Sigewinne, Durin, …), 26 calls, each listed with its reason.
+- **New recipients and rates**: `others` (every member but the giver), `active` (whoever is on
+  field when it lands: the subject's on-field share, defaulting from the toggle), `absorbed`;
+  `per: second` refunds run every `interval` for `max_seconds` a cast or burst, or the whole
+  fight (`on: rotation`).
+- **Verified** on two native samples at the pin (PROVENANCE beside them): Kaeya's, Thoma's and
+  Diona's refunds once a burst at the table's amount, Klee's 3 to each other member three times
+  a burst and none to Klee, Furina's never inside 300 frames, Barbara's every 600 frames,
+  Venti's absorbed Pyro. `formula:verify` holds the same totals, with two plants (a Cryo
+  absorption, Klee's refund to herself).
 
 #### Verification
 

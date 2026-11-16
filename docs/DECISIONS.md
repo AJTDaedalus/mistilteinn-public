@@ -1944,3 +1944,57 @@ owner says. *Owner question: default off, skip or wait?* **Answered 2026-11-15: 
   on-field subject would catch them on field too; left at 0 % because the ruling named summons.
 - *On field from the rows*: a burst-and-skill-only recipe reads as off field; acceptable, or
   should the toggle default on for some characters?
+
+## 50. ER small calls: the resonance at the samples' rate, the drip on field, Venti's absorbed element, constellation refunds (2026-11-15)
+
+**Owner, 2026-11-15**, three rulings on #394 (§49), answering its first two open questions.
+Built on `feat/formula-er-small-calls` (DESIGN §2.11 "Small calls", TASKS 14).
+
+1. **Electro resonance defaults to about 3 procs a rotation**, as a rate:
+   `default_procs_per_second` 0.12, read off the two committed Raiden-team samples (3 procs
+   between Raiden bursts 1500-1518 frames apart, in both), still capped at `rotation ÷ 5 s`,
+   still editable, the samples cited in the panel's default line. *Chosen*: a rate rather than a
+   fixed 3, so the default scales with the rotation the user sets; 3/25 rather than the samples'
+   measured 3/25.2 (1 % apart), because the owner named 3 per 25 s and the 25 s rotation then
+   gives exactly 3.
+2. **The drip follows on field**: an on-field subject catches enemy particles on field, as it
+   does the summons (gcsim `DistributeParticle` to the active member, `player.go:197-200`). The
+   waiting model's drip uses the same share. A panel field shows it.
+3. **Venti's absorbed-element 15 and constellation refunds are counted.**
+   - Venti: 15 to every member of the absorbed element. *Assumption, stated and editable*: the
+     absorbed element is the first of gcsim's order (Pyro, Hydro, Electro, Cryo) that a teammate
+     carries. gcsim's own sample agrees on a Pyro/Cryo team.
+   - Constellation refunds: **the whole `AddEnergy` inventory at the pin is accounted for** (93
+     calls; a test fails on a new one). 61 constellation refunds over 54 characters, each cited
+     and snapshotted, each served only to a build that has the constellation. *Classification*,
+     the rule being "a fixed number a burst or a cast, the kit's alone":
+     - **counted, 9**: Kaeya C6, Thoma C4, Diona C1, Ororon C4, Heizou C4 (the first Iris's 9),
+       Aino C4, Klee C6 (to every other member), Furina C4 (a rate under its ICD: an upper
+       bound), Barbara C1 (1 every 10 s, whole fight);
+     - **toggles off by default, 30**: countable only under a cited assumption (a cap, a full
+       uptime, a reaction cadence); the assumption is shown beside the toggle;
+     - **listed, not counted, 22**: kills, HP, per-plunge or per-charged-shot triggers the model
+       has no count for, team-composition amounts, and one gcsim ICD set but never read.
+   - *Choices made on the way, each reversible*: a build below the constellation is not shown
+     the refund at all (the ruling said "gated by a constellation the build has"); gcsim's
+     behaviour is followed where it differs from the in-game text (Heizou's 9 needs no aura in
+     gcsim; Chasca's C4 counts all six shells); the **Travelers' refunds are not curated** —
+     the catalogue names every Traveler "Traveler", so a table keyed by name cannot tell which
+     element's is which; **non-constellation talent refunds** found by the sweep (Dori, Razor,
+     Sigewinne, Durin, Lyney, Wanderer, Ayato, …) are listed as not curated, outside the ruling.
+
+**Verified against gcsim**: two new native samples at the pin (`venti_cons_energy.txt` with the
+drip on, `klee_cons_energy.txt`) — Venti absorbs Pyro and his 15 reaches the two Pyro members
+only, Kaeya's, Thoma's and Diona's refunds once a burst, Klee's 3 to each other member three
+times a burst, Furina's never inside 300 frames (every ~5.4 s, under the 5 s rate), Barbara's
+every 600 frames, every drip particle at the active member's full value.
+
+**Left to the owner**:
+- *Furina's C4*: counted at its ICD ceiling (one per 5 s while the Salon stands); gcsim's sample
+  procs about every 5.4 s. Keep the cited ceiling, or curate the measured cadence (as Raiden's
+  Eye uses KQM's realistic rate)?
+- *Klee's C6*: counted, though gcsim cancels the remaining ticks if Klee swaps out during her
+  burst. Keep counted, or make it a toggle?
+- *The toggles*: 30 refunds default off. Should any of them (Nilou C4, Citlali C4, Iansan C1 —
+  once a cast under their kit's usual play) default on?
+- *Travelers*: curate their refunds keyed by element once the catalogue can tell them apart?

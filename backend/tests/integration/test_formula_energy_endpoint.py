@@ -263,3 +263,53 @@ async def test_a_four_member_team_with_two_electro_has_high_voltage(
     assert set(res["trigger_elements"]) == {"pyro", "cryo", "hydro", "dendro"}
     assert "pkg/simulation/setup.go:" in res["citation"]
     assert "(CD: 5s)" in res["citation"]
+    # The small calls (DECISIONS §50): the default is the samples' rate, not the ceiling.
+    assert res["default_procs_per_second"] == pytest.approx(0.12)
+    assert "electro_res_sample.json" in res["default_note"]
+
+
+@pytest.fixture
+async def venti_team(db_session: AsyncSession, authed_user: tuple[User, str]) -> dict[str, str]:
+    """Xiangling (subject), Venti at A4, Kaeya at C6, Klee at C5 (one short of her C6)."""
+    user, _ = authed_user
+    out = {}
+    for key, name, nanoka_id, element, cons in (
+        ("xiangling", "Xiangling", "10000023", Element.PYRO, 0),
+        ("venti", "Venti", "10000022", Element.ANEMO, 0),
+        ("kaeya", "Kaeya", "10000015", Element.CRYO, 6),
+        ("klee", "Klee", "10000029", Element.PYRO, 5),
+    ):
+        character = await _character(
+            db_session, nanoka_id=nanoka_id, name=name, cost=80,
+            burst=XIANGLING_BURST if key == "xiangling" else None, element=element)
+        build = Build(owner_id=str(user.id), character_id=str(character.id), character_level=90,
+                      ascension_phase=6, constellation_level=cons)
+        db_session.add(build)
+        await db_session.flush()
+        out[key] = str(build.id)
+    return out
+
+
+async def test_constellation_refunds_and_ventis_absorbed_element_are_served(
+    authed_client: AsyncClient, db_session: AsyncSession, venti_team: dict[str, str],
+):
+    """Ruling 3: a constellation refund the build has is served with its basis and citation; one
+    it lacks is not served at all; Venti's absorbed 15 carries gcsim's absorption order."""
+    db_session.expire_all()
+    response = await authed_client.get(ENERGY, params={
+        "subject_build_id": venti_team["xiangling"],
+        "member_build_id": list(venti_team.values()),
+    })
+    assert response.status_code == 200, response.text
+    by_name = {m["name"]: m for m in response.json()["members"]}
+    [c6] = by_name["Kaeya"]["refunds"]
+    assert (c6["amount"], c6["per"], c6["count"], c6["recipients"], c6["basis"],
+            c6["requires_constellation"]) == (15, "burst", 1, "self", "kit", 6)
+    assert "internal/characters/kaeya/burst.go:" in c6["citation"]
+    # Klee is at C5: her C6 is not hers, so it is not served.
+    assert by_name["Klee"]["refunds"] == []
+    venti = {r["recipients"]: r for r in by_name["Venti"]["refunds"]}
+    assert set(venti) == {"self", "absorbed"}
+    assert venti["absorbed"]["absorbs"] == ["pyro", "hydro", "electro", "cryo"]
+    assert venti["absorbed"]["amount"] == 15
+    assert "internal/characters/venti/asc.go:" in venti["absorbed"]["citation"]
