@@ -9220,7 +9220,8 @@
             "type": "string",
             "enum": [
               "burst",
-              "cast"
+              "cast",
+              "second"
             ],
             "title": "Per"
           },
@@ -9232,7 +9233,10 @@
             "type": "string",
             "enum": [
               "team",
-              "self"
+              "self",
+              "others",
+              "active",
+              "absorbed"
             ],
             "title": "Recipients"
           },
@@ -9281,6 +9285,96 @@
           "citation": {
             "type": "string",
             "title": "Citation"
+          },
+          "requires_constellation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires Constellation"
+          },
+          "basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "kit",
+                  "assumption",
+                  "fight"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "absorbs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absorbs"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval"
+          },
+          "max_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Seconds"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "skill",
+                  "burst",
+                  "rotation"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
           }
         },
         "type": "object",
@@ -9331,6 +9425,14 @@
           "citation": {
             "type": "string",
             "title": "Citation"
+          },
+          "default_procs_per_second": {
+            "type": "number",
+            "title": "Default Procs Per Second"
+          },
+          "default_note": {
+            "type": "string",
+            "title": "Default Note"
           }
         },
         "type": "object",
@@ -9342,7 +9444,9 @@
           "trigger_elements",
           "team_can_trigger",
           "note",
-          "citation"
+          "citation",
+          "default_procs_per_second",
+          "default_note"
         ],
         "title": "FormulaResonanceEnergyRead",
         "description": "Electro resonance's particle (High Voltage), when the team has the resonance."

@@ -79,6 +79,7 @@ const HIGH_VOLTAGE = {
   name: 'High Voltage', element: 'electro', particles: 1, cooldown_seconds: 5,
   trigger_elements: ['pyro', 'cryo', 'hydro', 'dendro'], team_can_trigger: true,
   note: 'note', citation: 'gcsim setup.go:181-207; KQM',
+  default_procs_per_second: 0.12, default_note: 'samples',
 };
 
 const data = (members: Member[], resonance: TeamEnergyData['resonance'] = null): TeamEnergyData => ({
@@ -97,11 +98,11 @@ describe("Electro resonance's particles (gcsim setup.go:181-207; KQM's resonance
   const team = () => data(
     [raiden({ favonius: null }), fischl(), xingqiu({ favonius: null }), zhongli], HIGH_VOLTAGE);
 
-  it('defaults to the cooldown ceiling, one proc every 5 s of the rotation, when a member can react', () => {
+  it("defaults to the samples' rate, 0.12 a second of rotation, when a member can react (§50)", () => {
     const input = energyInput(team(), DEFAULT_ENERGY)!;
     const res = bySource(input)['resonance:electro'];
     expect(res.element).toBe('electro');
-    expect(res.particles).toBeCloseTo(18 / 5, 12);
+    expect(res.particles).toBeCloseTo(0.12 * 18, 12);
     expect(res.citation).toContain('setup.go');
   });
 
@@ -112,7 +113,7 @@ describe("Electro resonance's particles (gcsim setup.go:181-207; KQM's resonance
     expect(at(10).particles).toBeCloseTo(18 / 5, 12);
     expect(at(0)).toBeUndefined();
     expect(resonanceProcs(HIGH_VOLTAGE, { ...DEFAULT_ENERGY, resonanceProcs: 2 }, 18)).toBe(2);
-    expect(resonanceProcs(HIGH_VOLTAGE, DEFAULT_ENERGY, 25)).toBe(5);
+    expect(resonanceProcs(HIGH_VOLTAGE, DEFAULT_ENERGY, 25)).toBeCloseTo(3, 12);
   });
 
   it('counts nothing for a team with no member to react with, or without the resonance', () => {
@@ -178,10 +179,11 @@ describe('an on-field subject catches the summons on field (owner, 2026-11-15)',
     expect(on['fs:0'].onFieldShare).toBe(1); // Oz
     expect(on['ym:0'].onFieldShare).toBe(1); // Yae's totems
     // A caster's own particles land while the caster is on field; a teammate's Favonius procs
-    // only while its holder is on field; the drip is unchanged.
+    // only while its holder is on field. The drip follows on field since the small calls
+    // (DECISIONS §50; formula-energy-small-calls.spec.ts).
     expect(on['xq:0'].onFieldShare).toBe(0);
     expect(on['xq:favonius'].onFieldShare).toBe(0);
-    expect(on['drip'].onFieldShare).toBe(0);
+    expect(on['drip'].onFieldShare).toBe(1);
     const off = bySource(energyInput(team, DEFAULT_ENERGY, 20, false)!);
     expect(off['rd:0'].onFieldShare).toBe(0);
     expect(off['fs:0'].onFieldShare).toBe(0);

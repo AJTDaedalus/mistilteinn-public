@@ -263,6 +263,10 @@ async def energy_route(
                         label=r.label, per=r.per, count=r.count, recipients=r.recipients,
                         scaling=r.scaling, amount=r.amount, unavailable=r.unavailable,
                         note=r.note, citation=r.citation,
+                        requires_constellation=r.requires_constellation, basis=r.basis,
+                        condition=r.condition,
+                        absorbs=list(r.absorbs) if r.absorbs else None,
+                        interval=r.interval, max_seconds=r.max_seconds, on=r.on,
                     )
                     for r in m.refunds
                 ],
@@ -287,5 +291,7 @@ async def energy_route(
             trigger_elements=list(team.resonance.spec.trigger_elements),
             team_can_trigger=team.resonance.team_can_trigger,
             note=team.resonance.spec.note, citation=team.resonance.spec.citation,
+            default_procs_per_second=team.resonance.spec.default_procs_per_second,
+            default_note=team.resonance.spec.default_note,
         ) if team.resonance else None,
     )

@@ -184,16 +184,27 @@ export interface EnergySettings {
    */
   subjectOnField: boolean | null;
   /**
-   * Electro resonance's procs per rotation, bounded by its cooldown. `null`: the ceiling,
-   * one every cooldown, when a member can react with Electro; none otherwise.
+   * Electro resonance's procs per rotation, bounded by its cooldown. `null`: the rate gcsim's
+   * committed samples show (3 a 25 s rotation, owner ruling 2026-11-15, DECISIONS §50) times
+   * the rotation, when a member can react with Electro; none otherwise.
    */
   resonanceProcs: number | null;
+  /**
+   * An `assumption` refund switched on, by refund key (DECISIONS §50). Absent: off — it
+   * depends on the fight, and its stated assumption is the user's to accept.
+   */
+  refundToggles: Record<string, boolean>;
+  /**
+   * The element Venti's burst absorbed, by refund key (`'none'`: no absorption). Absent: the
+   * first of gcsim's order (Pyro, Hydro, Electro, Cryo) a teammate carries.
+   */
+  absorbed: Record<string, string>;
 }
 
 export const DEFAULT_ENERGY: EnergySettings = {
   mode: 'wait', rotationSeconds: null, casts: {}, particles: {}, onField: {}, manual: {},
   bursts: {}, favoniusHits: {}, refundCounts: {}, flatEnergy: 0, drip: true,
-  subjectOnField: null, resonanceProcs: null,
+  subjectOnField: null, resonanceProcs: null, refundToggles: {}, absorbed: {},
 };
 
 /** The team's Electro resonance as `/formula/energy` serves it. */
@@ -203,17 +214,18 @@ type TeamResonanceEnergy = NonNullable<TeamEnergyData['resonance']>;
 export const RESONANCE_KEY = 'resonance:electro';
 
 /**
- * Electro resonance's procs per rotation: the user's count, else one every cooldown when a
- * member can react with Electro — the ceiling, a reaction ready whenever the cooldown is —
- * and either way at most `rotation ÷ cooldown` (gcsim `setup.go:185`, 300 frames; KQM
- * "CD: 5s"). The ceiling is stated as one: two gcsim samples of Raiden teams proc 3 times in
- * a 25 s rotation against the 5 it allows (DESIGN §2.11).
+ * Electro resonance's procs per rotation: the user's count, else — when a member can react
+ * with Electro — the rate gcsim's committed samples show times the rotation (owner ruling
+ * 2026-11-15, DECISIONS §50: both Raiden-team samples proc 3 times a 25 s rotation, so 0.12
+ * a second, served as `default_procs_per_second`), and either way at most
+ * `rotation ÷ cooldown` (gcsim `setup.go:185`, 300 frames; KQM "CD: 5s").
  */
 export function resonanceProcs(
   resonance: TeamResonanceEnergy, settings: EnergySettings, rotationSeconds: number,
 ): number {
   const ceiling = rotationSeconds / resonance.cooldown_seconds;
-  const asked = settings.resonanceProcs ?? (resonance.team_can_trigger ? ceiling : 0);
+  const rate = resonance.default_procs_per_second * rotationSeconds;
+  const asked = settings.resonanceProcs ?? (resonance.team_can_trigger ? rate : 0);
   return Math.max(0, Math.min(ceiling, asked));
 }
 
@@ -268,22 +280,86 @@ export function defaultFavoniusHits(
   return member.is_subject ? subjectHits : settings.casts[member.build_id] ?? 1;
 }
 
+type EnergyRefund = NonNullable<EnergyMember['refunds']>[number];
+
+/** What a refund reads beyond its giver: the team, whether the subject is on field, the rotation. */
+export interface RefundContext {
+  members: readonly EnergyMember[];
+  subjectOnField: boolean;
+  rotationSeconds: number;
+}
+
+/**
+ * The element Venti's burst absorbed (DECISIONS §50), or `null` for none: the user's, else
+ * the first of gcsim's absorption order (`venti/burst.go:102`: Pyro, Hydro, Electro, Cryo)
+ * that a member other than the giver carries — the assumption being that an enemy carries the
+ * aura the team puts on it.
+ */
+export function absorbedElement(
+  giver: EnergyMember, refund: EnergyRefund, settings: EnergySettings,
+  members: readonly EnergyMember[], index?: number,
+): string | null {
+  const key = refundKey(giver.build_id, index ?? (giver.refunds ?? []).indexOf(refund));
+  const chosen = settings.absorbed[key];
+  if (chosen !== undefined) return chosen === 'none' ? null : chosen;
+  const carried = new Set(members.filter((m) => m.build_id !== giver.build_id)
+    .map((m) => m.element));
+  return (refund.absorbs ?? []).find((e) => carried.has(e)) ?? null;
+}
+
+/** The default on-field share of an `active` refund: the subject on field catches it. */
+export function refundOnField(
+  member: EnergyMember, index: number, settings: EnergySettings, subjectOnField: boolean,
+): number {
+  return settings.onField[refundKey(member.build_id, index)] ?? (subjectOnField ? 1 : 0);
+}
+
 /**
  * A refund over one rotation as the subject receives it, or `null` when it does not reach
- * them (another member's `self` refund) or cannot be counted (`unavailable`).
+ * them or is not counted.
+ *
+ * - **Who**: `self` the giver alone, `others` everyone but the giver, `team` everyone,
+ *   `active` whoever is on field when it lands (the subject's on-field share of it), and
+ *   `absorbed` every member of the element Venti's burst absorbed (`absorbedElement`).
+ * - **Whether**: `unavailable` (an ascension the build lacks) never; a `fight` refund never —
+ *   it is listed with its reason; an `assumption` refund only when switched on
+ *   (`refundToggles`). A constellation the giver lacks is never served at all.
+ * - **How often**: per burst or cast, `count` times; `second`: `count` every `interval`
+ *   seconds of the rotation, capped at `max_seconds` a trigger, per burst or cast (`on`).
  */
 export function refundSource(
   member: EnergyMember, index: number, settings: EnergySettings,
+  ctx: RefundContext = { members: [member], subjectOnField: false,
+    rotationSeconds: member.burst_cooldown ?? 20 },
 ): FlatSource | null {
   const refund = member.refunds?.[index];
   if (!refund || refund.amount === null || refund.amount === undefined || refund.unavailable) {
     return null;
   }
-  if (refund.recipients === 'self' && !member.is_subject) return null;
   const key = refundKey(member.build_id, index);
-  const triggers = refund.per === 'burst'
-    ? settings.bursts[member.build_id] ?? 1 : settings.casts[member.build_id] ?? 1;
-  const energy = refund.amount * (settings.refundCounts[key] ?? refund.count) * triggers;
+  const basis = refund.basis ?? 'kit';
+  if (basis === 'fight' || (basis === 'assumption' && !settings.refundToggles[key])) return null;
+  let share = 1;
+  switch (refund.recipients) {
+    case 'self': if (!member.is_subject) return null; break;
+    case 'others': if (member.is_subject) return null; break;
+    case 'active': share = refundOnField(member, index, settings, ctx.subjectOnField); break;
+    case 'absorbed': {
+      const subject = ctx.members.find((m) => m.is_subject) ?? (member.is_subject ? member : null);
+      const element = absorbedElement(member, refund, settings, ctx.members, index);
+      if (!subject || element === null || subject.element !== element) return null;
+      break;
+    }
+    case 'team': break;
+  }
+  if (share <= 0) return null;
+  const bursts = settings.bursts[member.build_id] ?? 1;
+  const casts = settings.casts[member.build_id] ?? 1;
+  const triggers = refund.per === 'burst' ? bursts
+    : refund.per === 'cast' ? casts
+      : (refund.on === 'skill' ? casts : refund.on === 'rotation' ? 1 : bursts)
+        * Math.min(ctx.rotationSeconds, refund.max_seconds ?? Infinity) / (refund.interval ?? Infinity);
+  const energy = refund.amount * (settings.refundCounts[key] ?? refund.count) * triggers * share;
   if (member.is_subject) {
     return { key, label: `${member.name}: ${refund.label}`, energy,
       scaling: refund.scaling, citation: refund.citation };
@@ -349,12 +425,15 @@ export function energyInput(
   const onField = settings.subjectOnField ?? rowsOnField;
   const sources: EnergySource[] = [];
   const flatSources: FlatSource[] = [];
+  const refundCtx: RefundContext = {
+    members: data.members, subjectOnField: onField, rotationSeconds: seconds,
+  };
   let subjectFavonius: SubjectFavonius | undefined;
   for (const member of data.members) {
     const casts = settings.casts[member.build_id] ?? 1;
     const bursts = settings.bursts[member.build_id] ?? 1;
     (member.refunds ?? []).forEach((_, i) => {
-      const flat = refundSource(member, i, settings);
+      const flat = refundSource(member, i, settings, refundCtx);
       if (flat && flat.energy > 0) flatSources.push(flat);
     });
     if (member.favonius) {
@@ -421,9 +500,12 @@ export function energyInput(
       });
     }
   }
+  // The drip is distributed like any particle (gcsim `setup.go:527`, `DistributeParticle`):
+  // whoever is active catches it at full value, so an on-field subject catches it on field
+  // (owner ruling 2026-11-15, DECISIONS §50), as it does the summons.
   const drip = settings.drip ? {
     particlesPerSecond: data.drip.particles / data.drip.interval_seconds,
-    onFieldShare: settings.onField['drip'] ?? 0,
+    onFieldShare: settings.onField['drip'] ?? (onField ? 1 : 0),
   } : null;
   if (drip) {
     sources.push({
