@@ -140,7 +140,9 @@ for (const f of data.fixtures) {
   // A weapon passive (P3, task 12) is planted exactly as a kit is: same vocabulary, same
   // resolution in the wielder's context, same per-candidate conversions on the subject's own.
   const isKit = (s) => s.id.startsWith('kit:') || s.id.startsWith('weapon:');
-  const kits = f.sources.filter(isKit);
+  // A source with no effect (a weapon whose only damage is its proc row, The Flute) has
+  // nothing to move here; its proc is planted below.
+  const kits = f.sources.filter((s) => isKit(s) && s.bonus.effects.length > 0);
   if (kits.length > 0) {
     const planted = (mutate) => f.sources.map((s) => (isKit(s)
       ? { ...s, bonus: { ...s.bonus, effects: s.bonus.effects.map(mutate) } }

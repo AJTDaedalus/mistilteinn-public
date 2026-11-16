@@ -46072,6 +46072,2948 @@
       "go_value": 24541.02242060013,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "absolution_r1_on_ayaka",
+      "covers": "a self CRIT DMG and DMG per Bond of Life stack, three",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/Absolution/index.tsx:16-38"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Absolution",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:absolution",
+          "label": "Absolution R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/Absolution/index.tsx @ 2c13fc40 \u2014 cd :19-20,35; dmg :22-31,36; gcsim internal/weapons/sword/absolution/absolution.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "bond",
+                "label": "Bond of Life increases (stacks, 6s each)",
+                "kind": "stacks",
+                "default": 3.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 3.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_dmg",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:absolution/bond": 3
+      },
+      "expected": 9388.069951179026,
+      "go_value": 9388.069951179026,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "absolution_r5_on_ayaka",
+      "covers": "a self CRIT DMG and DMG per Bond of Life stack, three",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/Absolution/index.tsx:16-38"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Absolution",
+          "refinement": 5,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:absolution",
+          "label": "Absolution R5 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/Absolution/index.tsx @ 2c13fc40 \u2014 cd :19-20,35; dmg :22-31,36; gcsim internal/weapons/sword/absolution/absolution.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "bond",
+                "label": "Bond of Life increases (stacks, 6s each)",
+                "kind": "stacks",
+                "default": 3.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 3.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_dmg",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": 0.32,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "bond",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:absolution/bond": 3
+      },
+      "expected": 12115.542692455347,
+      "go_value": 12115.542692455347,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "azurelight_r1_at_zero_energy_on_ayaka",
+      "covers": "a self ATK% after a skill, and ATK% and CRIT DMG again at 0 Energy (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/Azurelight/index.tsx:8-47"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Azurelight",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:azurelight",
+          "label": "Azurelight R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/Azurelight/index.tsx @ 2c13fc40 \u2014 atk :11,16-21,44; atk_zero :12,22-31,44; cd :13,32-40,45; gcsim internal/weapons/sword/azurelight/azurelight.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "Within 12s after an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "no_energy",
+                "label": "The wielder at 0 Energy (during the above)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: 0 Energy holds only between a burst and the next particles; a character who has no Energy to fill holds it throughout, so set it for one",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.24,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.24,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "no_energy",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  },
+                  {
+                    "condition": "no_energy",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:azurelight/after_skill": 1,
+        "weapon:azurelight/no_energy": 1
+      },
+      "expected": 9280.820027112626,
+      "go_value": 9280.820027112626,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "etherlight_spindlelute_r1_on_xiangling_vape",
+      "covers": "a self EM after a skill, into an amplifying reaction (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/EtherlightSpindlelute/index.tsx:8-23"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Etherlight Spindlelute",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:etherlight_spindlelute",
+          "label": "Etherlight Spindlelute R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/EtherlightSpindlelute/index.tsx @ 2c13fc40 \u2014 em :10,13-17,21; gcsim internal/weapons/catalyst/etherlightspindlelute/etherlightspindlelute.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "For 20s after an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 100.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:etherlight_spindlelute/after_skill": 1
+      },
+      "expected": 5687.620925935748,
+      "go_value": 5686.193170008781,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00025109170305683015
+    },
+    {
+      "name": "cloudforged_r1_on_xiangling_vape",
+      "covers": "a self EM per stack, two, into an amplifying reaction (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
+        "libs/gi/sheets/src/Weapons/Bow/Cloudforged/index.tsx:15-33"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Cloudforged",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:cloudforged",
+          "label": "Cloudforged R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Bow/Cloudforged/index.tsx @ 2c13fc40 \u2014 em :18,21-27,31; gcsim internal/weapons/bow/cloudforged/cloudforged.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "stacks",
+                "label": "Stacks after Elemental Energy decreases (18s each)",
+                "kind": "stacks",
+                "default": 2.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 2.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 40.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:cloudforged/stacks": 2
+      },
+      "expected": 5578.2001227741885,
+      "go_value": 5576.859833516414,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00024033045437491313
+    },
+    {
+      "name": "slingshot_r1_within_on_amber_aimed",
+      "covers": "a self Normal and Charged Attack DMG for a hit within 0.3s",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Bow/Slingshot/index.tsx:15-37"
+      ],
+      "givers": [
+        {
+          "name": "Amber",
+          "weapon": "Slingshot",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 733.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9461.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 601.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "physical_dmg_bonus": 0.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "aimed",
+          "label": "Fully-Charged Aimed Shot",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Fully-Charged Aimed Shot|{param7:P}",
+            "params": [
+              0.714,
+              0.714,
+              0.918,
+              0.935,
+              1.173,
+              0.867,
+              2.232
+            ]
+          },
+          "multiplier": 2.232,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:slingshot",
+          "label": "Slingshot R1 (Amber)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Bow/Slingshot/index.tsx @ 2c13fc40 \u2014 dmg :18,22-25,30-36; less :22-24,26,30-36; gcsim internal/weapons/bow/slingshot/slingshot.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shot",
+                "label": "Normal or Charged Attack hit time after firing",
+                "kind": "choice",
+                "default": "",
+                "default_reason": "situational",
+                "default_note": "None: depends on the distance to the target, which the estimate does not track; choose within or beyond 0.3s",
+                "max": null,
+                "step": null,
+                "options": [
+                  "within",
+                  "beyond"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.36,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shot",
+                    "values": [
+                      "within"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": -0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shot",
+                    "values": [
+                      "beyond"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:slingshot/shot": "within"
+      },
+      "expected": 3864.716777732489,
+      "go_value": 3864.716777732489,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "slingshot_r5_beyond_on_amber_aimed",
+      "covers": "the decrease beyond 0.3s, published positive and negated (GO `percent(-0.1)`)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Bow/Slingshot/index.tsx:15-37"
+      ],
+      "givers": [
+        {
+          "name": "Amber",
+          "weapon": "Slingshot",
+          "refinement": 5,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 733.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9461.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 601.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "physical_dmg_bonus": 0.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "aimed",
+          "label": "Fully-Charged Aimed Shot",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Fully-Charged Aimed Shot|{param7:P}",
+            "params": [
+              0.714,
+              0.714,
+              0.918,
+              0.935,
+              1.173,
+              0.867,
+              2.232
+            ]
+          },
+          "multiplier": 2.232,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:slingshot",
+          "label": "Slingshot R5 (Amber)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Bow/Slingshot/index.tsx @ 2c13fc40 \u2014 dmg :18,22-25,30-36; less :22-24,26,30-36; gcsim internal/weapons/bow/slingshot/slingshot.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shot",
+                "label": "Normal or Charged Attack hit time after firing",
+                "kind": "choice",
+                "default": "",
+                "default_reason": "situational",
+                "default_note": "None: depends on the distance to the target, which the estimate does not track; choose within or beyond 0.3s",
+                "max": null,
+                "step": null,
+                "options": [
+                  "within",
+                  "beyond"
+                ]
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.6,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shot",
+                    "values": [
+                      "within"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "dmg_bonus",
+                "value": -0.1,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shot",
+                    "values": [
+                      "beyond"
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:slingshot/shot": "beyond"
+      },
+      "expected": 2891.1298567264953,
+      "go_value": 2891.1298567264953,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "footprint_of_the_rainbow_r1_on_kachina",
+      "covers": "a self DEF% after a skill on a DEF-scaling row",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Polearm/FootprintOfTheRainbow/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Kachina",
+          "weapon": "Footprint of the Rainbow",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "geo",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 674.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11799.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 792.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "def_pct": 0.874,
+        "flat_def": 58.0,
+        "geo_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "independent",
+          "label": "Turbo Twirly Independent DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Turbo Twirly Independent DMG|{param2:F1P} DEF",
+            "params": [
+              1.57968,
+              1.14768
+            ]
+          },
+          "multiplier": 1.14768,
+          "scaling_stat": "def",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:footprint_of_the_rainbow",
+          "label": "Footprint of the Rainbow R1 (Kachina)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/FootprintOfTheRainbow/index.tsx @ 2c13fc40 \u2014 def :10,12-16,20; gcsim internal/weapons/spear/footprint/footprint.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "For 15s after an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "def_pct",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:footprint_of_the_rainbow/after_skill": 1
+      },
+      "expected": 1705.1934727019732,
+      "go_value": 1705.1934727019732,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "gest_of_the_mighty_wolf_r1_on_razor",
+      "covers": "a self DMG per stack, four, and CRIT DMG per stack with Hexerei (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/GestOfTheMightyWolf/index.tsx:18-46"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "Gest of the Mighty Wolf",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:gest_of_the_mighty_wolf",
+          "label": "Gest of the Mighty Wolf R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/GestOfTheMightyWolf/index.tsx @ 2c13fc40 \u2014 dmg :20,31-34,43; cd :21,35-39,44; gcsim internal/weapons/claymore/gestofthemightywolf/gestofthemightywolf.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "stacks",
+                "label": "Four Winds' Hymn stacks",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 4.0,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "hexerei",
+                "label": "Hexerei: Secret Rite in the party (two Hexerei members)",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: needs two Hexerei members (GO `tally.hexerei` >= 2), a party composition the estimate does not check",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.075,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.075,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "hexerei",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": "stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "ATK SPD +10%",
+                "reason": "no damage effect: attack speed"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:gest_of_the_mighty_wolf/stacks": 4,
+        "weapon:gest_of_the_mighty_wolf/hexerei": 1
+      },
+      "expected": 3771.644029774745,
+      "go_value": 3771.644029774745,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "black_tassel_r1_on_xiangling",
+      "covers": "a self DMG against slimes (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Polearm/BlackTassel/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Black Tassel",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:black_tassel",
+          "label": "Black Tassel R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/BlackTassel/index.tsx @ 2c13fc40 \u2014 dmg :11,13-17,19-21; gcsim internal/weapons/spear/blacktassel/blacktassel.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "slime",
+                "label": "Against slimes",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: slimes only; the estimate's target is not one",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.4,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "slime",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:black_tassel/slime": 1
+      },
+      "expected": 3310.684745604923,
+      "go_value": 3310.684745604923,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "ultimate_overlords_mega_magic_sword_r1_on_razor",
+      "covers": "a self ATK% and the Melusines' further ATK% at its maximum (GO 12 times 1%)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/UltimateOverlordsMegaMagicSword/index.tsx:18-50"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "\"Ultimate Overlord's Mega Magic Sword\"",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:ultimate_overlords_mega_magic_sword",
+          "label": "\"Ultimate Overlord's Mega Magic Sword\" R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/UltimateOverlordsMegaMagicSword/index.tsx @ 2c13fc40 \u2014 atk :22-32,48; atk_melusines :25,34-44,48; gcsim internal/weapons/claymore/ultimateoverlordsmegamagicsword/ultimateoverlordsmegamagicsword.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "melusines",
+                "label": "Melusines helped in Merusea Village: all",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "Maximum: account progress no guide documents; assumed complete, turn it off if not",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "melusines",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:ultimate_overlords_mega_magic_sword/melusines": 1
+      },
+      "expected": 3419.503103799363,
+      "go_value": 3419.503103799363,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "emerald_orb_r1_on_kokomi",
+      "covers": "a self ATK% after a reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/EmeraldOrb/index.tsx:8-23"
+      ],
+      "givers": [
+        {
+          "name": "Sangonomiya Kokomi",
+          "weapon": "Emerald Orb",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 744.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13471.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 657.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "hydro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.230768
+            ]
+          },
+          "multiplier": 1.230768,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:emerald_orb",
+          "label": "Emerald Orb R1 (Sangonomiya Kokomi)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/EmeraldOrb/index.tsx @ 2c13fc40 \u2014 atk :10,13-17,21; gcsim internal/weapons/catalyst/emeraldorb/emeraldorb.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "rapids",
+                "label": "After a Vaporize, Electro-Charged, Frozen, Bloom, Lunar or Hydro Swirl reaction",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "rapids",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:emerald_orb/rapids": 1
+      },
+      "expected": 1578.1250037811105,
+      "go_value": 1578.1250037811105,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "calamity_of_eshu_r1_on_kaeya",
+      "covers": "a self Normal and Charged Attack DMG and CRIT Rate while shielded (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/CalamityOfEshu/index.tsx:8-33"
+      ],
+      "givers": [
+        {
+          "name": "Kaeya",
+          "weapon": "Calamity of Eshu",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 788.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11636.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 792.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.0625
+            ]
+          },
+          "multiplier": 1.0625,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:calamity_of_eshu",
+          "label": "Calamity of Eshu R1 (Kaeya)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/CalamityOfEshu/index.tsx @ 2c13fc40 \u2014 dmg :10,13-18,28-29; cr :11,19-24,30-31; gcsim internal/weapons/sword/calamityofeshu/calamityofeshu.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shield",
+                "label": "Protected by a shield",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: depends on a shield, which the estimate does not track",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shield",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "crit_rate",
+                "value": 0.08,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "normal",
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shield",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:calamity_of_eshu/shield": 1
+      },
+      "expected": 1793.9491013438308,
+      "go_value": 1793.9491013438308,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "ferrous_shadow_r1_on_amber_aimed",
+      "covers": "a self Charged Attack DMG below the HP threshold (stated on) (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/FerrousShadow/index.tsx:8-23"
+      ],
+      "givers": [
+        {
+          "name": "Amber",
+          "weapon": "Ferrous Shadow",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 733.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9461.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 601.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "physical_dmg_bonus": 0.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "aimed",
+          "label": "Fully-Charged Aimed Shot",
+          "move": "charged",
+          "count": 1,
+          "talent_row": {
+            "label": "Fully-Charged Aimed Shot|{param7:P}",
+            "params": [
+              0.714,
+              0.714,
+              0.918,
+              0.935,
+              1.173,
+              0.867,
+              2.232
+            ]
+          },
+          "multiplier": 2.232,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:ferrous_shadow",
+          "label": "Ferrous Shadow R1 (Amber)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/FerrousShadow/index.tsx @ 2c13fc40 \u2014 charged :12,14-18,20-22; gcsim internal/weapons/claymore/ferrousshadow/ferrousshadow.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "low_hp",
+                "label": "Wielder below the HP threshold",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: the wielder's HP threshold is not their usual state",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.3,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "charged"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "low_hp",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:ferrous_shadow/low_hp": 1
+      },
+      "expected": 3737.7271793404034,
+      "go_value": 3737.7271793404034,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "earth_shaker_r5_on_ayaka",
+      "covers": "a self Elemental Skill DMG after a party Pyro reaction (stated on), at R5 (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/EarthShaker/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Earth Shaker",
+          "refinement": 5,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:earth_shaker",
+          "label": "Earth Shaker R5 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/EarthShaker/index.tsx @ 2c13fc40 \u2014 skill :10,12-16,19-21; gcsim internal/weapons/claymore/earthshaker/earthshaker.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "pyro_reaction",
+                "label": "After a party member's Pyro reaction",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: needs a party member's Pyro reaction, which depends on the team; the estimate does not check it",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.32,
+                "elements": null,
+                "element_from": null,
+                "moves": [
+                  "skill"
+                ],
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "pyro_reaction",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:earth_shaker/pyro_reaction": 1
+      },
+      "expected": 8313.010180892785,
+      "go_value": 8313.010180892785,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "angelos_heptades_r1_on_xiangling",
+      "covers": "a teammate's weapon: the active character's DMG per 1,000 of the wielder's ATK (with its own ATK%) after a shield, below its cap",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/AngelosHeptades/index.tsx:22-83"
+      ],
+      "givers": [
+        {
+          "name": "Lauma",
+          "weapon": "Angelos' Heptades",
+          "refinement": 1,
+          "stats": {
+            "base_atk": 900.0,
+            "atk_pct": 1.2,
+            "flat_atk": 311.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:angelos_heptades",
+          "label": "Angelos' Heptades R1 (Lauma)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/AngelosHeptades/index.tsx @ 2c13fc40 \u2014 team_dmg :30-47,67-73; gcsim internal/weapons/catalyst/angelosheptades/angelosheptades.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shield",
+                "label": "Pathfinder's Light: within 20s of the wielder's shield",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.2399,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shield",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": "angelos"
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Hexerei: Secret Rite: half of Pathfinder's Light to an off-field Hexerei member",
+                "reason": "the optimized character is the active one, who takes the whole buff; Hexerei membership is not tracked"
+              },
+              {
+                "what": "Guide's Contentment: Energy on a shield, once every 14s",
+                "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:angelos_heptades/shield": 1
+      },
+      "expected": 3026.632962233354,
+      "go_value": 3026.632962233354,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "angelos_heptades_r5_past_its_cap_on_xiangling",
+      "covers": "a teammate's weapon: the active character's DMG per 1,000 of the wielder's ATK (with its own ATK%) after a shield, past its cap",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/AngelosHeptades/index.tsx:22-83"
+      ],
+      "givers": [
+        {
+          "name": "Lauma",
+          "weapon": "Angelos' Heptades",
+          "refinement": 5,
+          "stats": {
+            "base_atk": 900.0,
+            "atk_pct": 2.0,
+            "flat_atk": 311.0
+          }
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:angelos_heptades",
+          "label": "Angelos' Heptades R5 (Lauma)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/AngelosHeptades/index.tsx @ 2c13fc40 \u2014 team_dmg :30-47,67-73; gcsim internal/weapons/catalyst/angelosheptades/angelosheptades.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "shield",
+                "label": "Pathfinder's Light: within 20s of the wielder's shield",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "teammate",
+                "default_note": "a teammate's buff, assumed up as they play it; at its maximum, since no usual value is curated",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.58,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "shield",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": "angelos"
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Hexerei: Secret Rite: half of Pathfinder's Light to an off-field Hexerei member",
+                "reason": "the optimized character is the active one, who takes the whole buff; Hexerei membership is not tracked"
+              },
+              {
+                "what": "Guide's Contentment: Energy on a shield, once every 14s",
+                "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:angelos_heptades/shield": 1
+      },
+      "expected": 3630.0434027372307,
+      "go_value": 3630.0434027372307,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "the_flute_r5_proc_row_on_kaeya",
+      "covers": "a proc row: two Chord instances (200% ATK at R5, Physical)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/TheFlute/index.tsx:16-28",
+        "libs/gi/sheets/src/Characters/dataUtil.tsx:113-138"
+      ],
+      "givers": [
+        {
+          "name": "Kaeya",
+          "weapon": "The Flute",
+          "refinement": 5,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 788.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11636.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 792.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "proc_chord",
+          "label": "Chord",
+          "move": null,
+          "count": 2,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.0625
+            ]
+          },
+          "multiplier": 1.0625,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "proc": {
+            "source": "weapon:the_flute",
+            "key": "chord"
+          },
+          "channel": "physical"
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:the_flute",
+          "label": "The Flute R5 (Kaeya)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/TheFlute/index.tsx @ 2c13fc40 \u2014 chord :18-24,26-28 (gcsim internal/weapons/sword/flute/flute.go:44-75); gcsim internal/weapons/sword/flute/flute.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [],
+            "unmodelled": []
+          },
+          "procs": [
+            {
+              "key": "chord",
+              "label": "Chord: an ATK Physical AoE at 5 Harmonics",
+              "multiplier": 2.0,
+              "scaling": "atk",
+              "element": "physical",
+              "stat_layer": "premod"
+            }
+          ]
+        }
+      ],
+      "conditionals": {},
+      "expected": 5637.905183276309,
+      "go_value": 5637.905183276309,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "bloodsoaked_ruins_r1_lunar_charged_on_flins",
+      "covers": "a Lunar-Charged row: a self Lunar-Charged DMG after a burst and Requiem of Ruin's CRIT DMG (both stated on), the trigger's own CRIT reaching it",
+      "go": [
+        "libs/gi/wr/src/reaction/special.ts:26-122",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/wr/src/reaction/lunar.ts:10-40",
+        "libs/gi/sheets/src/Weapons/Polearm/BloodsoakedRuins/index.tsx:8-31"
+      ],
+      "givers": [
+        {
+          "name": "Flins",
+          "weapon": "Bloodsoaked Ruins",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "electro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 1018.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12491.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 809.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "electro_dmg_bonus": 0.466,
+        "elemental_mastery": 200.0
+      },
+      "set_pools": [],
+      "channel": "electro",
+      "rows": [
+        {
+          "id": "lc",
+          "label": "lunar-charged",
+          "move": null,
+          "count": 2,
+          "reaction": {
+            "reaction": "lunar_charged"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:bloodsoaked_ruins",
+          "label": "Bloodsoaked Ruins R1 (Flins)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/BloodsoakedRuins/index.tsx @ 2c13fc40 \u2014 lc :9,13-17,28; cd :10,19-24,29; gcsim internal/weapons/spear/bloodsoakedruins/bloodsoakedruins.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_burst",
+                "label": "Within 3.5s after an Elemental Burst",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "after_lc",
+                "label": "Requiem of Ruin: after the wielder triggers Lunar-Charged",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.36,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_charged"
+                ],
+                "when": [
+                  {
+                    "condition": "after_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "crit_dmg",
+                "value": 0.28,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_lc",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Requiem of Ruin's Energy, once every 14s",
+                "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:bloodsoaked_ruins/after_burst": 1,
+        "weapon:bloodsoaked_ruins/after_lc": 1
+      },
+      "expected": 14447.263905198408,
+      "go_value": 24078.532390004373,
+      "divergence": "Lunar contributor weight: gcsim's solo 0.6 (ours, owner 2026-11-14) against GO's whole contribution; and transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 0.39999399999994
+    },
+    {
+      "name": "blackmarrow_lantern_r1_bloom_on_nahida",
+      "covers": "a bloom row: a self Bloom DMG bonus",
+      "go": [
+        "libs/gi/wr/src/reaction/trans.ts:36-108",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/sheets/src/Weapons/Catalyst/BlackmarrowLantern/index.tsx:15-47"
+      ],
+      "givers": [
+        {
+          "name": "Nahida",
+          "weapon": "Blackmarrow Lantern",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "dendro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "dendro",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 841.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10360.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 630.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 115.2,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 187.0,
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "dendro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "dendro",
+      "rows": [
+        {
+          "id": "bloom",
+          "label": "bloom",
+          "move": null,
+          "count": 2,
+          "reaction": {
+            "reaction": "bloom"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:blackmarrow_lantern",
+          "label": "Blackmarrow Lantern R1 (Nahida)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/BlackmarrowLantern/index.tsx @ 2c13fc40 \u2014 bloom :17,21-25,44; gcsim internal/weapons/catalyst/blackmarrowlantern/blackmarrowlantern.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.48,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "bloom"
+                ],
+                "when": [],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Lunar-Bloom DMG, and Ascendant Gleam's further Lunar-Bloom DMG",
+                "reason": "Lunar-Bloom is not a reaction the estimate prices"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {},
+      "expected": 18648.360345558056,
+      "go_value": 18648.173863817552,
+      "divergence": "transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 1.0000000100051338e-05
+    },
+    {
+      "name": "lightbearing_moonshard_r1_lunar_crystallize",
+      "covers": "a Lunar-Crystallize row: a self Lunar-Crystallize DMG after a skill (stated on); a Geo trigger wields it",
+      "go": [
+        "libs/gi/wr/src/reaction/special.ts:26-122",
+        "libs/gi/keymap/src/StatConstants.ts:29-131,151-158",
+        "libs/gi/wr/src/reaction/lunar.ts:10-40",
+        "libs/gi/sheets/src/Weapons/Sword/LightbearingMoonshard/index.tsx:8-30"
+      ],
+      "givers": [
+        {
+          "name": "a Geo trigger",
+          "weapon": "Lightbearing Moonshard",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "geo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "geo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 850.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12000.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 800.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "elemental_mastery": 300.0,
+        "flat_atk": 311.0,
+        "crit_rate": 0.4,
+        "crit_dmg": 0.8,
+        "geo_dmg_bonus": 0.466
+      },
+      "set_pools": [],
+      "channel": "geo",
+      "rows": [
+        {
+          "id": "lcr",
+          "label": "lunar-crystallize",
+          "move": null,
+          "count": 3,
+          "reaction": {
+            "reaction": "lunar_crystallize"
+          },
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:lightbearing_moonshard",
+          "label": "Lightbearing Moonshard R1 (a Geo trigger)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/LightbearingMoonshard/index.tsx @ 2c13fc40 \u2014 lcr :17-23,28; gcsim internal/weapons/sword/lightbearingmoonshard/lightbearingmoonshard.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_skill",
+                "label": "For 5s after an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "reaction_bonus",
+                "value": 0.64,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": [
+                  "lunar_crystallize"
+                ],
+                "when": [
+                  {
+                    "condition": "after_skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "DEF +20% (R1)",
+                "reason": "the seeded refinement list does not carry it (GO's literal `def_arr`, LightbearingMoonshard/index.tsx:10-15); not written as a constant, since it moves with refinement"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:lightbearing_moonshard/after_skill": 1
+      },
+      "expected": 15970.271264956371,
+      "go_value": 26616.852606398563,
+      "divergence": "Lunar contributor weight: gcsim's solo 0.6 (ours, owner 2026-11-14) against GO's whole contribution; and transformative DEF: gcsim ignores DEF (1, ours) against GO's enemy.transDef, about 1 - 1e-5",
+      "relative_divergence_from_go": 0.39999399999994006
     }
   ]
 }
