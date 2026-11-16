@@ -435,13 +435,57 @@
             }
             @for (item of row.refunds; track item.key) {
               <div class="energy__source energy__refund">
+                @if (item.refund.recipients === 'absorbed') {
+                  <label class="assumptions__value">
+                    <span>{{ item.refund.label }}: the element absorbed</span>
+                    <select (change)="setAbsorbed(item.key, $any($event.target).value)">
+                      <option value="default" [selected]="item.absorbedIsDefault">Default ({{ item.absorbed ?? 'none' }})</option>
+                      @for (el of item.refund.absorbs ?? []; track el) {
+                        <option [value]="el" [selected]="!item.absorbedIsDefault && item.absorbed === el">{{ el }}</option>
+                      }
+                      <option value="none" [selected]="!item.absorbedIsDefault && item.absorbed === null">None</option>
+                    </select>
+                  </label>
+                  @if (item.absorbedIsDefault) {
+                    <span class="assumptions__default">Default: the first of gcsim's order
+                      ({{ (item.refund.absorbs ?? []).join(', ') }}) a teammate carries.</span>
+                  }
+                }
                 @if (item.refund.unavailable) {
                   <p class="assumptions__unmodelled">{{ item.refund.label }}: not counted —
                     {{ item.refund.unavailable }}.</p>
+                } @else if (item.basis === 'fight') {
+                  <p class="assumptions__unmodelled">{{ item.refund.label }}: not counted —
+                    {{ item.refund.condition }}</p>
                 } @else if (!item.reaches) {
-                  <p class="assumptions__static">{{ item.refund.label }}: {{ row.member.name }}'s
-                    own, so it does not reach {{ energy.subject?.name }}.</p>
+                  <p class="assumptions__static">{{ item.refund.label }}:
+                    @if (item.refund.recipients === 'absorbed') {
+                      {{ energy.subject?.name }} is not of the absorbed element.
+                    } @else {
+                      {{ row.member.name }}'s own, so it does not reach {{ energy.subject?.name }}.
+                    }</p>
+                } @else if (item.basis === 'assumption' && !item.toggled) {
+                  <label class="assumptions__toggle">
+                    <input type="checkbox" [checked]="false"
+                      (change)="setRefundToggle(item.key, $any($event.target).checked)" />
+                    <span>{{ item.refund.label }}: count it — off by default, it depends on the fight</span>
+                  </label>
+                  <p class="assumptions__static">Assumes: {{ item.refund.condition }}</p>
                 } @else {
+                  @if (item.basis === 'assumption') {
+                    <label class="assumptions__toggle">
+                      <input type="checkbox" [checked]="true"
+                        (change)="setRefundToggle(item.key, $any($event.target).checked)" />
+                      <span>Counted, on its assumption: {{ item.refund.condition }}</span>
+                    </label>
+                  }
+                  @if (item.onField !== null) {
+                    <label class="assumptions__value">
+                      <span>{{ item.refund.label }}: caught by {{ energy.subject?.name }} on field (%)</span>
+                      <input type="number" min="0" max="100" step="any" [value]="item.onField * 100"
+                        (change)="setOnField(item.key, $any($event.target), item.onField)" />
+                    </label>
+                  }
                   <label class="assumptions__value">
                     <span>{{ item.refund.label }}: times per {{ item.refund.per }}
                       ({{ item.refund.amount }} flat each)</span>
@@ -470,8 +514,8 @@
             <span class="assumptions__default" [class.assumptions__default--changed]="!res.procsIsDefault">
               @if (res.procsIsDefault) {
                 @if (res.res.team_can_trigger) {
-                  Default: the ceiling — a qualifying reaction whenever the cooldown is up. gcsim's
-                  Raiden samples proc 3 times in a 25 s rotation, against 5.
+                  Default: {{ res.res.default_procs_per_second }} a second of rotation, at most
+                  one every {{ res.res.cooldown_seconds }} s. {{ res.res.default_note }}
                 } @else {
                   Default: none — no member can react with Electro
                   ({{ res.res.trigger_elements.join(', ') }}).
@@ -497,6 +541,17 @@
           <span>Enemy particles: one clear particle every
             {{ energy.drip.interval_seconds.toFixed(1) }} s</span>
         </label>
+        @if (energySettings().drip) {
+          <label class="assumptions__value">
+            <span>Enemy particles caught by {{ energy.subject?.name }} on field (%)</span>
+            <input type="number" min="0" max="100" step="any" [value]="energy.dripOnField * 100"
+              (change)="setOnField('drip', $any($event.target), energy.dripOnField)" />
+          </label>
+          @if (energy.dripOnFieldIsDefault) {
+            <span class="assumptions__default">Default: {{ energy.onField ? '100% — on field, it lands on them'
+              : '0% — off field, it lands on whoever is' }}.</span>
+          }
+        }
         <p class="assumptions__cite">Source: {{ energy.drip.citation }}</p>
 
         <label class="assumptions__value">
@@ -505,9 +560,10 @@
             (change)="setFlatEnergy($any($event.target), energySettings().flatEnergy)" />
         </label>
         <p class="assumptions__static">
-          Counted above: the team's Favonius procs, the kits' flat refunds the table curates and
-          Electro resonance's particles. Not counted unless entered: constellation refunds,
-          normal attacks' chance of 1 energy. A particle is worth 3 of its own element, 2 clear, 1 other;
+          Counted above: the team's Favonius procs, the kits' flat refunds the table curates
+          (constellation refunds when the build has the constellation; a fight-dependent one only
+          when switched on), Venti's absorbed-element 15 and Electro resonance's particles. Not
+          counted unless entered: a Traveler's refunds, normal attacks' chance of 1 energy. A particle is worth 3 of its own element, 2 clear, 1 other;
           60% off field in a party of four; ER multiplies particles only (gcsim at the pin, KQM's
           Energy page).
         </p>

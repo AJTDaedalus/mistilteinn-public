@@ -16,7 +16,9 @@ import {
   favoniusKey,
   favoniusProcs,
   FormulaEstimateService,
+  absorbedElement,
   refundKey,
+  refundOnField,
   RESONANCE_KEY,
   resonanceProcs,
   rotationSecondsOf,
@@ -146,6 +148,10 @@ export class FormulaPanel {
       rotationSeconds: rotationSecondsOf(data, settings),
       rotationIsDefault: settings.rotationSeconds === null,
       drip: data.drip,
+      // The drip lands on whoever is active (gcsim `DistributeParticle`): an on-field
+      // subject catches it on field by default (owner ruling 2026-11-15, DECISIONS §50).
+      dripOnField: settings.onField['drip'] ?? (onField ? 1 : 0),
+      dripOnFieldIsDefault: settings.onField['drip'] === undefined,
       requirement: model ? requiredEnergyRecharge(model) : null,
       raw: model ? rawParticleEnergy(model) : 0,
       onField,
@@ -168,10 +174,26 @@ export class FormulaPanel {
         manual: settings.manual[member.build_id] ?? 0,
         refunds: (member.refunds ?? []).map((refund, i) => {
           const key = refundKey(member.build_id, i);
+          // Venti's absorbed element (DECISIONS §50): the user's, else the first of gcsim's
+          // order a teammate carries.
+          const absorbed = refund.recipients === 'absorbed'
+            ? absorbedElement(member, refund, settings, data.members, i) : null;
+          const reaches = refund.recipients === 'team'
+            || refund.recipients === 'active'
+            || (refund.recipients === 'self' && member.is_subject)
+            || (refund.recipients === 'others' && !member.is_subject)
+            || (refund.recipients === 'absorbed' && absorbed !== null
+              && absorbed === subject?.element);
           return {
             key, refund,
             count: settings.refundCounts[key] ?? refund.count,
-            reaches: refund.recipients === 'team' || member.is_subject,
+            reaches,
+            basis: refund.basis ?? 'kit',
+            toggled: settings.refundToggles[key] ?? false,
+            absorbed,
+            absorbedIsDefault: settings.absorbed[key] === undefined,
+            onField: refund.recipients === 'active'
+              ? refundOnField(member, i, settings, onField) : null,
           };
         }),
         favonius: member.favonius ? (() => {
@@ -522,6 +544,18 @@ export class FormulaPanel {
   protected setRefundCount(key: string, box: HTMLInputElement, shown: number): void {
     const value = this.numberFrom(box, shown);
     if (value !== null) this.patchMap('refundCounts', key, value);
+  }
+
+  /** An `assumption` refund: counted only when the user accepts its stated assumption. */
+  protected setRefundToggle(key: string, on: boolean): void {
+    const current = this.service.energy();
+    this.service.setEnergy({ refundToggles: { ...current.refundToggles, [key]: on } });
+  }
+
+  /** The element Venti's burst absorbed: an element, `none`, or `default` (gcsim's order). */
+  protected setAbsorbed(key: string, value: string): void {
+    const { [key]: _dropped, ...rest } = this.service.energy().absorbed;
+    this.service.setEnergy({ absorbed: value === 'default' ? rest : { ...rest, [key]: value } });
   }
 
   protected setManual(buildId: string, box: HTMLInputElement, shown: number): void {

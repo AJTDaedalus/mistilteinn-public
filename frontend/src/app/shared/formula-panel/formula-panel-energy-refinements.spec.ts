@@ -23,6 +23,7 @@ const DATA: TeamEnergyData = {
     name: 'High Voltage', element: 'electro', particles: 1, cooldown_seconds: 5,
     trigger_elements: ['pyro', 'cryo', 'hydro', 'dendro'], team_can_trigger: true,
     note: 'One Electro particle a qualifying reaction.', citation: 'gcsim pkg/simulation/setup.go:185',
+    default_procs_per_second: 0.12, default_note: 'Default procs: 3 per 25 s rotation.',
   },
   members: [
     { build_id: 'rd', name: 'Raiden Shogun', element: 'electro', burst_energy_cost: 90,
@@ -88,15 +89,16 @@ describe('FormulaPanel energy refinements', () => {
     expect(service.energy().subjectOnField).toBeNull();
   });
 
-  it('shows Electro resonance at the cooldown ceiling, editable, cited', () => {
+  it("shows Electro resonance at the samples' rate (§50), editable, cited", () => {
     const { el, service } = render();
     const shown = text(el);
     expect(shown).toContain('Electro resonance (High Voltage)');
     expect(shown).toContain('at most one every 5 s');
-    expect(shown).toContain('the ceiling — a qualifying reaction whenever the cooldown is up');
+    expect(shown).toContain('Default: 0.12 a second of rotation, at most one every 5 s.');
+    expect(shown).toContain('Default procs: 3 per 25 s rotation.');
     expect(shown).toContain('gcsim pkg/simulation/setup.go:185');
     const procs = box(el, 'Procs per rotation');
-    expect(Number(procs.value)).toBeCloseTo(18 / 5, 9);
+    expect(Number(procs.value)).toBeCloseTo(0.12 * 18, 9);
     procs.value = '3';
     procs.dispatchEvent(new Event('change'));
     expect(service.energy().resonanceProcs).toBe(3);
