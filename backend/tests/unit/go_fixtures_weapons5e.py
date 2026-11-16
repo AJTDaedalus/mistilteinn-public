@@ -1,4 +1,4 @@
-"""Math-fallback P3, task 12 (fifth batch, continued): the 3-star weapons with a damage effect.
+"""Math-fallback P3, task 12 (fifth batch, continued): the 3-star weapons, and six newer 4-stars.
 
 The method and helpers are `go_fixtures_weapons5.py`'s and `go_fixtures_weapons5d.py`'s.
 """
@@ -9,9 +9,19 @@ from typing import Any
 
 from tests.unit import go_fixtures_batch6 as b6
 from tests.unit import go_fixtures_batch8 as b8
+from tests.unit import go_fixtures_weapons as w
 from tests.unit import go_fixtures_weapons2 as w2
 from tests.unit import test_go_formula_fixtures as base
-from tests.unit.go_fixtures_weapons5 import AMBER, AYAKA, KOKOMI, RAZOR, STAND_IN, XIANG, own
+from tests.unit.go_fixtures_weapons5 import (
+    AMBER,
+    AYAKA,
+    KOKOMI,
+    RAZOR,
+    STAND_IN,
+    XIANG,
+    own,
+    vape,
+)
 from tests.unit.go_fixtures_weapons5d import _proc
 
 
@@ -73,3 +83,37 @@ def three_star_fixtures() -> list[dict[str, Any]]:
                          + STAND_IN, go, gcsim, "Xiangling", name, nid, slug, key, label,
                          w2.XTEAM, XIANG, base.PYRONADO, "pyro", 1, mult))
     return out
+
+
+def newer_four_star_fixtures() -> list[dict[str, Any]]:
+    """Newer 4-star weapons whose damage parts are ordinary stats."""
+    return [
+        own("blade_of_atonement_r1_on_razor",
+            "a self EM after a reaction and ATK% after Stellar Glimmer (both stated on; GO gates "
+            "the ATK% on the reaction toggle too)", "Claymore/BladeOfAtonement/index.tsx:8-31",
+            "Razor", "Blade of Atonement", "12436", 1, w2.CLAYMORE, RAZOR, "physical",
+            w2.RAZOR_NA, b8.RAZOR_NA_1,
+            {"weapon:blade_of_atonement/react": 1, "weapon:blade_of_atonement/stellar": 1},
+            {"em": 64.0, "atk_pct": 0.16}),
+        own("clash_of_kings_r1_on_kokomi", "a self ATK% and EM after a skill",
+            "Catalyst/ClashOfKings/index.tsx:8-30", "Sangonomiya Kokomi", "Clash of Kings",
+            "14435", 1, w2.CATALYST_HYDRO, KOKOMI, "hydro", w2.KOKOMI_NA, b6.KOKOMI_NA_1,
+            {"weapon:clash_of_kings/skill": 1}, {"atk_pct": 0.2, "em": 100.0}),
+        vape("dawning_frost_r1_on_xiangling_vape",
+             "a self EM after a Charged hit and a skill hit, into an amplifying reaction"
+             + STAND_IN, "Catalyst/DawningFrost/index.tsx:8-30", "Dawning Frost", "14434", 1,
+             {"weapon:dawning_frost/charged_hit": 1, "weapon:dawning_frost/skill_hit": 1},
+             {"em": 72.0 + 48.0}),
+        vape("echoes_of_the_heart_r1_on_xiangling_vape",
+             "a self EM after a reaction, into an amplifying reaction" + STAND_IN,
+             "Catalyst/EchoesOfTheHeart/index.tsx:12-34", "Echoes of the Heart", "14436", 1,
+             {"weapon:echoes_of_the_heart/react": 1}, {"em": 60.0}),
+        own("emberwell_r1_on_ayaka", "a self ATK% after a reaction",
+            "Sword/Emberwell/index.tsx:12-34", "Kamisato Ayaka", "Emberwell", "11436", 1,
+            w2.SWORD, AYAKA, "cryo", w2.PRESS, base.HYOUKA, {"weapon:emberwell/react": 1},
+            {"atk_pct": 0.16}),
+        own("frostbreath_r1_on_xiangling", "a self ATK% after a Cryo- or Hydro-related reaction",
+            "Polearm/Frostbreath/index.tsx:8-23", "Xiangling", "Frostbreath", "13435", 1,
+            w2.XTEAM, XIANG, "pyro", w.NADO, base.PYRONADO, {"weapon:frostbreath/react": 1},
+            {"atk_pct": 0.2}),
+    ]

@@ -1,0 +1,119 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Dawning Frost",
+ "nanoka_id": "14434",
+ "slug": "dawning_frost",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/DawningFrost/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/dawningfrost/dawningfrost.go",
+ "verified_by": [
+  "dawning_frost_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   72.0,
+   10.0,
+   48.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   90.0,
+   10.0,
+   60.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   108.0,
+   10.0,
+   72.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   126.0,
+   10.0,
+   84.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   144.0,
+   10.0,
+   96.0,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "charged_hit",
+   "label": "For 10s after a Charged Attack hits",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "13"
+  },
+  {
+   "key": "skill_hit",
+   "label": "For 10s after an Elemental Skill hits",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "14"
+  }
+ ],
+ "effects": [
+  {
+   "key": "em_charged",
+   "label": "EM after a Charged Attack hit",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "charged_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,15-19,28"
+  },
+  {
+   "key": "em_skill",
+   "label": "EM after a skill hit",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "skill_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "11,20-24,28"
+  }
+ ]
+}

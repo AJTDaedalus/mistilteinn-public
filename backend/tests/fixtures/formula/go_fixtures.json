@@ -65244,6 +65244,888 @@
       "go_value": 1408.1069538461538,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "blade_of_atonement_r1_on_razor",
+      "covers": "a self EM after a reaction and ATK% after Stellar Glimmer (both stated on; GO gates the ATK% on the reaction toggle too)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/BladeOfAtonement/index.tsx:8-31"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "Blade of Atonement",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:blade_of_atonement",
+          "label": "Blade of Atonement R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/BladeOfAtonement/index.tsx @ 2c13fc40 \u2014 em :10,15-19,28; atk :11,20-24,29; gcsim internal/weapons/claymore/bladeofatonement/bladeofatonement.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "react",
+                "label": "For 12s after an Elemental Reaction",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "stellar",
+                "label": "For 12s after a Stellar Glimmer reaction",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: Stellar Glimmer is a Stellar reaction, which the estimate refuses by name; turn it on for a team that triggers it",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 64.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "react",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "atk_pct",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "stellar",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:blade_of_atonement/react": 1,
+        "weapon:blade_of_atonement/stellar": 1
+      },
+      "expected": 3287.6896239029616,
+      "go_value": 3287.6896239029616,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "clash_of_kings_r1_on_kokomi",
+      "covers": "a self ATK% and EM after a skill",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/ClashOfKings/index.tsx:8-30"
+      ],
+      "givers": [
+        {
+          "name": "Sangonomiya Kokomi",
+          "weapon": "Clash of Kings",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 744.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13471.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 657.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "hydro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.230768
+            ]
+          },
+          "multiplier": 1.230768,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:clash_of_kings",
+          "label": "Clash of Kings R1 (Sangonomiya Kokomi)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/ClashOfKings/index.tsx @ 2c13fc40 \u2014 atk :10,14-18,27; em :11,19-23,28; gcsim internal/weapons/catalyst/clashofkings/clashofkings.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "skill",
+                "label": "Laws of the Board: after an Elemental Skill",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 100.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "skill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:clash_of_kings/skill": 1
+      },
+      "expected": 1578.1250037811105,
+      "go_value": 1578.1250037811105,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "dawning_frost_r1_on_xiangling_vape",
+      "covers": "a self EM after a Charged hit and a skill hit, into an amplifying reaction (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/DawningFrost/index.tsx:8-30"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Dawning Frost",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:dawning_frost",
+          "label": "Dawning Frost R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/DawningFrost/index.tsx @ 2c13fc40 \u2014 em_charged :10,15-19,28; em_skill :11,20-24,28; gcsim internal/weapons/catalyst/dawningfrost/dawningfrost.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "charged_hit",
+                "label": "For 10s after a Charged Attack hits",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              },
+              {
+                "key": "skill_hit",
+                "label": "For 10s after an Elemental Skill hits",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 72.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "charged_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              },
+              {
+                "stat": "elemental_mastery",
+                "value": 48.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "skill_hit",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:dawning_frost/charged_hit": 1,
+        "weapon:dawning_frost/skill_hit": 1
+      },
+      "expected": 5794.461049777458,
+      "go_value": 5792.947890074439,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.0002612072008471042
+    },
+    {
+      "name": "echoes_of_the_heart_r1_on_xiangling_vape",
+      "covers": "a self EM after a reaction, into an amplifying reaction (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:257,357,434-484,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/EchoesOfTheHeart/index.tsx:12-34"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Echoes of the Heart",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado_vape",
+          "label": "Pyronado DMG (vaporize)",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": "reverse_vaporize",
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:echoes_of_the_heart",
+          "label": "Echoes of the Heart R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/EchoesOfTheHeart/index.tsx @ 2c13fc40 \u2014 em :14,19-23,31; gcsim internal/weapons/catalyst/echoesoftheheart/echoesoftheheart.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "react",
+                "label": "For 12s after an Elemental Reaction",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "elemental_mastery",
+                "value": 60.0,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "react",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Stellar Glimmer DMG after a Stellar Glimmer reaction",
+                "reason": "Stellar reactions are refused by name (`reactions.REFUSED`)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:echoes_of_the_heart/react": 1
+      },
+      "expected": 5466.103994351955,
+      "go_value": 5464.853310312745,
+      "divergence": "amplifying EM coefficient: 2.78 (gcsim, ours) against GO's 25/9",
+      "relative_divergence_from_go": 0.00022885958107064135
+    },
+    {
+      "name": "emberwell_r1_on_ayaka",
+      "covers": "a self ATK% after a reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/Emberwell/index.tsx:12-34"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Emberwell",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:emberwell",
+          "label": "Emberwell R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/Emberwell/index.tsx @ 2c13fc40 \u2014 atk :14,19-23,31; gcsim internal/weapons/sword/emberwell/emberwell.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "react",
+                "label": "For 12s after an Elemental Reaction",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.16,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "react",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Stellar Glimmer DMG after a Stellar Glimmer reaction",
+                "reason": "Stellar reactions are refused by name (`reactions.REFUSED`)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:emberwell/react": 1
+      },
+      "expected": 7432.338353522543,
+      "go_value": 7432.338353522543,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "frostbreath_r1_on_xiangling",
+      "covers": "a self ATK% after a Cryo- or Hydro-related reaction",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Polearm/Frostbreath/index.tsx:8-23"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Frostbreath",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "nado",
+          "label": "Pyronado DMG",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:frostbreath",
+          "label": "Frostbreath R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/Frostbreath/index.tsx @ 2c13fc40 \u2014 atk :10,13-17,21; gcsim internal/weapons/spear/frostbreath/frostbreath.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "react",
+                "label": "For 15s after a Cryo- or Hydro-related reaction",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "react",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Energy to the other members",
+                "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:frostbreath/react": 1
+      },
+      "expected": 2871.495359867077,
+      "go_value": 2871.495359867077,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }
