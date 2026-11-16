@@ -124,7 +124,9 @@ async def team(db_session: AsyncSession, authed_user: tuple[User, str]) -> dict[
         description="", param_list=_pad([0.0004, 8.0], 30),
     ))
     weapon = Weapon(
-        nanoka_id=11402, name="The Flute", weapon_type=WeaponType.SWORD,
+        # A sword with no passive file, so the sources are the kits alone (The Flute, used
+        # here until 2026-11-15, has one now).
+        nanoka_id=11428, name="Sword of Narzissenkreuz", weapon_type=WeaponType.SWORD,
         rarity=Rarity.FOUR_STAR, base_atk=42.0, base_atk_curve="GROW_CURVE_ATTACK_201",
         sub_stat_type=StatType.ATK_PCT, sub_stat_base_value=0.09,
         sub_stat_curve="GROW_CURVE_CRITICAL_201",

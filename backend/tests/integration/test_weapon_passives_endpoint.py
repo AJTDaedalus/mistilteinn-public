@@ -1,9 +1,9 @@
 """Math-fallback P3, task 12 — weapon passives through `/formula/kit-buffs`, end to end.
 
 A team of four of the caller's builds: a Pyro practice mannequin (the subject) wielding Staff of
-Homa R1, Bennett wielding The Flute (no passive file: named, not dropped), Kazuha wielding
-Thrilling Tales of Dragon Slayers R5, and a second mannequin wielding Thrilling Tales R1 — the
-same weapon twice, so the second source gets its own id. Refinement lists are the seeded
+Homa R1, Bennett wielding Sword of Narzissenkreuz (no passive file: named, not dropped), Kazuha
+wielding Thrilling Tales of Dragon Slayers R5, and a second mannequin wielding Thrilling Tales R1 —
+the same weapon twice, so the second source gets its own id. Refinement lists are the seeded
 catalogue's (nanoka 7.2.51), the ones each file pins.
 """
 
@@ -86,7 +86,8 @@ async def team(db_session: AsyncSession, authed_user: tuple[User, str]) -> dict[
                               element=Element.ANEMO, weapon_type=WeaponType.CATALYST,
                               base_atk=23.1, burst=(KAZUHA_BURST_LABELS, KAZUHA_BURST_10))
     homa = await _weapon(db_session, 13501, "Staff of Homa", WeaponType.POLEARM)
-    flute = await _weapon(db_session, 11402, "The Flute", WeaponType.SWORD,
+    # A sword with no passive file (The Flute, used here until 2026-11-15, has one now).
+    flute = await _weapon(db_session, 11428, "Sword of Narzissenkreuz", WeaponType.SWORD,
                           params={1: [1.0, 0.5, 5.0, 1.0, 0.0, 0.0, 0.0, 0.0]})
     tales = await _weapon(db_session, 14302, "Thrilling Tales of Dragon Slayers",
                           WeaponType.CATALYST)
@@ -140,7 +141,7 @@ async def test_a_weapon_with_no_file_is_named_not_dropped(
     kit = await _kit(authed_client, team, "manekin")
     weapons = {w["wielder"]: w for w in kit["weapons"]}
     assert weapons["Bennett"]["status"] == "no_passive_data"
-    assert weapons["Bennett"]["weapon"] == "The Flute"
+    assert weapons["Bennett"]["weapon"] == "Sword of Narzissenkreuz"
     assert weapons["Bennett"]["source_id"] is None
     assert weapons["Manekin"]["is_subject"] is True
     assert weapons["Manekin"]["source_id"] == "weapon:staff_of_homa"
