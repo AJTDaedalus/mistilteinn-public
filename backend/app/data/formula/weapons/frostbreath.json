@@ -1,0 +1,100 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Frostbreath",
+ "nanoka_id": "13435",
+ "slug": "frostbreath",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/Frostbreath/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/frostbreath/frostbreath.go",
+ "verified_by": [
+  "frostbreath_r1_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   15.0,
+   6.0,
+   16.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   15.0,
+   7.5,
+   16.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   15.0,
+   9.0,
+   16.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   15.0,
+   10.5,
+   16.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   15.0,
+   12.0,
+   16.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "react",
+   "label": "For 15s after a Cryo- or Hydro-related reaction",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "12"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK% after the reaction",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "react",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,13-17,21"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Energy to the other members",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

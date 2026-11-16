@@ -334,5 +334,8 @@ def weapon_fixtures() -> list[dict[str, Any]]:
     # non-stacking and proc rows.
     from tests.unit.go_fixtures_weapon_compare import weapon_compare_fixtures
     out.extend(weapon_compare_fixtures())
+    # Owner, 2026-11-15: "More weapon files" (task 12, fifth batch).
+    from tests.unit.go_fixtures_weapons5 import weapon_fixtures_5
+    out.extend(weapon_fixtures_5())
     return out
 

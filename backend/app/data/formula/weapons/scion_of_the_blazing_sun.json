@@ -1,0 +1,103 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Scion of the Blazing Sun",
+ "nanoka_id": "15424",
+ "slug": "scion_of_the_blazing_sun",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/ScionOfTheBlazingSun/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/scionoftheblazingsun/scionoftheblazingsun.go",
+ "verified_by": [
+  "scion_of_the_blazing_sun_r1_on_amber_aimed"
+ ],
+ "pins": {
+  "1": [
+   10.0,
+   0.6,
+   10.0,
+   0.28,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   10.0,
+   0.75,
+   10.0,
+   0.35,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   10.0,
+   0.9,
+   10.0,
+   0.42,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   10.0,
+   1.05,
+   10.0,
+   0.49,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   10.0,
+   1.2,
+   10.0,
+   0.56,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "heartsearer",
+   "label": "Against an opponent with Heartsearer (after a Sunfire Arrow)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "28"
+  }
+ ],
+ "effects": [
+  {
+   "key": "charged",
+   "label": "Charged Attack DMG against Heartsearer",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3
+   },
+   "moves": [
+    "charged"
+   ],
+   "when": [
+    {
+     "condition": "heartsearer",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,29-33,37"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "the Sunfire Arrow's ATK DMG",
+   "reason": "a damage instance in the wielder's element; a proc row is Physical (GO `customDmgNode(…, 'elemental')` with no Physical hit)"
+  }
+ ]
+}

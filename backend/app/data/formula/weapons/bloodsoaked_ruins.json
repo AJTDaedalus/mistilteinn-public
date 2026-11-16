@@ -1,0 +1,128 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Bloodsoaked Ruins",
+ "nanoka_id": "13516",
+ "slug": "bloodsoaked_ruins",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/BloodsoakedRuins/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/bloodsoakedruins/bloodsoakedruins.go",
+ "verified_by": [
+  "bloodsoaked_ruins_r1_lunar_charged_on_flins"
+ ],
+ "pins": {
+  "1": [
+   3.5,
+   0.36,
+   6.0,
+   0.28,
+   12.0,
+   14.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   3.5,
+   0.48,
+   6.0,
+   0.35,
+   13.0,
+   14.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   3.5,
+   0.6,
+   6.0,
+   0.42,
+   14.0,
+   14.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   3.5,
+   0.72,
+   6.0,
+   0.49,
+   15.0,
+   14.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   3.5,
+   0.84,
+   6.0,
+   0.56,
+   16.0,
+   14.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "after_burst",
+   "label": "Within 3.5s after an Elemental Burst",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "12"
+  },
+  {
+   "key": "after_lc",
+   "label": "Requiem of Ruin: after the wielder triggers Lunar-Charged",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "19"
+  }
+ ],
+ "effects": [
+  {
+   "key": "lc",
+   "label": "Lunar-Charged DMG after a burst",
+   "receivers": "self",
+   "stat": "reaction_bonus",
+   "value": {
+    "param": 1
+   },
+   "reactions": [
+    "lunar_charged"
+   ],
+   "when": [
+    {
+     "condition": "after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "9,13-17,28"
+  },
+  {
+   "key": "cd",
+   "label": "Requiem of Ruin: CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "after_lc",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,19-24,29"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Requiem of Ruin's Energy, once every 14s",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

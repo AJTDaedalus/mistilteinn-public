@@ -1,0 +1,104 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Crane's Echoing Call",
+ "nanoka_id": "14515",
+ "slug": "cranes_echoing_call",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/CranesEchoingCall/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/cranesechoingcall/cranesechoingcall.go",
+ "verified_by": [
+  "cranes_echoing_call_r1_on_xiangling_plunge"
+ ],
+ "pins": {
+  "1": [
+   2.5,
+   0.7,
+   0.28,
+   20.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   2.75,
+   0.7,
+   0.41,
+   20.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   3.0,
+   0.7,
+   0.54,
+   20.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   3.25,
+   0.7,
+   0.67,
+   20.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   3.5,
+   0.7,
+   0.8,
+   20.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "plunged",
+   "label": "After the wielder's Plunging Attack hits (20s)",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "12-13"
+  }
+ ],
+ "effects": [
+  {
+   "key": "plunge",
+   "label": "The party's Plunging Attack DMG",
+   "receivers": "team",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2
+   },
+   "moves": [
+    "plunge"
+   ],
+   "when": [
+    {
+     "condition": "plunged",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "non_stack": "crane",
+   "go": "10,14-18,20-28"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Energy to the wielder on party plunges",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

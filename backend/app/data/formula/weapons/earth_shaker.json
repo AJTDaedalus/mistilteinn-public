@@ -1,0 +1,101 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Earth Shaker",
+ "nanoka_id": "12431",
+ "slug": "earth_shaker",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/EarthShaker/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/earthshaker/earthshaker.go",
+ "verified_by": [
+  "earth_shaker_r5_on_ayaka"
+ ],
+ "pins": {
+  "1": [
+   0.16,
+   8.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.2,
+   8.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.24,
+   8.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.28,
+   8.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.32,
+   8.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "pyro_reaction",
+   "label": "After a party member's Pyro reaction",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs a party member's Pyro reaction, which depends on the team; the estimate does not check it"
+   },
+   "go": "11"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill",
+   "label": "Elemental Skill DMG after a Pyro reaction",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "skill"
+   ],
+   "when": [
+    {
+     "condition": "pyro_reaction",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,12-16,19-21"
+  }
+ ]
+}

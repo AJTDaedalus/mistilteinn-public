@@ -1,0 +1,93 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "The Daybreak Chronicles",
+ "nanoka_id": "15515",
+ "slug": "the_daybreak_chronicles",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/TheDaybreakChronicles/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/daybreakchronicles/daybreakchronicles.go",
+ "verified_by": [
+  "the_daybreak_chronicles_r1_on_amber_burst"
+ ],
+ "pins": {
+  "1": [
+   3.0,
+   0.6,
+   0.1,
+   0.1,
+   0.1,
+   0.2,
+   0.0,
+   0.0
+  ],
+  "2": [
+   3.0,
+   0.75,
+   0.125,
+   0.125,
+   0.1,
+   0.25,
+   0.0,
+   0.0
+  ],
+  "3": [
+   3.0,
+   0.9,
+   0.15,
+   0.15,
+   0.1,
+   0.3,
+   0.0,
+   0.0
+  ],
+  "4": [
+   3.0,
+   1.05,
+   0.175,
+   0.175,
+   0.1,
+   0.35,
+   0.0,
+   0.0
+  ],
+  "5": [
+   3.0,
+   1.2,
+   0.2,
+   0.2,
+   0.1,
+   0.4,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "passive",
+   "label": "Stirring Dawn Breeze, in steps of the listed bonus (to six)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 6,
+   "go": "20-26"
+  }
+ ],
+ "effects": [
+  {
+   "key": "dmg",
+   "label": "Normal Attack, Elemental Skill and Burst DMG per step",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2
+   },
+   "moves": [
+    "normal",
+    "skill",
+    "burst"
+   ],
+   "per": "passive",
+   "go": "18,28-33,37-39"
+  }
+ ]
+}

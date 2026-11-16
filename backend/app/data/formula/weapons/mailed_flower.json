@@ -1,0 +1,112 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Mailed Flower",
+ "nanoka_id": "12418",
+ "slug": "mailed_flower",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/MailedFlower/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/mailedflower/mailedflower.go",
+ "verified_by": [
+  "mailed_flower_r1_on_razor"
+ ],
+ "pins": {
+  "1": [
+   8.0,
+   0.12,
+   48.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   8.0,
+   0.15,
+   60.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   8.0,
+   0.18,
+   72.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   8.0,
+   0.21,
+   84.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   8.0,
+   0.24,
+   96.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "passive",
+   "label": "For 8s after a skill hit or an Elemental Reaction",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "14"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "passive",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "12,15-19,27"
+  },
+  {
+   "key": "em",
+   "label": "Elemental Mastery",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "passive",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "13,20-24,28"
+  }
+ ]
+}

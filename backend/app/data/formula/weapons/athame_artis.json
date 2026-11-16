@@ -1,0 +1,187 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Athame Artis",
+ "nanoka_id": "11518",
+ "slug": "athame_artis",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/AthameArtis/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/athameartis/athameartis.go",
+ "verified_by": [
+  "athame_artis_r1_on_amber_burst",
+  "athame_artis_r5_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.16,
+   3.0,
+   0.2,
+   0.16,
+   0.75,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.2,
+   3.0,
+   0.25,
+   0.2,
+   0.75,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.24,
+   3.0,
+   0.3,
+   0.24,
+   0.75,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.28,
+   3.0,
+   0.35,
+   0.28,
+   0.75,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.32,
+   3.0,
+   0.4,
+   0.32,
+   0.75,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "burst_hit",
+   "label": "Blade of the Daylight Hours: after an Elemental Burst hits",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "34"
+  },
+  {
+   "key": "hexerei",
+   "label": "Hexerei: Secret Rite in the party (two Hexerei members)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs two Hexerei members (GO `tally.hexerei` >= 2), a party composition the estimate does not check"
+   },
+   "go": "51-53"
+  }
+ ],
+ "effects": [
+  {
+   "key": "burst_cd",
+   "label": "Elemental Burst CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "burst"
+   ],
+   "go": "23,27-32,69"
+  },
+  {
+   "key": "atk",
+   "label": "Blade of the Daylight Hours: ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "burst_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "24,35-39,70"
+  },
+  {
+   "key": "atk_hex",
+   "label": "Blade of the Daylight Hours with Hexerei: 75% more ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2,
+    "times_param": 4
+   },
+   "when": [
+    {
+     "condition": "burst_hit",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "hexerei",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "51-55,70"
+  },
+  {
+   "key": "team_atk",
+   "label": "Blade of the Daylight Hours: the active teammate's ATK%",
+   "receivers": "others",
+   "stat": "atk_pct",
+   "value": {
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "burst_hit",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "25,40-49,72-76"
+  },
+  {
+   "key": "team_atk_hex",
+   "label": "With Hexerei: 75% more of the teammate's ATK%",
+   "receivers": "others",
+   "stat": "atk_pct",
+   "value": {
+    "param": 3,
+    "times_param": 4
+   },
+   "when": [
+    {
+     "condition": "burst_hit",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "hexerei",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "56-65,72-76"
+  }
+ ]
+}

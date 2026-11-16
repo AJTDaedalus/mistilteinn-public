@@ -1,0 +1,104 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Beyond the Chrysalis",
+ "nanoka_id": "11522",
+ "slug": "beyond_the_chrysalis",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/BeyondTheChrysalis/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/beyondthechrysalis/beyondthechrysalis.go",
+ "verified_by": [
+  "beyond_the_chrysalis_r1_on_ayaka"
+ ],
+ "pins": {
+  "1": [
+   0.56,
+   0.36,
+   5.0,
+   10.0,
+   4.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.72,
+   0.45,
+   5.5,
+   10.0,
+   4.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.88,
+   0.54,
+   6.0,
+   10.0,
+   4.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   1.04,
+   0.63,
+   6.5,
+   10.0,
+   4.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   1.2,
+   0.72,
+   7.0,
+   10.0,
+   4.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "devotion",
+   "label": "Winds of Devotion (the first of the three, after a skill or burst)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "14"
+  }
+ ],
+ "effects": [
+  {
+   "key": "cd",
+   "label": "Winds of Devotion: CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "devotion",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "11,15-19,29"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Winds of Defiance: Stellar Swirl DMG",
+   "reason": "Stellar reactions are refused by name (`reactions.REFUSED`)"
+  },
+  {
+   "what": "Winds of Plenty: Energy",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

@@ -1,0 +1,100 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Wine and Song",
+ "nanoka_id": "14410",
+ "slug": "wine_and_song",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/WineAndSong/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/wine/wine.go",
+ "verified_by": [
+  "wine_and_song_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   5.0,
+   0.14,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   5.0,
+   0.16,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   5.0,
+   0.18,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   5.0,
+   0.2,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   5.0,
+   0.22,
+   5.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "sprint",
+   "label": "For 5s after a Sprint",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "12"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK% after a Sprint",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "sprint",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,13-17,21"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Sprint Stamina consumption",
+   "reason": "no damage effect: stamina"
+  }
+ ]
+}

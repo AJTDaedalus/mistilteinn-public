@@ -886,7 +886,86 @@ recipe used to refuse a second conversion into flat ATK; it now prices each apar
 (`ResolvedConversion.extra`, each `cappedAmount` on its own and summed — monotone, so the bound
 holds; `capped-conversions.spec.ts`).
 
-#### Coverage (catalogue: 253 released weapons at nanoka 7.2.51, beta and crossbow rows excluded)
+#### Coverage after the fifth batch (owner, 2026-11-15: "More weapon files")
+
+Branch `feat/formula-weapon-files-2`. 148 more files, curated the same way (GO's sheet at
+`2c13fc40`, gcsim at `b107b5dc`, every number a seeded refinement index pinned at 7.2.51), in
+the order the owner asked: the weapons equipped in their own builds, the remaining 5-stars, the
+commonly used 4-stars, then the 3-stars. Status as a wielder-subject at R1 (§2.9's reading),
+out of the 253 released weapons:
+
+| status | count | |
+|---|---|---|
+| modelled | 169 | every damage part applied |
+| partial | 24 | a damage part named and not applied, each with its reason in the file |
+| no damage effect | 17 | energy, healing or shield only (the Favonius and Sacrificial series, Prototype Amber, Amenoma Kageuchi, Rightful Reward, Dialogues of the Desert Sages, four 3-star heals) |
+| unmodelled | 10 | nothing the estimate can apply for its wielder, below |
+| no file | 33 | 10 have no passive at all (the 1- and 2-star weapons: no refinement rows); 23 have one, below |
+
+The table supersedes the one above, which is the state #389 left.
+
+**Unmodelled, each said in its file.** Wavebreaker's Fin, Akuoumaru and Mouun's Moon: Burst DMG
+per point of the party's combined maximum Energy, capped — the cap binds after the count
+multiplies the value, and a weapon value is capped before a count reads it (GO `min(prod(ratio,
+energy), max)`). Sequence of Solitude and Ash-Graven Drinking Horn: a damage instance from the
+wielder's Max HP, where a proc row is an ATK multiplier. King's Squire's and End of the Line's
+instances (and Scion's arrow) are in the wielder's element, where a proc row is Physical.
+Sharpshooter's Oath and Messenger ask about a weak spot the target does not have. Xiphos'
+Moonlight's own Energy Recharge from EM has no per-candidate conversion (its 30% to the others
+is a number when a teammate wields it), and Thrilling Tales gives its wielder nothing.
+
+**Partial, the recurring reasons.** Stellar reactions and Lunar-Bloom (refused or not priced:
+Teaspoon, Beyond the Chrysalis, Cashflow, Whitelake, Echoes of the Heart, Emberwell, Blackmarrow
+Lantern, Nightweaver's); a stat the seeded list does not carry (Verdict's and Lightbearing
+Moonshard's base stat, Tome of the Eternal Flow's and Nocturne's Curtain Call's HP — never written
+as constants, as Starcaller's Watch's EM was not); Hexerei to an off-field member (Angelos'
+Heptades); a cap that is a product of two parameters (Hymn of the Maelstrom after Frozen); the
+Frost Burial weapons' two instances (which lands depends on the enemy's aura: count the row).
+
+**No file, with a passive.** Exaiphanes Blade (the Traveler only: a wielder gate the format
+cannot read; its 7.0.52+ data is also the one CLAUDE.md flags) and Starsealed Edict (no GO sheet
+at `2c13fc40`); Kagotsurube Isshin, Predator and Sword of Descension (the catalogue carries only
+their R1 row, and a file pins five); Chain Breaker, Waveriding Whirl and Forged by the Golden
+Melody (a Natlan count, a Hydro count including the wielder, a Stellar-led rotation: each needs a
+choice the batch did not make); and Breezeborne Refrain, Covenant of Frost and Snow, Heretic's
+Molten Blade, Jade Vista, Master Key, Moonweaver's Dawn, New Bough, Prospector's Shovel, Rainbow
+Serpent's Rain Bow, Serenity's Call, Silver Light, Snare Hook, Song of the Vigil, Sword of
+Narzissenkreuz and Winter's Heavy Heart (not reached).
+
+**How the defaults were chosen**, §41's rule unchanged: a wielder-triggered effect is `self`, on
+at its maximum (after a skill, on-hit stacks, a reaction the wielder triggers); a teammate's buff
+is `giver_is_subject`; anything that depends on the enemy (aura, weak point, a kill), the
+team's healer, a party count the estimate does not check (Liyue members, Hexerei, three
+elements), a shield or being hit is `situational` with a `usual` and its reason. Three
+`situational` conditions default **on**, each saying why: unshielded (Beacon of the Reed Sea),
+not hit (The Alley Flash, Harbinger of Dawn), and two account-or-team states GO derives and the
+toggle stands in for (Ultimate Overlord's Melusines; Ballad of the Fjords' three elements). Choices
+default to a stated value or none: Slingshot's distance and Fading Twilight's state none,
+Astral Vulture's members of another element two or more, Crimson Moon's Bond below 30%.
+
+**Found curating.** Xiphos' Moonlight's seeded per-EM share is a percentage (0.036 at R1 for GO's
+0.00036): the file divides by a cited 100, found because its fixture was worked from GO's value.
+GO writes The Flute's Chord as 200% at every refinement (gcsim and the list: 100–200%), Dark Iron
+Sword's R5 as 0.5 (the list: 0.4), and gates Blade of Atonement's Stellar Glimmer ATK% on its
+reaction toggle; each fixture is at a refinement or state where the two agree, and the
+difference is recorded here. The First Great Magic's 1/2/3-stack ATK is read as the first entry
+times the count, which the list's entries are at every refinement. Tulaytullah's Remembrance is
+one count of 4.8% steps to its own ten (the list's 10), the cap GO applies to the sum of its two
+toggles.
+
+**GO agreement.** 139 new fixtures (`go_fixtures_weapons5.py` to `_weapons5e.py`, 372 in all),
+one or more per file with a damage effect, R1 and R5 for Absolution, Angelos' Heptades, Jadefall's
+Splendor, Disaster and Remorse, Athame Artis and Slingshot. Reaction rows for Bloodsoaked Ruins,
+Fractured Halo (Lunar-Charged), Lightbearing Moonshard and Golden Frostbound Oath
+(Lunar-Crystallize), Blackmarrow Lantern and Nightweaver's (bloom); proc rows for The Flute, the
+three Frost Burial weapons, Prototype Archaic, The Viridescent Hunt, Luxurious Sea-Lord, Eye of
+Perception, Debate Club, Fillet Blade and Halberd; Energy Recharge through Emblem's burst bonus
+(Oathsworn Eye, Xiphos' Moonlight). Every one agrees with GO exactly but the recorded
+divergences: the amplified ones (2.78 vs 25/9), the transformative DEF term and the Lunar solo
+weight. `formula:verify` 372/372 (worst 8.5e-8); its effect plant now skips a source with no
+effects (a proc-only weapon, whose proc is planted instead).
+
+#### Coverage at #389 (catalogue: 253 released weapons at nanoka 7.2.51, beta and crossbow rows excluded)
 
 | status | count | |
 |---|---|---|

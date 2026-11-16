@@ -1,0 +1,105 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Ring of Yaxche",
+ "nanoka_id": "14431",
+ "slug": "ring_of_yaxche",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/RingOfYaxche/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/ringofyaxche/ringofyaxche.go",
+ "verified_by": [
+  "ring_of_yaxche_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   0.006,
+   0.16,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.007,
+   0.2,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.008,
+   0.24,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.009,
+   0.28,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.01,
+   0.32,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "crown",
+   "label": "Jade-Forged Crown: for 10s after an Elemental Skill",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "12"
+  }
+ ],
+ "effects": [
+  {
+   "key": "normal",
+   "label": "Normal Attack DMG per 1,000 Max HP, capped",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0,
+    "times_stat": "hp",
+    "stat_unit": {
+     "constant": 1000.0,
+     "cite": "GO RingOfYaxche/index.tsx:23 `1 / 1000`"
+    },
+    "cap": {
+     "param": 1
+    }
+   },
+   "moves": [
+    "normal"
+   ],
+   "when": [
+    {
+     "condition": "crown",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10-11,13-34"
+  }
+ ]
+}

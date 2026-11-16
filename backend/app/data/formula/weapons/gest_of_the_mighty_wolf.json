@@ -1,0 +1,124 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Gest of the Mighty Wolf",
+ "nanoka_id": "12515",
+ "slug": "gest_of_the_mighty_wolf",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/GestOfTheMightyWolf/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/gestofthemightywolf/gestofthemightywolf.go",
+ "verified_by": [
+  "gest_of_the_mighty_wolf_r1_on_razor"
+ ],
+ "pins": {
+  "1": [
+   0.1,
+   0.075,
+   0.075,
+   4.0,
+   4.0,
+   0.01,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.1,
+   0.095,
+   0.095,
+   4.0,
+   4.0,
+   0.01,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.1,
+   0.115,
+   0.115,
+   4.0,
+   4.0,
+   0.01,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.1,
+   0.135,
+   0.135,
+   4.0,
+   4.0,
+   0.01,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.1,
+   0.155,
+   0.155,
+   4.0,
+   4.0,
+   0.01,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "stacks",
+   "label": "Four Winds' Hymn stacks",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 4,
+   "go": "23-30"
+  },
+  {
+   "key": "hexerei",
+   "label": "Hexerei: Secret Rite in the party (two Hexerei members)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs two Hexerei members (GO `tally.hexerei` >= 2), a party composition the estimate does not check"
+   },
+   "go": "35-37"
+  }
+ ],
+ "effects": [
+  {
+   "key": "dmg",
+   "label": "Four Winds' Hymn: DMG per stack",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "per": "stacks",
+   "go": "20,31-34,43"
+  },
+  {
+   "key": "cd",
+   "label": "Four Winds' Hymn with Hexerei: CRIT DMG per stack",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "hexerei",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "per": "stacks",
+   "go": "21,35-39,44"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "ATK SPD +10%",
+   "reason": "no damage effect: attack speed"
+  }
+ ]
+}

@@ -1,0 +1,91 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Everlasting Moonglow",
+ "nanoka_id": "14506",
+ "slug": "everlasting_moonglow",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/EverlastingMoonglow/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/moonglow/moonglow.go",
+ "verified_by": [
+  "everlasting_moonglow_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   0.1,
+   0.01,
+   12.0,
+   0.6,
+   0.1,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.125,
+   0.015,
+   12.0,
+   0.6,
+   0.1,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.15,
+   0.02,
+   12.0,
+   0.6,
+   0.1,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.175,
+   0.025,
+   12.0,
+   0.6,
+   0.1,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.2,
+   0.03,
+   12.0,
+   0.6,
+   0.1,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "effects": [
+  {
+   "key": "normal_flat",
+   "label": "Normal Attack DMG from the wielder's Max HP",
+   "receivers": "self",
+   "stat": "flat_damage",
+   "value": {
+    "param": 1,
+    "times_stat": "hp"
+   },
+   "moves": [
+    "normal"
+   ],
+   "go": "12-21,30"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Healing Bonus",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "what": "Energy on Normal Attack hits after a burst",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

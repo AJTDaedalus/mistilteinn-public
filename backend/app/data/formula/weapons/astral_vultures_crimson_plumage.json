@@ -1,0 +1,193 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Astral Vulture's Crimson Plumage",
+ "nanoka_id": "15514",
+ "slug": "astral_vultures_crimson_plumage",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/AstralVulturesCrimsonPlumage/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/astralvulturescrimsonplumage/astralvulturescrimsonplumage.go",
+ "verified_by": [
+  "astral_vultures_crimson_plumage_r1_on_amber_aimed"
+ ],
+ "pins": {
+  "1": [
+   0.24,
+   12.0,
+   0.2,
+   0.48,
+   0.1,
+   0.24,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.3,
+   12.0,
+   0.25,
+   0.6,
+   0.125,
+   0.3,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.36,
+   12.0,
+   0.3,
+   0.72,
+   0.15,
+   0.36,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.42,
+   12.0,
+   0.35,
+   0.84,
+   0.175,
+   0.42,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.48,
+   12.0,
+   0.4,
+   0.96,
+   0.2,
+   0.48,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "swirl",
+   "label": "For 12s after a Swirl",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "26"
+  },
+  {
+   "key": "others",
+   "label": "Party members of another element than the wielder",
+   "kind": "choice",
+   "default_by": "self",
+   "options": [
+    "one",
+    "two_or_more"
+   ],
+   "usual": {
+    "value": "two_or_more",
+    "reason": "Two or more: GO counts them from the team; a four-member party with at most one more of the wielder's element has two or more, choose one for a party with two more of it"
+   },
+   "go": "32-34"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK% after a Swirl",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "swirl",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "20,27-31,58"
+  },
+  {
+   "key": "charged_1",
+   "label": "Charged Attack DMG, one member of another element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2
+   },
+   "moves": [
+    "charged"
+   ],
+   "when": [
+    {
+     "condition": "others",
+     "values": [
+      "one"
+     ]
+    }
+   ],
+   "go": "21,35-44,59"
+  },
+  {
+   "key": "charged_2",
+   "label": "Charged Attack DMG, two or more of another element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3
+   },
+   "moves": [
+    "charged"
+   ],
+   "when": [
+    {
+     "condition": "others",
+     "values": [
+      "two_or_more"
+     ]
+    }
+   ],
+   "go": "22,35-44,59"
+  },
+  {
+   "key": "burst_1",
+   "label": "Elemental Burst DMG, one member of another element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 4
+   },
+   "moves": [
+    "burst"
+   ],
+   "when": [
+    {
+     "condition": "others",
+     "values": [
+      "one"
+     ]
+    }
+   ],
+   "go": "23,45-54,60"
+  },
+  {
+   "key": "burst_2",
+   "label": "Elemental Burst DMG, two or more of another element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 5
+   },
+   "moves": [
+    "burst"
+   ],
+   "when": [
+    {
+     "condition": "others",
+     "values": [
+      "two_or_more"
+     ]
+    }
+   ],
+   "go": "24,45-54,60"
+  }
+ ]
+}

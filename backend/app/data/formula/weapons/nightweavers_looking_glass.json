@@ -1,0 +1,186 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Nightweaver's Looking Glass",
+ "nanoka_id": "14520",
+ "slug": "nightweavers_looking_glass",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/NightweaversLookingGlass/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/nightweavers/nightweavers.go",
+ "verified_by": [
+  "nightweavers_looking_glass_r1_bloom_on_nahida"
+ ],
+ "pins": {
+  "1": [
+   60.0,
+   10.0,
+   60.0,
+   4.5,
+   1.2,
+   0.8,
+   0.4,
+   0.0
+  ],
+  "2": [
+   75.0,
+   10.0,
+   75.0,
+   4.5,
+   1.5,
+   1.0,
+   0.5,
+   0.0
+  ],
+  "3": [
+   90.0,
+   10.0,
+   90.0,
+   4.5,
+   1.8,
+   1.2,
+   0.6,
+   0.0
+  ],
+  "4": [
+   105.0,
+   10.0,
+   105.0,
+   4.5,
+   2.1,
+   1.4,
+   0.7,
+   0.0
+  ],
+  "5": [
+   120.0,
+   10.0,
+   120.0,
+   4.5,
+   2.4,
+   1.6,
+   0.8,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "prayer",
+   "label": "Prayer of the Far North: after the wielder's skill deals Hydro or Dendro DMG",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "24-27"
+  },
+  {
+   "key": "verse",
+   "label": "New Moon Verse: after a party Lunar-Bloom",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs a party Lunar-Bloom reaction, which the estimate does not price"
+   },
+   "go": "34-37"
+  }
+ ],
+ "effects": [
+  {
+   "key": "em_prayer",
+   "label": "Prayer of the Far North: EM",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "prayer",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "18,28-32,72"
+  },
+  {
+   "key": "em_verse",
+   "label": "New Moon Verse: EM",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "verse",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,38-42,72"
+  },
+  {
+   "key": "bloom",
+   "label": "Both: the party's Bloom DMG",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "value": {
+    "param": 4
+   },
+   "reactions": [
+    "bloom"
+   ],
+   "when": [
+    {
+     "condition": "prayer",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "verse",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "non_stack": "nightweaver",
+   "go": "20,44-53,75-79"
+  },
+  {
+   "key": "hb_burgeon",
+   "label": "Both: the party's Hyperbloom and Burgeon DMG",
+   "receivers": "team",
+   "stat": "reaction_bonus",
+   "value": {
+    "param": 5
+   },
+   "reactions": [
+    "hyperbloom",
+    "burgeon"
+   ],
+   "when": [
+    {
+     "condition": "prayer",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "verse",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "non_stack": "nightweaver",
+   "go": "21,54-63,80-81"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Both: the party's Lunar-Bloom DMG",
+   "reason": "Lunar-Bloom is not a reaction the estimate prices"
+  }
+ ]
+}

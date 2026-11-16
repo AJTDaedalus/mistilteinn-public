@@ -1,0 +1,126 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Solar Pearl",
+ "nanoka_id": "14405",
+ "slug": "solar_pearl",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/SolarPearl/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/solar/solar.go",
+ "verified_by": [
+  "solar_pearl_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "after_normal",
+   "label": "After a Normal Attack hit",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "12"
+  },
+  {
+   "key": "after_skill_burst",
+   "label": "After an Elemental Skill or Burst hit",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "13"
+  }
+ ],
+ "effects": [
+  {
+   "key": "skill_burst",
+   "label": "Elemental Skill and Burst DMG after a Normal Attack hit",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "skill",
+    "burst"
+   ],
+   "when": [
+    {
+     "condition": "after_normal",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,14-16,21-22"
+  },
+  {
+   "key": "normal",
+   "label": "Normal Attack DMG after a skill or burst hit",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "normal"
+   ],
+   "when": [
+    {
+     "condition": "after_skill_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,14,17,23"
+  }
+ ]
+}

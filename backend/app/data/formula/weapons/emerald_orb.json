@@ -1,0 +1,94 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Emerald Orb",
+ "nanoka_id": "14304",
+ "slug": "emerald_orb",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/EmeraldOrb/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/emeraldorb/emeraldorb.go",
+ "verified_by": [
+  "emerald_orb_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   0.2,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.25,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.35,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.4,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "rapids",
+   "label": "After a Vaporize, Electro-Charged, Frozen, Bloom, Lunar or Hydro Swirl reaction",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "12"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK% after the reaction",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "rapids",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,13-17,21"
+  }
+ ]
+}

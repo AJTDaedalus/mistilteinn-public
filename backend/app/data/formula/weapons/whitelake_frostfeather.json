@@ -1,0 +1,98 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Whitelake Frostfeather",
+ "nanoka_id": "11520",
+ "slug": "whitelake_frostfeather",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/WhitelakeFrostfeather/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/whitelakefrostfeather/whitelakefrostfeather.go",
+ "verified_by": [
+  "whitelake_frostfeather_r1_on_ayaka"
+ ],
+ "pins": {
+  "1": [
+   4.0,
+   0.08,
+   8.0,
+   3.0,
+   0.5,
+   3.5,
+   0.0,
+   0.0
+  ],
+  "2": [
+   4.5,
+   0.1,
+   8.0,
+   3.0,
+   0.65,
+   3.5,
+   0.0,
+   0.0
+  ],
+  "3": [
+   5.0,
+   0.12,
+   8.0,
+   3.0,
+   0.8,
+   3.5,
+   0.0,
+   0.0
+  ],
+  "4": [
+   5.5,
+   0.14,
+   8.0,
+   3.0,
+   0.95,
+   3.5,
+   0.0,
+   0.0
+  ],
+  "5": [
+   6.0,
+   0.16,
+   8.0,
+   3.0,
+   1.1,
+   3.5,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "stacks",
+   "label": "Lake-Hued Lament stacks (Elemental Skill hits)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 3,
+   "go": "14-15"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "Lake-Hued Lament: ATK% per stack",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1
+   },
+   "per": "stacks",
+   "go": "16-23,36"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "At 3 stacks: Stellar Glimmer CRIT DMG",
+   "reason": "Stellar reactions are refused by name (`reactions.REFUSED`)"
+  },
+  {
+   "what": "Energy on Stellar Glimmer",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

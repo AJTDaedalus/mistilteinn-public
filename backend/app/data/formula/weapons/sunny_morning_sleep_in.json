@@ -1,0 +1,144 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Sunny Morning Sleep-In",
+ "nanoka_id": "14518",
+ "slug": "sunny_morning_sleep_in",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/SunnyMorningSleepIn/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/sunnymorning/sunnymorning.go",
+ "verified_by": [
+  "sunny_morning_sleep_in_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   120.0,
+   96.0,
+   32.0,
+   6.0,
+   9.0,
+   30.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   150.0,
+   120.0,
+   40.0,
+   6.0,
+   9.0,
+   30.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   180.0,
+   144.0,
+   48.0,
+   6.0,
+   9.0,
+   30.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   210.0,
+   168.0,
+   56.0,
+   6.0,
+   9.0,
+   30.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   240.0,
+   192.0,
+   64.0,
+   6.0,
+   9.0,
+   30.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "swirl",
+   "label": "For 6s after a Swirl",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "11"
+  },
+  {
+   "key": "after_skill",
+   "label": "For 9s after an Elemental Skill hits",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "20"
+  },
+  {
+   "key": "after_burst",
+   "label": "For 30s after an Elemental Burst hits",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "29"
+  }
+ ],
+ "effects": [
+  {
+   "key": "em_swirl",
+   "label": "EM after a Swirl",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "swirl",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,12-17,39"
+  },
+  {
+   "key": "em_skill",
+   "label": "EM after a skill hits",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,21-26,39"
+  },
+  {
+   "key": "em_burst",
+   "label": "EM after a burst hits",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "after_burst",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "28,30-35,39"
+  }
+ ]
+}

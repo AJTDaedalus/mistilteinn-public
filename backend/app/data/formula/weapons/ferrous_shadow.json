@@ -1,0 +1,101 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Ferrous Shadow",
+ "nanoka_id": "12301",
+ "slug": "ferrous_shadow",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/FerrousShadow/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/ferrousshadow/ferrousshadow.go",
+ "verified_by": [
+  "ferrous_shadow_r1_on_amber_aimed"
+ ],
+ "pins": {
+  "1": [
+   0.7,
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.75,
+   0.35,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.8,
+   0.4,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.85,
+   0.45,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.9,
+   0.5,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "low_hp",
+   "label": "Wielder below the HP threshold",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: the wielder's HP threshold is not their usual state"
+   },
+   "go": "13"
+  }
+ ],
+ "effects": [
+  {
+   "key": "charged",
+   "label": "Charged Attack DMG below the HP threshold",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "moves": [
+    "charged"
+   ],
+   "when": [
+    {
+     "condition": "low_hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "12,14-18,20-22"
+  }
+ ]
+}

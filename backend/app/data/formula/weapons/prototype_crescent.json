@@ -1,0 +1,104 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Prototype Crescent",
+ "nanoka_id": "15406",
+ "slug": "prototype_crescent",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/PrototypeCrescent/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/prototype/prototype.go",
+ "verified_by": [
+  "prototype_crescent_r1_on_amber"
+ ],
+ "pins": {
+  "1": [
+   0.1,
+   0.36,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.1,
+   0.45,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.1,
+   0.54,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.1,
+   0.63,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.1,
+   0.72,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "weak_point",
+   "label": "After a Charged Attack hits a weak point",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: weak points depend on the enemy, which the estimate does not track"
+   },
+   "go": "11"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK% after a weak-point hit",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "weak_point",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10,12,17"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Movement SPD",
+   "reason": "no damage effect: movement speed"
+  }
+ ]
+}
