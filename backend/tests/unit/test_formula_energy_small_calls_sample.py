@@ -31,7 +31,8 @@ def _cons(name: str) -> list[dict]:
 
 
 def _bursts(sample: dict, who: str) -> list[int]:
-    return [c["frame"] for c in sample["casts"] if c["character"] == who and c["action"] == "burst"]
+    return [c["frame"] for c in sample["casts"]
+            if c["character"] == who and c["action"] == "burst"]
 
 
 def _flat(sample: dict, source: str) -> list[dict]:
