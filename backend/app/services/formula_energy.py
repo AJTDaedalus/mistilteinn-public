@@ -33,6 +33,17 @@ Electro at all. **Yae Miko** is curated at gcsim's rate: one particle a totem st
 ICD shared by her totems (`shared_icd`, so skill casts do not multiply it), at a totem's
 176-frame cadence for the totems' 25 s. The browser decides the proc count, the on-field
 shares and the per-candidate Favonius crit rate.
+
+**Small calls (owner rulings 2026-11-15, DESIGN §2.11, DECISIONS §50).** The resonance carries
+its default proc rate, 0.12 a second (3 a 25 s rotation), read off the two committed gcsim
+samples it names; the drip's citation names who catches it (whoever is active,
+`player.go:197-200`). Venti's A4 also gives 15 to every member of the element his burst
+absorbed (`recipients: absorbed`, with gcsim's absorption order). **Constellation refunds**:
+every constellation `AddEnergy` in gcsim's character packages at the pin is curated
+(`constellation_refunds`), each served only to a build with that constellation and with its
+`basis` — `kit` (counted), `assumption` (a toggle the browser leaves off, its `condition`
+stated) or `fight` (never counted, `condition` saying why) — and every other `AddEnergy` call is
+listed with why it is not curated (`uncurated_add_energy`).
 """
 
 from __future__ import annotations
@@ -107,6 +118,10 @@ class ResonanceSpec:
     trigger_elements: tuple[str, ...]
     note: str
     citation: str
+    #: The default procs a second of rotation: the rate gcsim's committed samples show (owner
+    #: ruling 2026-11-15, DECISIONS §50), still capped by the cooldown in the browser.
+    default_procs_per_second: float = 0.0
+    default_note: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,14 +133,31 @@ class TeamResonance:
     team_can_trigger: bool
 
 
+#: When a refund triggers: per `burst`, per skill `cast`, or every `interval` seconds while it
+#: runs (`second`, at most `max_seconds` a trigger, the trigger being a burst or a cast: `on`).
+RefundPer = Literal["burst", "cast", "second"]
+#: Who receives it: every member (`team`), the giver (`self`), every member but the giver
+#: (`others`), whoever is on field when it lands (`active`), or every member of the element
+#: Venti's burst absorbed (`absorbed`, DECISIONS §50).
+Recipients = Literal["team", "self", "others", "active", "absorbed"]
+#: Whether it is counted: `kit` — a fixed number a trigger, counted; `assumption` — it depends
+#: on the fight, but a stated, cited assumption makes it countable: a toggle, off by default;
+#: `fight` — it depends on the fight and no assumption answers it: listed, never counted.
+Basis = Literal["kit", "assumption", "fight"]
+
+_PERS = ("burst", "cast", "second")
+_RECIPIENTS = ("team", "self", "others", "active", "absorbed")
+_BASES = ("kit", "assumption", "fight")
+
+
 @dataclass(frozen=True, slots=True)
 class RefundSpec:
     """One flat-energy refund as `particles.json` curates it, before a build resolves it."""
 
     label: str
-    per: Literal["burst", "cast"]
+    per: RefundPer
     count: float
-    recipients: Literal["team", "self"]
+    recipients: Recipients
     scaling: Literal["none", "per_er", "raiden_a4"]
     citation: str
     amount: float | None = None
@@ -133,6 +165,18 @@ class RefundSpec:
     amount_row: tuple[str, str] | None = None
     requires_ascension: int | None = None
     note: str | None = None
+    #: The giver's constellation it needs; a build below it is not served the refund at all.
+    requires_constellation: int | None = None
+    basis: Basis = "kit"
+    #: The assumption a toggle states, or why a `fight` refund is not counted.
+    condition: str | None = None
+    #: Venti's absorption priority (gcsim `venti/burst.go:102`), for `absorbed` recipients.
+    absorbs: tuple[str, ...] | None = None
+    interval: float | None = None
+    max_seconds: float | None = None
+    #: What starts a per-second refund: a skill cast, a burst, or nothing (`rotation`: it runs
+    #: the whole fight, Barbara's C1).
+    on: Literal["skill", "burst", "rotation"] = "burst"
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,15 +184,22 @@ class Refund:
     """A refund resolved for one build: energy per trigger before scaling, or why not."""
 
     label: str
-    per: Literal["burst", "cast"]
+    per: RefundPer
     count: float
-    recipients: Literal["team", "self"]
+    recipients: Recipients
     scaling: Literal["none", "per_er", "raiden_a4"]
     amount: float | None
     citation: str
     note: str | None = None
     #: Why the refund cannot be counted for this build (an ascension it lacks, a missing row).
     unavailable: str | None = None
+    requires_constellation: int | None = None
+    basis: Basis = "kit"
+    condition: str | None = None
+    absorbs: tuple[str, ...] | None = None
+    interval: float | None = None
+    max_seconds: float | None = None
+    on: Literal["skill", "burst", "rotation"] = "burst"
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,19 +311,41 @@ def particle_table() -> dict[str, tuple[ParticleSource, ...]]:
 
 @cache
 def refund_table() -> dict[str, tuple[RefundSpec, ...]]:
-    """Each character's flat-energy refunds, cited to the `AddEnergy` line they are read off."""
+    """Each character's flat-energy refunds, cited to the `AddEnergy` line they are read off.
+
+    The kits' own (`characters`) and the constellation refunds (`constellation_refunds`, owner
+    ruling 2026-11-15, DECISIONS §50), in that order.
+    """
     data = _load()
     commit = str(data["gcsim_commit"])
     out: dict[str, tuple[RefundSpec, ...]] = {}
-    for name, entry in data["characters"].items():
-        specs = []
+    groups = [*data["characters"].items(), *data.get("constellation_refunds", {}).items()]
+    for name, entry in groups:
+        specs = list(out.get(name, ()))
         for r in entry.get("refunds", ()):
-            if (r["per"] not in ("burst", "cast") or r["recipients"] not in ("team", "self")
-                    or r["scaling"] not in ("none", "per_er", "raiden_a4")):
-                msg = f"{name}: a refund with an unknown per, recipients or scaling: {r}"
+            if (r["per"] not in _PERS or r["recipients"] not in _RECIPIENTS
+                    or r["scaling"] not in ("none", "per_er", "raiden_a4")
+                    or r.get("basis", "kit") not in _BASES
+                    or r.get("on", "burst") not in ("skill", "burst", "rotation")):
+                msg = f"{name}: a refund with an unknown per, recipients, scaling or basis: {r}"
                 raise FormulaEnergyError(msg)
-            if ("amount" in r) == ("amount_row" in r):
+            named = ("amount" in r) + ("amount_row" in r)
+            if named > 1 or (named == 0 and r.get("basis", "kit") != "fight"):
+                # A `fight` refund is never counted, so one whose amount is not a literal
+                # (Sethos's C6 returns what his A1 drained) may leave it out.
                 msg = f"{name}: a refund names an amount or a talent row, exactly one"
+                raise FormulaEnergyError(msg)
+            if r["per"] == "second" and not r.get("interval"):
+                msg = f"{name}: a per-second refund needs an interval"
+                raise FormulaEnergyError(msg)
+            if r["per"] == "second" and r.get("on") != "rotation" and not r.get("max_seconds"):
+                msg = f"{name}: a per-second refund on a cast or burst needs a duration"
+                raise FormulaEnergyError(msg)
+            if r.get("basis", "kit") != "kit" and not r.get("condition"):
+                msg = f"{name}: a refund that is not the kit's alone says why (condition)"
+                raise FormulaEnergyError(msg)
+            if (r["recipients"] == "absorbed") != bool(r.get("absorbs")):
+                msg = f"{name}: an absorbed-element refund names the absorption order"
                 raise FormulaEnergyError(msg)
             row = r.get("amount_row")
             specs.append(RefundSpec(
@@ -281,6 +354,11 @@ def refund_table() -> dict[str, tuple[RefundSpec, ...]]:
                 amount=float(r["amount"]) if "amount" in r else None,
                 amount_row=(row["talent"], row["label"]) if row else None,
                 requires_ascension=r.get("requires_ascension"), note=r.get("note"),
+                requires_constellation=r.get("requires_constellation"),
+                basis=r.get("basis", "kit"), condition=r.get("condition"),
+                absorbs=tuple(r["absorbs"]) if r.get("absorbs") else None,
+                interval=r.get("interval"), max_seconds=r.get("max_seconds"),
+                on=r.get("on", "burst"),
             ))
         if specs:
             out[name] = tuple(specs)
@@ -305,6 +383,8 @@ def resonance_spec() -> ResonanceSpec:
         particles=float(entry["particles"]), cooldown_seconds=float(entry["cooldown_seconds"]),
         trigger_elements=tuple(entry["trigger_elements"]), note=str(entry["note"]),
         citation=_cited(entry, str(data["gcsim_commit"])),
+        default_procs_per_second=float(entry["default_procs_per_second"]),
+        default_note=str(entry["default_note"]),
     )
 
 
@@ -373,6 +453,10 @@ def _row_value(build: Build, talent: str, label: str) -> tuple[float | None, str
 def _refunds(build: Build) -> tuple[Refund, ...]:
     out = []
     for spec in refund_table().get(build.character.name, ()):
+        if (spec.requires_constellation is not None
+                and (build.constellation_level or 0) < spec.requires_constellation):
+            # A constellation the build lacks: not a refund this build has, so not served.
+            continue
         amount, unavailable = spec.amount, None
         if spec.amount_row is not None:
             amount, unavailable = _row_value(build, *spec.amount_row)
@@ -388,7 +472,9 @@ def _refunds(build: Build) -> tuple[Refund, ...]:
         out.append(Refund(
             label=spec.label, per=spec.per, count=spec.count, recipients=spec.recipients,
             scaling=scaling, amount=amount, citation=spec.citation, note=spec.note,
-            unavailable=unavailable,
+            unavailable=unavailable, requires_constellation=spec.requires_constellation,
+            basis=spec.basis, condition=spec.condition, absorbs=spec.absorbs,
+            interval=spec.interval, max_seconds=spec.max_seconds, on=spec.on,
         ))
     return tuple(out)
 
@@ -444,7 +530,9 @@ def drip() -> Drip:
     return Drip(
         particles=float(amount), interval_seconds=gap / FRAMES_PER_SECOND, config=ENERGY_DRIP,
         citation=f"gcsim {table_commit()[:8]} pkg/simulation/setup.go:522-531 (a clear "
-                 "particle, `Intn(end - start)` frames after `start`); the line is "
+                 "particle, `Intn(end - start)` frames after `start`, distributed to every "
+                 "member, the active one at full value: pkg/core/player/player.go:197-200); "
+                 "the line is "
                  "app/services/gcsim_config.py ENERGY_DRIP, cited to five community configs "
                  "(docs/DESIGN_waiting_for_energy.md)",
     )

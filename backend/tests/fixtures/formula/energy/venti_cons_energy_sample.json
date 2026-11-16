@@ -1,0 +1,1819 @@
+{
+"sim_version": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+"seed": "15325029959068778551",
+"config": "options swap_delay=12 iteration=20 ignore_burst_energy=true;\nenergy every interval=480,720 amount=1;\n\nventi char lvl=90/90 cons=0 talent=9,9,9;\nventi add weapon=\"favoniuswarbow\" refine=1 lvl=90/90;\nventi add set=\"viridescentvenerer\" count=4;\n\nxiangling char lvl=90/90 cons=0 talent=9,9,9;\nxiangling add weapon=\"thecatch\" refine=5 lvl=90/90;\nxiangling add set=\"emblemofseveredfate\" count=4;\n\nkaeya char lvl=90/90 cons=6 talent=9,9,9;\nkaeya add weapon=\"harbingerofdawn\" refine=5 lvl=90/90;\nkaeya add set=\"emblemofseveredfate\" count=4;\n\nthoma char lvl=90/90 cons=4 talent=9,9,9;\nthoma add weapon=\"blacktassel\" refine=5 lvl=90/90;\nthoma add set=\"emblemofseveredfate\" count=4;\n\ntarget lvl=100 resist=0.1 radius=2 pos=0,2.4 hp=999999999;\n\nactive xiangling;\nfor let i = 0; i < 3; i = i + 1 {\n  xiangling skill;\n  kaeya skill, burst;\n  thoma skill, burst;\n  xiangling burst;\n  venti skill, burst;\n  xiangling attack:12;\n  wait(300);\n}\n",
+"elements": {
+"venti": "anemo",
+"xiangling": "pyro",
+"kaeya": "cryo",
+"thoma": "pyro"
+},
+"constellations": {
+"venti": null,
+"xiangling": null,
+"kaeya": 6,
+"thoma": 4
+},
+"particles": [
+{
+"frame": 179,
+"receiver": "venti",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 3.4785572436
+},
+{
+"frame": 179,
+"receiver": "xiangling",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.98692
+},
+{
+"frame": 179,
+"receiver": "kaeya",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.4667,
+"amt": 13.2003
+},
+{
+"frame": 179,
+"receiver": "thoma",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.16
+},
+{
+"frame": 227,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.1595190812
+},
+{
+"frame": 227,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 227,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 227,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 303,
+"receiver": "venti",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 3.4785572436
+},
+{
+"frame": 303,
+"receiver": "xiangling",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 8.960759999999999
+},
+{
+"frame": 303,
+"receiver": "kaeya",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 2.6400599999999996
+},
+{
+"frame": 303,
+"receiver": "thoma",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 10.799999999999999
+},
+{
+"frame": 327,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.1595190812
+},
+{
+"frame": 327,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 4.9782
+},
+{
+"frame": 327,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 327,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 427,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.9325318020000002
+},
+{
+"frame": 427,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 427,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 427,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 527,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.9325318020000002
+},
+{
+"frame": 527,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 527,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 527,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 574,
+"receiver": "venti",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 10.4356717308
+},
+{
+"frame": 574,
+"receiver": "xiangling",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 4.9782
+},
+{
+"frame": 574,
+"receiver": "kaeya",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 2.6400599999999996
+},
+{
+"frame": 574,
+"receiver": "thoma",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.16
+},
+{
+"frame": 624,
+"receiver": "venti",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 2.3190381624
+},
+{
+"frame": 624,
+"receiver": "xiangling",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 3.3188
+},
+{
+"frame": 624,
+"receiver": "kaeya",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 1.7600399999999998
+},
+{
+"frame": 624,
+"receiver": "thoma",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.44
+},
+{
+"frame": 1293,
+"receiver": "venti",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 2.3190381624
+},
+{
+"frame": 1293,
+"receiver": "xiangling",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 3.3188
+},
+{
+"frame": 1293,
+"receiver": "kaeya",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 1.7600399999999998
+},
+{
+"frame": 1293,
+"receiver": "thoma",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.44
+},
+{
+"frame": 1504,
+"receiver": "venti",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 3.4785572436
+},
+{
+"frame": 1504,
+"receiver": "xiangling",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.98692
+},
+{
+"frame": 1504,
+"receiver": "kaeya",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.4667,
+"amt": 13.2003
+},
+{
+"frame": 1504,
+"receiver": "thoma",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.16
+},
+{
+"frame": 1552,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.1595190812
+},
+{
+"frame": 1552,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 1552,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 1552,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 1628,
+"receiver": "venti",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 3.4785572436
+},
+{
+"frame": 1628,
+"receiver": "xiangling",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 8.960759999999999
+},
+{
+"frame": 1628,
+"receiver": "kaeya",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 2.6400599999999996
+},
+{
+"frame": 1628,
+"receiver": "thoma",
+"source": "thoma",
+"count": 3,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 10.799999999999999
+},
+{
+"frame": 1652,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.1595190812
+},
+{
+"frame": 1652,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 4.9782
+},
+{
+"frame": 1652,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 1652,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1752,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.9325318020000002
+},
+{
+"frame": 1752,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 1752,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 1752,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1852,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.9325318020000002
+},
+{
+"frame": 1852,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 1852,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 1852,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1899,
+"receiver": "venti",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 10.4356717308
+},
+{
+"frame": 1899,
+"receiver": "xiangling",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 4.9782
+},
+{
+"frame": 1899,
+"receiver": "kaeya",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 2.6400599999999996
+},
+{
+"frame": 1899,
+"receiver": "thoma",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.16
+},
+{
+"frame": 1942,
+"receiver": "venti",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 2.3190381624
+},
+{
+"frame": 1942,
+"receiver": "xiangling",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 3.3188
+},
+{
+"frame": 1942,
+"receiver": "kaeya",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 1.7600399999999998
+},
+{
+"frame": 1942,
+"receiver": "thoma",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.44
+},
+{
+"frame": 2487,
+"receiver": "venti",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 2.3190381624
+},
+{
+"frame": 2487,
+"receiver": "xiangling",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 3.3188
+},
+{
+"frame": 2487,
+"receiver": "kaeya",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 1.7600399999999998
+},
+{
+"frame": 2487,
+"receiver": "thoma",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.44
+},
+{
+"frame": 2829,
+"receiver": "venti",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 3.4785572436
+},
+{
+"frame": 2829,
+"receiver": "xiangling",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.98692
+},
+{
+"frame": 2829,
+"receiver": "kaeya",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.4667,
+"amt": 13.2003
+},
+{
+"frame": 2829,
+"receiver": "thoma",
+"source": "kaeya",
+"count": 3,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.16
+},
+{
+"frame": 2877,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.1595190812
+},
+{
+"frame": 2877,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 2877,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 2877,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 2953,
+"receiver": "venti",
+"source": "thoma",
+"count": 4,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 4.6380763248
+},
+{
+"frame": 2953,
+"receiver": "xiangling",
+"source": "thoma",
+"count": 4,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 11.947679999999998
+},
+{
+"frame": 2953,
+"receiver": "kaeya",
+"source": "thoma",
+"count": 4,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 3.5200799999999997
+},
+{
+"frame": 2953,
+"receiver": "thoma",
+"source": "thoma",
+"count": 4,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 14.399999999999999
+},
+{
+"frame": 2977,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.1595190812
+},
+{
+"frame": 2977,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 4.9782
+},
+{
+"frame": 2977,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 2977,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 3077,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.9325318020000002
+},
+{
+"frame": 3077,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 3077,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 3077,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 3149,
+"receiver": "venti",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 3.8650636040000004
+},
+{
+"frame": 3149,
+"receiver": "xiangling",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 1.99128
+},
+{
+"frame": 3149,
+"receiver": "kaeya",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 1.7600399999999998
+},
+{
+"frame": 3149,
+"receiver": "thoma",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.44
+},
+{
+"frame": 3177,
+"receiver": "venti",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": true,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 1.9325318020000002
+},
+{
+"frame": 3177,
+"receiver": "xiangling",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.6594,
+"amt": 2.9869199999999996
+},
+{
+"frame": 3177,
+"receiver": "kaeya",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 0.8800199999999999
+},
+{
+"frame": 3177,
+"receiver": "thoma",
+"source": "xiangling",
+"count": 1,
+"ele": "pyro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 3224,
+"receiver": "venti",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 10.4356717308
+},
+{
+"frame": 3224,
+"receiver": "xiangling",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 4.9782
+},
+{
+"frame": 3224,
+"receiver": "kaeya",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 2.6400599999999996
+},
+{
+"frame": 3224,
+"receiver": "thoma",
+"source": "venti",
+"count": 3,
+"ele": "anemo",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.16
+},
+{
+"frame": 3645,
+"receiver": "venti",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.9325318020000002,
+"amt": 2.3190381624
+},
+{
+"frame": 3645,
+"receiver": "xiangling",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": true,
+"party_count": 4,
+"er": 1.6594,
+"amt": 3.3188
+},
+{
+"frame": 3645,
+"receiver": "kaeya",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.4667,
+"amt": 1.7600399999999998
+},
+{
+"frame": 3645,
+"receiver": "thoma",
+"source": "drop",
+"count": 1,
+"ele": "none",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.44
+}
+],
+"flat": [
+{
+"frame": 155,
+"receiver": "kaeya",
+"source": "kaeya-c6",
+"amt": 15
+},
+{
+"frame": 254,
+"receiver": "thoma",
+"source": "thoma-c4",
+"amt": 15
+},
+{
+"frame": 713,
+"receiver": "xiangling",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 805,
+"receiver": "xiangling",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 1019,
+"receiver": "venti",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 1019,
+"receiver": "xiangling",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 1019,
+"receiver": "thoma",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 1480,
+"receiver": "kaeya",
+"source": "kaeya-c6",
+"amt": 15
+},
+{
+"frame": 1579,
+"receiver": "thoma",
+"source": "thoma-c4",
+"amt": 15
+},
+{
+"frame": 2003,
+"receiver": "xiangling",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 2329,
+"receiver": "xiangling",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 2344,
+"receiver": "venti",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 2344,
+"receiver": "xiangling",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 2344,
+"receiver": "thoma",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 2805,
+"receiver": "kaeya",
+"source": "kaeya-c6",
+"amt": 15
+},
+{
+"frame": 2904,
+"receiver": "thoma",
+"source": "thoma-c4",
+"amt": 15
+},
+{
+"frame": 3273,
+"receiver": "xiangling",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 3527,
+"receiver": "xiangling",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 3669,
+"receiver": "venti",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 3669,
+"receiver": "xiangling",
+"source": "venti-a4",
+"amt": 15
+},
+{
+"frame": 3669,
+"receiver": "thoma",
+"source": "venti-a4",
+"amt": 15
+}
+],
+"drains": [
+{
+"frame": 154,
+"character": "kaeya",
+"pre_drain": 60,
+"source": "kaeya-burst-energy-drain"
+},
+{
+"frame": 253,
+"character": "thoma",
+"pre_drain": 80,
+"source": "thoma-burst-energy-drain"
+},
+{
+"frame": 338,
+"character": "xiangling",
+"pre_drain": 80,
+"source": "xiangling-burst-energy-drain"
+},
+{
+"frame": 529,
+"character": "venti",
+"pre_drain": 60,
+"source": "venti-burst-energy-drain"
+},
+{
+"frame": 1479,
+"character": "kaeya",
+"pre_drain": 40.52057999999999,
+"source": "kaeya-burst-energy-drain"
+},
+{
+"frame": 1578,
+"character": "thoma",
+"pre_drain": 58.07999999999999,
+"source": "thoma-burst-energy-drain"
+},
+{
+"frame": 1663,
+"character": "xiangling",
+"pre_drain": 54.50244,
+"source": "xiangling-burst-energy-drain"
+},
+{
+"frame": 1854,
+"character": "venti",
+"pre_drain": 43.214964309200006,
+"source": "venti-burst-energy-drain"
+},
+{
+"frame": 2804,
+"character": "kaeya",
+"pre_drain": 40.52057999999999,
+"source": "kaeya-burst-energy-drain"
+},
+{
+"frame": 2903,
+"character": "thoma",
+"pre_drain": 58.07999999999999,
+"source": "thoma-burst-energy-drain"
+},
+{
+"frame": 2988,
+"character": "xiangling",
+"pre_drain": 57.48936,
+"source": "xiangling-burst-energy-drain"
+},
+{
+"frame": 3179,
+"character": "venti",
+"pre_drain": 48.2395469944,
+"source": "venti-burst-energy-drain"
+}
+],
+"casts": [
+{
+"frame": 1,
+"character": "xiangling",
+"action": "skill"
+},
+{
+"frame": 51,
+"character": "kaeya",
+"action": "swap"
+},
+{
+"frame": 51,
+"character": "kaeya",
+"action": "skill"
+},
+{
+"frame": 103,
+"character": "kaeya",
+"action": "burst"
+},
+{
+"frame": 192,
+"character": "thoma",
+"action": "swap"
+},
+{
+"frame": 192,
+"character": "thoma",
+"action": "skill"
+},
+{
+"frame": 246,
+"character": "thoma",
+"action": "burst"
+},
+{
+"frame": 314,
+"character": "xiangling",
+"action": "swap"
+},
+{
+"frame": 314,
+"character": "xiangling",
+"action": "burst"
+},
+{
+"frame": 423,
+"character": "venti",
+"action": "swap"
+},
+{
+"frame": 423,
+"character": "venti",
+"action": "skill"
+},
+{
+"frame": 445,
+"character": "venti",
+"action": "burst"
+},
+{
+"frame": 550,
+"character": "xiangling",
+"action": "swap"
+},
+{
+"frame": 550,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 576,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 599,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 637,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 692,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 771,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 797,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 820,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 858,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 913,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 992,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 1018,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 1026,
+"character": "xiangling",
+"action": "wait"
+},
+{
+"frame": 1326,
+"character": "xiangling",
+"action": "skill"
+},
+{
+"frame": 1376,
+"character": "kaeya",
+"action": "swap"
+},
+{
+"frame": 1376,
+"character": "kaeya",
+"action": "skill"
+},
+{
+"frame": 1428,
+"character": "kaeya",
+"action": "burst"
+},
+{
+"frame": 1517,
+"character": "thoma",
+"action": "swap"
+},
+{
+"frame": 1517,
+"character": "thoma",
+"action": "skill"
+},
+{
+"frame": 1571,
+"character": "thoma",
+"action": "burst"
+},
+{
+"frame": 1639,
+"character": "xiangling",
+"action": "swap"
+},
+{
+"frame": 1639,
+"character": "xiangling",
+"action": "burst"
+},
+{
+"frame": 1748,
+"character": "venti",
+"action": "swap"
+},
+{
+"frame": 1748,
+"character": "venti",
+"action": "skill"
+},
+{
+"frame": 1770,
+"character": "venti",
+"action": "burst"
+},
+{
+"frame": 1875,
+"character": "xiangling",
+"action": "swap"
+},
+{
+"frame": 1875,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 1901,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 1924,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 1962,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2017,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2096,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2122,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2145,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2183,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2238,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2317,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2343,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 2351,
+"character": "xiangling",
+"action": "wait"
+},
+{
+"frame": 2651,
+"character": "xiangling",
+"action": "skill"
+},
+{
+"frame": 2701,
+"character": "kaeya",
+"action": "swap"
+},
+{
+"frame": 2701,
+"character": "kaeya",
+"action": "skill"
+},
+{
+"frame": 2753,
+"character": "kaeya",
+"action": "burst"
+},
+{
+"frame": 2842,
+"character": "thoma",
+"action": "swap"
+},
+{
+"frame": 2842,
+"character": "thoma",
+"action": "skill"
+},
+{
+"frame": 2896,
+"character": "thoma",
+"action": "burst"
+},
+{
+"frame": 2964,
+"character": "xiangling",
+"action": "swap"
+},
+{
+"frame": 2964,
+"character": "xiangling",
+"action": "burst"
+},
+{
+"frame": 3073,
+"character": "venti",
+"action": "swap"
+},
+{
+"frame": 3073,
+"character": "venti",
+"action": "skill"
+},
+{
+"frame": 3095,
+"character": "venti",
+"action": "burst"
+},
+{
+"frame": 3200,
+"character": "xiangling",
+"action": "swap"
+},
+{
+"frame": 3200,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3226,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3249,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3287,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3342,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3421,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3447,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3470,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3508,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3563,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3642,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3668,
+"character": "xiangling",
+"action": "attack"
+},
+{
+"frame": 3676,
+"character": "xiangling",
+"action": "wait"
+}
+],
+"absorbs": [
+{
+"frame": 677,
+"by": "venti",
+"msg": "infusion check (e) picked up pyro"
+},
+{
+"frame": 2002,
+"by": "venti",
+"msg": "infusion check (e) picked up pyro"
+},
+{
+"frame": 3327,
+"by": "venti",
+"msg": "infusion check (e) picked up pyro"
+}
+],
+"drip_queued": []
+}

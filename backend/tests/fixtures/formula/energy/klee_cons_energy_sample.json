@@ -1,0 +1,2097 @@
+{
+"sim_version": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+"seed": "2622578390594857073",
+"config": "options swap_delay=12 iteration=20 ignore_burst_energy=true;\n\nklee char lvl=90/90 cons=6 talent=9,9,9;\nklee add weapon=\"thewidsith\" refine=5 lvl=90/90;\nklee add set=\"crimsonwitchofflames\" count=4;\n\ndiona char lvl=90/90 cons=1 talent=9,9,9;\ndiona add weapon=\"favoniuswarbow\" refine=1 lvl=90/90;\ndiona add set=\"emblemofseveredfate\" count=4;\n\nfurina char lvl=90/90 cons=4 talent=9,9,9;\nfurina add weapon=\"festeringdesire\" refine=5 lvl=90/90;\nfurina add set=\"goldentroupe\" count=4;\n\nbarbara char lvl=90/90 cons=1 talent=9,9,9;\nbarbara add weapon=\"prototypeamber\" refine=5 lvl=90/90;\nbarbara add set=\"emblemofseveredfate\" count=4;\n\ntarget lvl=100 resist=0.1 radius=2 pos=0,2.4 hp=999999999;\n\nactive furina;\nfor let i = 0; i < 3; i = i + 1 {\n  furina skill, burst;\n  diona skill, burst;\n  barbara skill;\n  klee burst, attack:10;\n  wait(400);\n}\n",
+"elements": {
+"klee": "pyro",
+"diona": "cryo",
+"furina": "hydro",
+"barbara": "hydro"
+},
+"constellations": {
+"klee": 6,
+"diona": 1,
+"furina": 4,
+"barbara": 1
+},
+"particles": [
+{
+"frame": 209,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 209,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.812531802
+},
+{
+"frame": 209,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 209,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 288,
+"receiver": "klee",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 288,
+"receiver": "diona",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 3.2625572436
+},
+{
+"frame": 288,
+"receiver": "furina",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 0.87564
+},
+{
+"frame": 288,
+"receiver": "barbara",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.2
+},
+{
+"frame": 289,
+"receiver": "klee",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 289,
+"receiver": "diona",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 3.2625572436
+},
+{
+"frame": 289,
+"receiver": "furina",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 0.87564
+},
+{
+"frame": 289,
+"receiver": "barbara",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.2
+},
+{
+"frame": 406,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 406,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 406,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 406,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 599,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 599,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 599,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 599,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 796,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 796,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 796,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 796,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 993,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 993,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 993,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 993,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1172,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 1172,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 1172,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 1172,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1380,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 1380,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 1380,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.4594,
+"amt": 4.3782
+},
+{
+"frame": 1380,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1548,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 1548,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.812531802
+},
+{
+"frame": 1548,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 1548,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 1627,
+"receiver": "klee",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 1627,
+"receiver": "diona",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 3.2625572436
+},
+{
+"frame": 1627,
+"receiver": "furina",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 0.87564
+},
+{
+"frame": 1627,
+"receiver": "barbara",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.2
+},
+{
+"frame": 1628,
+"receiver": "klee",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 1628,
+"receiver": "diona",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 3.2625572436
+},
+{
+"frame": 1628,
+"receiver": "furina",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 0.87564
+},
+{
+"frame": 1628,
+"receiver": "barbara",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.2
+},
+{
+"frame": 1748,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 1748,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 1748,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 1748,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 1936,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 1936,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 1936,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 1936,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 2133,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 2133,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 2133,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 2133,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 2335,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 2335,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 2335,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 2335,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 2513,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 2513,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 2513,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 2513,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 2720,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 2720,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 2720,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 2720,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 2917,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 2917,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 2917,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 2917,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 3117,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 3117,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 3117,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 3117,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 3468,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 3468,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.812531802
+},
+{
+"frame": 3468,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 3468,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 3543,
+"receiver": "klee",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 3543,
+"receiver": "diona",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 3.2625572436
+},
+{
+"frame": 3543,
+"receiver": "furina",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 0.87564
+},
+{
+"frame": 3543,
+"receiver": "barbara",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.2
+},
+{
+"frame": 3544,
+"receiver": "klee",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 3544,
+"receiver": "diona",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 3.2625572436
+},
+{
+"frame": 3544,
+"receiver": "furina",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 0.87564
+},
+{
+"frame": 3544,
+"receiver": "barbara",
+"source": "diona",
+"count": 1,
+"ele": "cryo",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 1.2
+},
+{
+"frame": 3663,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 3663,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 3663,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 3663,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 3858,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 3858,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 3858,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 3858,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 4050,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1,
+"amt": 0.6
+},
+{
+"frame": 4050,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 4050,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 4050,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1.2,
+"amt": 3.5999999999999996
+},
+{
+"frame": 4246,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 4246,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 4246,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 4246,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 4426,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 4426,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 4426,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 4426,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 4636,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 4636,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 4636,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 4636,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 4836,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 4836,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 4836,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 4836,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+},
+{
+"frame": 5024,
+"receiver": "klee",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": true,
+"party_count": 4,
+"er": 1,
+"amt": 1
+},
+{
+"frame": 5024,
+"receiver": "diona",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.812531802,
+"amt": 1.0875190812
+},
+{
+"frame": 5024,
+"receiver": "furina",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.4594,
+"amt": 2.6269199999999997
+},
+{
+"frame": 5024,
+"receiver": "barbara",
+"source": "furina",
+"count": 1,
+"ele": "hydro",
+"is_active": false,
+"party_count": 4,
+"er": 1.2,
+"amt": 2.1599999999999997
+}
+],
+"flat": [
+{
+"frame": 109,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 441,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 601,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 662,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 662,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 662,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 759,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 802,
+"receiver": "klee",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 842,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 842,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 842,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 1019,
+"receiver": "diona",
+"source": "diona-c1",
+"amt": 15
+},
+{
+"frame": 1022,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 1022,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 1022,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 1072,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 1201,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 1448,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 1781,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 1801,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 2096,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 2358,
+"receiver": "diona",
+"source": "diona-c1",
+"amt": 15
+},
+{
+"frame": 2401,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 2413,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 2578,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2578,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2578,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2610,
+"receiver": "klee",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 2720,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 2758,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2758,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2758,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2938,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2938,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 2938,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 3001,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 3038,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 3368,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 3601,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 3699,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 4018,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 4201,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 4274,
+"receiver": "diona",
+"source": "diona-c1",
+"amt": 15
+},
+{
+"frame": 4326,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 4495,
+"receiver": "klee",
+"source": "na-ca-on-hit",
+"amt": 1
+},
+{
+"frame": 4501,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4501,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4501,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4640,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+},
+{
+"frame": 4681,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4681,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4681,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4801,
+"receiver": "barbara",
+"source": "barbara-c1",
+"amt": 1
+},
+{
+"frame": 4861,
+"receiver": "diona",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4861,
+"receiver": "furina",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4861,
+"receiver": "barbara",
+"source": "klee-c6",
+"amt": 3
+},
+{
+"frame": 4954,
+"receiver": "furina",
+"source": "furina-c4",
+"amt": 4
+}
+],
+"drains": [
+{
+"frame": 62,
+"character": "furina",
+"pre_drain": 60,
+"source": "furina-burst-energy-drain"
+},
+{
+"frame": 254,
+"character": "diona",
+"pre_drain": 80,
+"source": "diona-burst-energy-drain"
+},
+{
+"frame": 348,
+"character": "klee",
+"pre_drain": 60,
+"source": "klee-burst-energy-drain"
+},
+{
+"frame": 1401,
+"character": "furina",
+"pre_drain": 46.891,
+"source": "furina-burst-energy-drain"
+},
+{
+"frame": 1593,
+"character": "diona",
+"pre_drain": 38.8627607764,
+"source": "diona-burst-energy-drain"
+},
+{
+"frame": 2264,
+"character": "klee",
+"pre_drain": 10.199999999999998,
+"source": "klee-burst-energy-drain"
+},
+{
+"frame": 3317,
+"character": "furina",
+"pre_drain": 58.393559999999994,
+"source": "furina-burst-energy-drain"
+},
+{
+"frame": 3509,
+"character": "diona",
+"pre_drain": 41.0377989388,
+"source": "diona-burst-energy-drain"
+},
+{
+"frame": 4187,
+"character": "klee",
+"pre_drain": 9.599999999999998,
+"source": "klee-burst-energy-drain"
+}
+],
+"casts": [
+{
+"frame": 1,
+"character": "furina",
+"action": "skill"
+},
+{
+"frame": 55,
+"character": "furina",
+"action": "burst"
+},
+{
+"frame": 178,
+"character": "diona",
+"action": "swap"
+},
+{
+"frame": 178,
+"character": "diona",
+"action": "skill"
+},
+{
+"frame": 211,
+"character": "diona",
+"action": "burst"
+},
+{
+"frame": 264,
+"character": "barbara",
+"action": "swap"
+},
+{
+"frame": 264,
+"character": "barbara",
+"action": "skill"
+},
+{
+"frame": 336,
+"character": "klee",
+"action": "swap"
+},
+{
+"frame": 336,
+"character": "klee",
+"action": "burst"
+},
+{
+"frame": 475,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 515,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 553,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 630,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 661,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 699,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 776,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 807,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 845,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 922,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 928,
+"character": "klee",
+"action": "wait"
+},
+{
+"frame": 1340,
+"character": "furina",
+"action": "swap"
+},
+{
+"frame": 1340,
+"character": "furina",
+"action": "skill"
+},
+{
+"frame": 1394,
+"character": "furina",
+"action": "burst"
+},
+{
+"frame": 1517,
+"character": "diona",
+"action": "swap"
+},
+{
+"frame": 1517,
+"character": "diona",
+"action": "skill"
+},
+{
+"frame": 1550,
+"character": "diona",
+"action": "burst"
+},
+{
+"frame": 1603,
+"character": "barbara",
+"action": "swap"
+},
+{
+"frame": 2187,
+"character": "barbara",
+"action": "skill"
+},
+{
+"frame": 2252,
+"character": "klee",
+"action": "swap"
+},
+{
+"frame": 2252,
+"character": "klee",
+"action": "burst"
+},
+{
+"frame": 2391,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2431,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2469,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2546,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2577,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2615,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2692,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2723,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2761,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2838,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 2844,
+"character": "klee",
+"action": "wait"
+},
+{
+"frame": 3256,
+"character": "furina",
+"action": "swap"
+},
+{
+"frame": 3256,
+"character": "furina",
+"action": "skill"
+},
+{
+"frame": 3310,
+"character": "furina",
+"action": "burst"
+},
+{
+"frame": 3433,
+"character": "diona",
+"action": "swap"
+},
+{
+"frame": 3433,
+"character": "diona",
+"action": "skill"
+},
+{
+"frame": 3466,
+"character": "diona",
+"action": "burst"
+},
+{
+"frame": 3519,
+"character": "barbara",
+"action": "swap"
+},
+{
+"frame": 4110,
+"character": "barbara",
+"action": "skill"
+},
+{
+"frame": 4175,
+"character": "klee",
+"action": "swap"
+},
+{
+"frame": 4175,
+"character": "klee",
+"action": "burst"
+},
+{
+"frame": 4314,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4354,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4392,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4469,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4500,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4538,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4615,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4646,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4684,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4761,
+"character": "klee",
+"action": "attack"
+},
+{
+"frame": 4767,
+"character": "klee",
+"action": "wait"
+}
+],
+"absorbs": [],
+"drip_queued": []
+}

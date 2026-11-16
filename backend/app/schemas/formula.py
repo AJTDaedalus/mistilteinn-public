@@ -339,17 +339,24 @@ class FormulaResonanceEnergyRead(BaseModel):
     team_can_trigger: bool
     note: str
     citation: str
+    #: The default procs a second of rotation, from gcsim's committed samples (DECISIONS §50);
+    #: the browser caps it at one per `cooldown_seconds`.
+    default_procs_per_second: float
+    default_note: str
 
 
 class FormulaRefundRead(BaseModel):
     """A kit's flat energy (gcsim `AddEnergy`): ER never multiplies it (DESIGN §2.11)."""
 
     label: str
-    #: Triggered per `burst` or per skill `cast`, `count` times each.
-    per: Literal["burst", "cast"]
+    #: Triggered per `burst` or per skill `cast`, `count` times each; or `second`: `count`
+    #: every `interval` seconds for at most `max_seconds` after each trigger (`on`).
+    per: Literal["burst", "cast", "second"]
     count: float
-    #: `team`: every member gets it, on field or off. `self`: the giver alone.
-    recipients: Literal["team", "self"]
+    #: `team`: every member gets it, on field or off. `self`: the giver alone. `others`:
+    #: every member but the giver. `active`: whoever is on field when it lands. `absorbed`:
+    #: every member of the element Venti's burst absorbed (`absorbs`, its priority order).
+    recipients: Literal["team", "self", "others", "active", "absorbed"]
     #: `none`: `amount` as is. `per_er`: × the giver's total ER (Sara). `raiden_a4`:
     #: × (1 + 0.006 × whole percent of the giver's ER above 100 %).
     scaling: Literal["none", "per_er", "raiden_a4"]
@@ -358,6 +365,19 @@ class FormulaRefundRead(BaseModel):
     unavailable: str | None = None
     note: str | None = None
     citation: str
+    #: The giver's constellation it needs (a build below it is not served it at all).
+    requires_constellation: int | None = None
+    #: `kit`: counted. `assumption`: a toggle, off by default, stating `condition`. `fight`:
+    #: listed, never counted, `condition` saying why (DECISIONS §50).
+    basis: Literal["kit", "assumption", "fight"] | None = None
+    condition: str | None = None
+    #: Venti's absorption priority, lower case, for `absorbed` recipients.
+    absorbs: list[str] | None = None
+    interval: float | None = None
+    max_seconds: float | None = None
+    #: What starts a `second` refund (absent: not a rate): a skill cast, a burst, or the whole
+    #: fight (`rotation`).
+    on: Literal["skill", "burst", "rotation"] | None = None
 
 
 class FormulaFavoniusRead(BaseModel):

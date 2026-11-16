@@ -152,7 +152,8 @@ def test_cooldown_reads_the_first_value_of_the_cd_row() -> None:
 
 REFUNDS = [
     (name, refund)
-    for name, entry in TABLE["characters"].items()
+    for group in ("characters", "constellation_refunds")
+    for name, entry in TABLE[group].items()
     for refund in entry.get("refunds", ())
 ]
 
@@ -177,10 +178,18 @@ def test_every_refund_cites_an_add_energy_line_that_says_what_it_claims(
     if refund["recipients"] == "team":
         # gcsim adds a team refund inside `for _, char := range c.Core.Player.Chars()`.
         assert "char.AddEnergy(" in text, name
+    elif refund["recipients"] in ("others", "absorbed"):
+        # The same loop, skipping the giver (`others`) or filtering by element (`absorbed`):
+        # the loop line is cited too.
+        assert "range c.Core.Player.Chars()" in text, name
+        assert re.search(r"\b(char|x|other|this)\.AddEnergy\(", text), name
+    elif refund["recipients"] == "active":
+        # Whoever is on field when it lands: `active.AddEnergy` / `ActiveChar().AddEnergy`.
+        assert re.search(r"(active|ActiveChar\(\))\.AddEnergy\(", text), name
     else:
         assert "c.AddEnergy(" in text, name
-    assert refund["per"] in ("burst", "cast")
-    assert refund["count"] >= 1
+    assert refund["per"] in ("burst", "cast", "second")
+    assert refund["count"] > 0
 
 
 def test_raidens_refund_is_five_a_burst_once_a_second() -> None:
