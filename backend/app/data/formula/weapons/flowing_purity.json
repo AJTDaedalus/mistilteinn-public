@@ -1,0 +1,146 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Flowing Purity",
+ "nanoka_id": "14425",
+ "slug": "flowing_purity",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/FlowingPurity/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/flowingpurity/flowingpurity.go",
+ "verified_by": [
+  "flowing_purity_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   0.08,
+   15.0,
+   0.24,
+   0.02,
+   0.12,
+   15.0,
+   10.0,
+   0.0
+  ],
+  "2": [
+   0.1,
+   15.0,
+   0.24,
+   0.025,
+   0.15,
+   15.0,
+   10.0,
+   0.0
+  ],
+  "3": [
+   0.12,
+   15.0,
+   0.24,
+   0.03,
+   0.18,
+   15.0,
+   10.0,
+   0.0
+  ],
+  "4": [
+   0.14,
+   15.0,
+   0.24,
+   0.035,
+   0.21,
+   15.0,
+   10.0,
+   0.0
+  ],
+  "5": [
+   0.16,
+   15.0,
+   0.24,
+   0.04,
+   0.24,
+   15.0,
+   10.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "after_skill",
+   "label": "For 15s after an Elemental Skill",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "25"
+  },
+  {
+   "key": "bond",
+   "label": "After the weapon's Bond of Life is cleared",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "37"
+  }
+ ],
+ "effects": [
+  {
+   "key": "ele",
+   "label": "Elemental DMG after a skill, every element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 0
+   },
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "when": [
+    {
+     "condition": "after_skill",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "21,26-34,59-64"
+  },
+  {
+   "key": "bond_ele",
+   "label": "Bond cleared: Elemental DMG per 1,000 HP cleared (24% of Max HP)",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3,
+    "times_stat": "hp",
+    "times_param": 2,
+    "stat_unit": {
+     "constant": 1000.0,
+     "cite": "GO FlowingPurity/index.tsx:47 `percent(1 / 1000)`"
+    },
+    "cap": {
+     "param": 4
+    }
+   },
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "when": [
+    {
+     "condition": "bond",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "22-23,36-55,59-69"
+  }
+ ]
+}

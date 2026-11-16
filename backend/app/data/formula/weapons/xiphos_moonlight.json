@@ -1,0 +1,98 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Xiphos' Moonlight",
+ "nanoka_id": "11418",
+ "slug": "xiphos_moonlight",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/XiphosMoonlight/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/xiphos/xiphos.go",
+ "verified_by": [
+  "xiphos_moonlight_r1_emblem_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   10.0,
+   0.036,
+   12.0,
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   10.0,
+   0.045,
+   12.0,
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   10.0,
+   0.054,
+   12.0,
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   10.0,
+   0.063,
+   12.0,
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   10.0,
+   0.072,
+   12.0,
+   0.3,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "effects": [
+  {
+   "key": "er",
+   "label": "Energy Recharge from the wielder's EM",
+   "receivers": "self",
+   "stat": "energy_recharge",
+   "value": {
+    "param": 1,
+    "times_stat": "elemental_mastery",
+    "stat_unit": {
+     "constant": 100.0,
+     "cite": "the seeded list's 0.036 is a percentage: GO XiphosMoonlight/index.tsx:19 `enerRech_arr` 0.00036 (R1), `unit: '%'`"
+    }
+   },
+   "go": "19-30,42-43"
+  },
+  {
+   "key": "team_er",
+   "label": "30% of it to the other members",
+   "receivers": "others",
+   "stat": "energy_recharge",
+   "value": {
+    "param": 1,
+    "times_stat": "elemental_mastery",
+    "times_param": 3,
+    "stat_unit": {
+     "constant": 100.0,
+     "cite": "the seeded list's 0.036 is a percentage: GO XiphosMoonlight/index.tsx:19 `enerRech_arr` 0.00036 (R1), `unit: '%'`"
+    }
+   },
+   "go": "31-37,45-48"
+  }
+ ]
+}

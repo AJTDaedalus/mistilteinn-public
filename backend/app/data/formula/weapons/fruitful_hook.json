@@ -1,0 +1,112 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Fruitful Hook",
+ "nanoka_id": "12430",
+ "slug": "fruitful_hook",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Claymore/FruitfulHook/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/claymore/fruitfulhook/fruitfulhook.go",
+ "verified_by": [
+  "fruitful_hook_r1_on_xiangling_plunge"
+ ],
+ "pins": {
+  "1": [
+   0.16,
+   0.16,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.2,
+   0.2,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.24,
+   0.24,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.28,
+   0.28,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.32,
+   0.32,
+   10.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "after_plunge",
+   "label": "For 10s after a Plunging Attack hits",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "17"
+  }
+ ],
+ "effects": [
+  {
+   "key": "plunge_cr",
+   "label": "Plunging Attack CRIT Rate",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "param": 0
+   },
+   "moves": [
+    "plunge"
+   ],
+   "go": "10-15,29"
+  },
+  {
+   "key": "dmg",
+   "label": "Normal, Charged and Plunging Attack DMG after a plunge",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "moves": [
+    "normal",
+    "charged",
+    "plunge"
+   ],
+   "when": [
+    {
+     "condition": "after_plunge",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "18-25,30-32"
+  }
+ ]
+}

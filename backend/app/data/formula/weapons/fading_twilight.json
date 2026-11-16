@@ -1,0 +1,139 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Fading Twilight",
+ "nanoka_id": "15411",
+ "slug": "fading_twilight",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/FadingTwilight/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/twilight/twilight.go",
+ "verified_by": [
+  "fading_twilight_r1_dawnblaze_on_amber"
+ ],
+ "pins": {
+  "1": [
+   7.0,
+   0.06,
+   0.1,
+   0.14,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   7.0,
+   0.075,
+   0.125,
+   0.175,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   7.0,
+   0.09,
+   0.15,
+   0.21,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   7.0,
+   0.105,
+   0.175,
+   0.245,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   7.0,
+   0.12,
+   0.2,
+   0.28,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "state",
+   "label": "The weapon's state",
+   "kind": "choice",
+   "default_by": "self",
+   "options": [
+    "evengleam",
+    "afterglow",
+    "dawnblaze"
+   ],
+   "usual": {
+    "value": "",
+    "reason": "None: the state cycles on hits every 7s; choose the one to assume"
+   },
+   "go": "11"
+  }
+ ],
+ "effects": [
+  {
+   "key": "evengleam",
+   "label": "Evengleam: DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "state",
+     "values": [
+      "evengleam"
+     ]
+    }
+   ],
+   "go": "12-16,26,30"
+  },
+  {
+   "key": "afterglow",
+   "label": "Afterglow: DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2
+   },
+   "when": [
+    {
+     "condition": "state",
+     "values": [
+      "afterglow"
+     ]
+    }
+   ],
+   "go": "17-20,26,30"
+  },
+  {
+   "key": "dawnblaze",
+   "label": "Dawnblaze: DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3
+   },
+   "when": [
+    {
+     "condition": "state",
+     "values": [
+      "dawnblaze"
+     ]
+    }
+   ],
+   "go": "21-26,30"
+  }
+ ]
+}
