@@ -257,5 +257,6 @@ def weapon_fixtures_5() -> list[dict[str, Any]]:
     from tests.unit.go_fixtures_weapons5b import five_star_fixtures
     from tests.unit.go_fixtures_weapons5c import four_star_fixtures_a
     from tests.unit.go_fixtures_weapons5d import four_star_fixtures_b
+    from tests.unit.go_fixtures_weapons5e import three_star_fixtures
     return [*owner_fixtures(), *five_star_fixtures(), *four_star_fixtures_a(),
-            *four_star_fixtures_b()]
+            *four_star_fixtures_b(), *three_star_fixtures()]

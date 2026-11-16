@@ -1,0 +1,98 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Harbinger of Dawn",
+ "nanoka_id": "11302",
+ "slug": "harbinger_of_dawn",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/HarbingerOfDawn/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/harbinger/harbinger.go",
+ "verified_by": [
+  "harbinger_of_dawn_r1_on_ayaka"
+ ],
+ "pins": {
+  "1": [
+   0.14,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.175,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.21,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.245,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.28,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "hp",
+   "label": "Wielder above 90% HP",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 1,
+    "reason": "On: incoming damage is not modelled; turn it off below 90% HP"
+   },
+   "go": "10"
+  }
+ ],
+ "effects": [
+  {
+   "key": "cr",
+   "label": "CRIT Rate above 90% HP",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "hp",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "10-16,18-22"
+  }
+ ]
+}

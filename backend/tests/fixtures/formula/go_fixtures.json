@@ -63800,6 +63800,1450 @@
       "go_value": 7688.028461538462,
       "divergence": "none: no reaction",
       "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "bloodtainted_greatsword_r1_on_razor",
+      "covers": "a self DMG against a Pyro- or Electro-affected opponent (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/BloodtaintedGreatsword/index.tsx:8-21"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "Bloodtainted Greatsword",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:bloodtainted_greatsword",
+          "label": "Bloodtainted Greatsword R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/BloodtaintedGreatsword/index.tsx @ 2c13fc40 \u2014 dmg :10-16,17-21; gcsim internal/weapons/claymore/bloodtainted/bloodtainted.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "aura",
+                "label": "Opponent affected by Pyro or Electro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: depends on the enemy's aura, which the estimate does not track",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "aura",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:bloodtainted_greatsword/aura": 1
+      },
+      "expected": 3216.78041222127,
+      "go_value": 3216.78041222127,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "cool_steel_r1_on_ayaka",
+      "covers": "a self DMG against a Hydro- or Cryo-affected opponent (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/CoolSteel/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Cool Steel",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:cool_steel",
+          "label": "Cool Steel R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/CoolSteel/index.tsx @ 2c13fc40 \u2014 dmg :10-16,18-22; gcsim internal/weapons/sword/coolsteel/coolsteel.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "aura",
+                "label": "Opponent affected by Hydro or Cryo",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: depends on the enemy's aura, which the estimate does not track",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "aura",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:cool_steel/aura": 1
+      },
+      "expected": 7382.101985943986,
+      "go_value": 7382.101985943986,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "magic_guide_r1_on_kokomi",
+      "covers": "a self DMG against a Hydro- or Electro-affected opponent (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/MagicGuide/index.tsx:8-21"
+      ],
+      "givers": [
+        {
+          "name": "Sangonomiya Kokomi",
+          "weapon": "Magic Guide",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 744.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13471.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 657.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "hydro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.230768
+            ]
+          },
+          "multiplier": 1.230768,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:magic_guide",
+          "label": "Magic Guide R1 (Sangonomiya Kokomi)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/MagicGuide/index.tsx @ 2c13fc40 \u2014 dmg :10-16,17-21; gcsim internal/weapons/catalyst/magicguide/magicguide.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "aura",
+                "label": "Opponent affected by Hydro or Electro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: depends on the enemy's aura, which the estimate does not track",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "aura",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:magic_guide/aura": 1
+      },
+      "expected": 1477.6770184161787,
+      "go_value": 1477.6770184161787,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "raven_bow_r5_on_amber",
+      "covers": "a self DMG against a Hydro- or Pyro-affected opponent (stated on), at R5",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Bow/RavenBow/index.tsx:8-23"
+      ],
+      "givers": [
+        {
+          "name": "Amber",
+          "weapon": "Raven Bow",
+          "refinement": 5,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_BOW",
+        "member_elements": [
+          "pyro",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 733.0,
+        "atk_pct": 0.24,
+        "flat_atk": 0.0,
+        "base_hp": 9461.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 601.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "physical_dmg_bonus": 0.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "wave",
+          "label": "Fiery Rain DMG Per Wave",
+          "move": "burst",
+          "count": 1,
+          "talent_row": {
+            "label": "Fiery Rain DMG Per Wave|{param1:F1P}",
+            "params": [
+              0.5967
+            ]
+          },
+          "multiplier": 0.5967,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:raven_bow",
+          "label": "Raven Bow R5 (Amber)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Bow/RavenBow/index.tsx @ 2c13fc40 \u2014 dmg :10-17,19-23; gcsim internal/weapons/bow/raven/raven.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "aura",
+                "label": "Opponent affected by Hydro or Pyro",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: depends on the enemy's aura, which the estimate does not track",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "dmg_bonus",
+                "value": 0.24,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "aura",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:raven_bow/aura": 1
+      },
+      "expected": 965.2899258744893,
+      "go_value": 965.2899258744893,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "dark_iron_sword_r1_on_ayaka",
+      "covers": "a self ATK% after an Electro-related reaction (GO's R5 entry is 0.5, the list's 0.4; R1 agrees)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/DarkIronSword/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Dark Iron Sword",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:dark_iron_sword",
+          "label": "Dark Iron Sword R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/DarkIronSword/index.tsx @ 2c13fc40 \u2014 atk :10-16,18-22; gcsim internal/weapons/sword/darkironsword/darkironsword.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "reaction",
+                "label": "For 12s after an Electro-related reaction",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.2,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "reaction",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:dark_iron_sword/reaction": 1
+      },
+      "expected": 7584.533674659503,
+      "go_value": 7584.533674659503,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "harbinger_of_dawn_r1_on_ayaka",
+      "covers": "a self CRIT Rate above 90% HP",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/HarbingerOfDawn/index.tsx:8-22"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Harbinger of Dawn",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:harbinger_of_dawn",
+          "label": "Harbinger of Dawn R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/HarbingerOfDawn/index.tsx @ 2c13fc40 \u2014 cr :10-16,18-22; gcsim internal/weapons/sword/harbinger/harbinger.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "hp",
+                "label": "Wielder above 90% HP",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "usual",
+                "default_note": "On: incoming damage is not modelled; turn it off below 90% HP",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "crit_rate",
+                "value": 0.14,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "hp",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:harbinger_of_dawn/hp": 1
+      },
+      "expected": 7857.5922379390995,
+      "go_value": 7857.5922379390995,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "skyrider_greatsword_r1_on_razor",
+      "covers": "a self ATK% per stack, four",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/SkyriderGreatsword/index.tsx:15-31"
+      ],
+      "givers": [
+        {
+          "name": "Razor",
+          "weapon": "Skyrider Greatsword",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "electro",
+        "weapon_type": "WEAPON_CLAYMORE",
+        "member_elements": [
+          "electro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 842.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 11962.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 751.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "physical_dmg_bonus": 0.3
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6,
+        "physical_dmg_bonus": 0.583
+      },
+      "set_pools": [],
+      "channel": "physical",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:P}",
+            "params": [
+              1.7113
+            ]
+          },
+          "multiplier": 1.7113,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:skyrider_greatsword",
+          "label": "Skyrider Greatsword R1 (Razor)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/SkyriderGreatsword/index.tsx @ 2c13fc40 \u2014 atk :17-25,27-31; gcsim internal/weapons/claymore/skyrider/skyrider.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "stacks",
+                "label": "On-hit stacks (Normal and Charged Attacks)",
+                "kind": "stacks",
+                "default": 4.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": 4.0,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.06,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [],
+                "per": "stacks",
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": []
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:skyrider_greatsword/stacks": 4
+      },
+      "expected": 3419.503103799363,
+      "go_value": 3419.503103799363,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "skyrider_sword_r1_on_ayaka",
+      "covers": "a self ATK% after a burst",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/SkyriderSword/index.tsx:8-28"
+      ],
+      "givers": [
+        {
+          "name": "Kamisato Ayaka",
+          "weapon": "Skyrider Sword",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "cryo",
+        "weapon_type": "WEAPON_SWORD_ONE_HAND",
+        "member_elements": [
+          "cryo",
+          "hydro"
+        ]
+      },
+      "base": {
+        "base_atk": 950.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 12858.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 784.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.884,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.466,
+        "flat_atk": 311.0,
+        "cryo_dmg_bonus": 0.466,
+        "crit_rate": 0.2,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "cryo",
+      "rows": [
+        {
+          "id": "press",
+          "label": "Skill DMG",
+          "move": "skill",
+          "count": 1,
+          "talent_row": {
+            "label": "Skill DMG|{param1:P}",
+            "params": [
+              4.5448
+            ]
+          },
+          "multiplier": 4.5448,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:skyrider_sword",
+          "label": "Skyrider Sword R1 (Kamisato Ayaka)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/SkyriderSword/index.tsx @ 2c13fc40 \u2014 atk :10-21,23-28; gcsim internal/weapons/sword/skyrider/skyrider.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "after_burst",
+                "label": "For 15s after an Elemental Burst",
+                "kind": "toggle",
+                "default": 1.0,
+                "default_reason": "self",
+                "default_note": null,
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "after_burst",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Movement SPD",
+                "reason": "no damage effect: movement speed"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:skyrider_sword/after_burst": 1
+      },
+      "expected": 7280.143032385584,
+      "go_value": 7280.143032385584,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "twin_nephrite_r1_on_kokomi",
+      "covers": "a self ATK% after a kill (stated on)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Catalyst/TwinNephrite/index.tsx:8-29"
+      ],
+      "givers": [
+        {
+          "name": "Sangonomiya Kokomi",
+          "weapon": "Twin Nephrite",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "hydro",
+        "weapon_type": "WEAPON_CATALYST",
+        "member_elements": [
+          "hydro",
+          "pyro"
+        ]
+      },
+      "base": {
+        "base_atk": 744.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 13471.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 657.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 0.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0,
+        "hydro_dmg_bonus": 0.288
+      },
+      "artifacts": {
+        "hp_pct": 0.932,
+        "flat_hp": 4780.0,
+        "flat_atk": 311.0,
+        "hydro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.6
+      },
+      "set_pools": [],
+      "channel": "hydro",
+      "rows": [
+        {
+          "id": "na1",
+          "label": "1-Hit DMG",
+          "move": "normal",
+          "count": 1,
+          "talent_row": {
+            "label": "1-Hit DMG|{param1:F1P}",
+            "params": [
+              1.230768
+            ]
+          },
+          "multiplier": 1.230768,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {}
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:twin_nephrite",
+          "label": "Twin Nephrite R1 (Sangonomiya Kokomi)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Catalyst/TwinNephrite/index.tsx @ 2c13fc40 \u2014 atk :10-22,24-29; gcsim internal/weapons/catalyst/twin/twin.go @ b107b5dc",
+          "bonus": {
+            "conditions": [
+              {
+                "key": "kill",
+                "label": "For 15s after defeating an opponent",
+                "kind": "toggle",
+                "default": 0.0,
+                "default_reason": "situational",
+                "default_note": "Off: a kill is not a usual state of a fight against one target",
+                "max": null,
+                "step": null,
+                "options": null
+              }
+            ],
+            "effects": [
+              {
+                "stat": "atk_pct",
+                "value": 0.12,
+                "elements": null,
+                "element_from": null,
+                "moves": null,
+                "rows": null,
+                "reactions": null,
+                "when": [
+                  {
+                    "condition": "kill",
+                    "values": [
+                      1.0
+                    ]
+                  }
+                ],
+                "per": null,
+                "by_stack": null,
+                "per_team": null,
+                "per_team_max": null,
+                "cap": null,
+                "threshold": null,
+                "weapon_types": null,
+                "talent": null,
+                "non_stack": null
+              }
+            ],
+            "unmodelled": [
+              {
+                "what": "Movement SPD",
+                "reason": "no damage effect: movement speed"
+              }
+            ]
+          }
+        }
+      ],
+      "conditionals": {
+        "weapon:twin_nephrite/kill": 1
+      },
+      "expected": 1500.097091980935,
+      "go_value": 1500.097091980935,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "debate_club_r1_proc_row_on_xiangling",
+      "covers": "a proc row: one Blunt Conclusion instance (60% ATK, Physical) (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Claymore/DebateClub/index.tsx:16-36",
+        "libs/gi/sheets/src/Characters/dataUtil.tsx:113-138",
+        "gcsim: internal/weapons/claymore/debateclub/debateclub.go:32-81"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Debate Club",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "proc_blunt",
+          "label": "Blunt Conclusion",
+          "move": null,
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "proc": {
+            "source": "weapon:debate_club",
+            "key": "blunt"
+          },
+          "channel": "physical"
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:debate_club",
+          "label": "Debate Club R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Claymore/DebateClub/index.tsx @ 2c13fc40 \u2014 blunt :18-32,33-33 (gcsim internal/weapons/claymore/debateclub/debateclub.go:32-81); gcsim internal/weapons/claymore/debateclub/debateclub.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [],
+            "unmodelled": []
+          },
+          "procs": [
+            {
+              "key": "blunt",
+              "label": "Blunt Conclusion: an ATK Physical AoE on Normal or Charged hits after a skill",
+              "multiplier": 0.6,
+              "scaling": "atk",
+              "element": "physical",
+              "stat_layer": "total"
+            }
+          ]
+        }
+      ],
+      "conditionals": {},
+      "expected": 528.0401076923076,
+      "go_value": 528.0401076923076,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "fillet_blade_r1_proc_row_on_xiangling",
+      "covers": "a proc row: one Gash instance (240% ATK, Physical) (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Sword/FilletBlade/index.tsx:16-38",
+        "libs/gi/sheets/src/Characters/dataUtil.tsx:113-138",
+        "gcsim: internal/weapons/sword/filletblade/filletblade.go:32-63"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Fillet Blade",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "proc_gash",
+          "label": "Gash",
+          "move": null,
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "proc": {
+            "source": "weapon:fillet_blade",
+            "key": "gash"
+          },
+          "channel": "physical"
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:fillet_blade",
+          "label": "Fillet Blade R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Sword/FilletBlade/index.tsx @ 2c13fc40 \u2014 gash :18-33,35-37 (gcsim internal/weapons/sword/filletblade/filletblade.go:32-63); gcsim internal/weapons/sword/filletblade/filletblade.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [],
+            "unmodelled": []
+          },
+          "procs": [
+            {
+              "key": "gash",
+              "label": "Gash: an ATK Physical hit",
+              "multiplier": 2.4,
+              "scaling": "atk",
+              "element": "physical",
+              "stat_layer": "premod"
+            }
+          ]
+        }
+      ],
+      "conditionals": {},
+      "expected": 2112.1604307692305,
+      "go_value": 2112.1604307692305,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
+    },
+    {
+      "name": "halberd_r1_proc_row_on_xiangling",
+      "covers": "a proc row: one Heavy instance (160% ATK, Physical) (a stand-in wielder: the passive does not read the weapon class)",
+      "go": [
+        "libs/gi/wr/src/formula.ts:357,434-453,505-514",
+        "libs/gi/sheets/src/Weapons/Polearm/Halberd/index.tsx:16-36",
+        "libs/gi/sheets/src/Characters/dataUtil.tsx:113-138",
+        "gcsim: internal/weapons/spear/halberd/halberd.go:31-61"
+      ],
+      "givers": [
+        {
+          "name": "Xiangling",
+          "weapon": "Halberd",
+          "refinement": 1,
+          "stats": "the optimized character"
+        }
+      ],
+      "team": {
+        "element": "pyro",
+        "weapon_type": "WEAPON_POLE",
+        "member_elements": [
+          "pyro",
+          "hydro",
+          "anemo",
+          "cryo"
+        ]
+      },
+      "base": {
+        "base_atk": 735.0,
+        "atk_pct": 0.0,
+        "flat_atk": 0.0,
+        "base_hp": 10875.0,
+        "hp_pct": 0.0,
+        "flat_hp": 0.0,
+        "base_def": 669.0,
+        "def_pct": 0.0,
+        "flat_def": 0.0,
+        "elemental_mastery": 96.0,
+        "crit_rate": 0.05,
+        "crit_dmg": 0.5,
+        "energy_recharge": 1.0
+      },
+      "artifacts": {
+        "atk_pct": 0.5,
+        "flat_atk": 311.0,
+        "pyro_dmg_bonus": 0.466,
+        "crit_rate": 0.3,
+        "crit_dmg": 0.7,
+        "elemental_mastery": 80.0
+      },
+      "set_pools": [],
+      "channel": "pyro",
+      "rows": [
+        {
+          "id": "proc_heavy",
+          "label": "Heavy",
+          "move": null,
+          "count": 1,
+          "talent_row": {
+            "label": "Pyronado DMG|{param4:P}",
+            "params": [
+              1.296,
+              1.584,
+              1.9728,
+              2.016
+            ]
+          },
+          "multiplier": 2.016,
+          "scaling_stat": "atk",
+          "amplifying": null,
+          "conditionals": {},
+          "proc": {
+            "source": "weapon:halberd",
+            "key": "heavy"
+          },
+          "channel": "physical"
+        }
+      ],
+      "sources": [
+        {
+          "id": "weapon:halberd",
+          "label": "Halberd R1 (Xiangling)",
+          "citation": "GO libs/gi/sheets/src/Weapons/Polearm/Halberd/index.tsx @ 2c13fc40 \u2014 heavy :18-32,33-33 (gcsim internal/weapons/spear/halberd/halberd.go:31-61); gcsim internal/weapons/spear/halberd/halberd.go @ b107b5dc",
+          "bonus": {
+            "conditions": [],
+            "effects": [],
+            "unmodelled": []
+          },
+          "procs": [
+            {
+              "key": "heavy",
+              "label": "Heavy: an ATK Physical hit on a Normal Attack",
+              "multiplier": 1.6,
+              "scaling": "atk",
+              "element": "physical",
+              "stat_layer": "total"
+            }
+          ]
+        }
+      ],
+      "conditionals": {},
+      "expected": 1408.1069538461538,
+      "go_value": 1408.1069538461538,
+      "divergence": "none: no reaction",
+      "relative_divergence_from_go": 0.0
     }
   ]
 }
