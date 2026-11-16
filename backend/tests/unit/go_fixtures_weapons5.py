@@ -44,7 +44,8 @@ def own(name: str, covers: str, go: str, who: str, weapon: str, nanoka_id: str, 
     return w._fx(
         name, covers, [w.FORMULA, f"{w.WEAPONS}{go}"], w._wielder(who, weapon, r, w.SUBJECT),
         team, stats[0], stats[1], channel, [row],
-        cmp.source(nanoka_id, r, who, stats[0], subject=True, receiver_element=team["element"]),
+        cmp.source(nanoka_id, r, who, stats[0], subject=True, receiver_element=team["element"],
+                   team_elements=team.get("member_elements")),
         conditionals, w._figure(stats[0], stats[1], talent, channel, x, scaling=scaling))
 
 
@@ -252,5 +253,6 @@ def _owner_reactions() -> list[dict[str, Any]]:
 
 
 def weapon_fixtures_5() -> list[dict[str, Any]]:
-    """Every fixture of this batch."""
-    return [*owner_fixtures()]
+    """Every fixture of this batch (the later modules import this one's helpers)."""
+    from tests.unit.go_fixtures_weapons5b import five_star_fixtures
+    return [*owner_fixtures(), *five_star_fixtures()]

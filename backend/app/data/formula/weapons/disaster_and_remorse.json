@@ -1,0 +1,197 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Disaster and Remorse",
+ "nanoka_id": "13517",
+ "slug": "disaster_and_remorse",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/DisasterAndRemorse/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/disasterandremorse/disasterandremorse.go",
+ "verified_by": [
+  "disaster_and_remorse_r1_on_xiangling",
+  "disaster_and_remorse_r5_hexerei_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   17.0,
+   3.0,
+   0.4,
+   0.4,
+   1.0,
+   0.75,
+   18.0,
+   0.0
+  ],
+  "2": [
+   17.0,
+   3.0,
+   0.5,
+   0.5,
+   1.0,
+   0.75,
+   18.0,
+   0.0
+  ],
+  "3": [
+   17.0,
+   3.0,
+   0.6,
+   0.6,
+   1.0,
+   0.75,
+   18.0,
+   0.0
+  ],
+  "4": [
+   17.0,
+   3.0,
+   0.7,
+   0.7,
+   1.0,
+   0.75,
+   18.0,
+   0.0
+  ],
+  "5": [
+   17.0,
+   3.0,
+   0.8,
+   0.8,
+   1.0,
+   0.75,
+   18.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "unforgivable",
+   "label": "Unforgivable (after a skill, extended by skill and burst hits)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "22"
+  },
+  {
+   "key": "irreparable",
+   "label": "Irreparable (after a skill, extended by Normal and Charged hits)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "33"
+  },
+  {
+   "key": "hexerei",
+   "label": "Hexerei: Secret Rite in the party (two Hexerei members)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs two Hexerei members (GO `tally.hexerei` >= 2), a party composition the estimate does not check"
+   },
+   "go": "27,38"
+  }
+ ],
+ "effects": [
+  {
+   "key": "na_ca",
+   "label": "Unforgivable: Normal and Charged Attack DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2
+   },
+   "moves": [
+    "normal",
+    "charged"
+   ],
+   "when": [
+    {
+     "condition": "unforgivable",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "21,23-31,46-47"
+  },
+  {
+   "key": "na_ca_hex",
+   "label": "Unforgivable with Hexerei: 75% more",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2,
+    "times_param": 5
+   },
+   "moves": [
+    "normal",
+    "charged"
+   ],
+   "when": [
+    {
+     "condition": "unforgivable",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "hexerei",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "26-29"
+  },
+  {
+   "key": "skill_burst",
+   "label": "Irreparable: Elemental Skill and Burst DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3
+   },
+   "moves": [
+    "skill",
+    "burst"
+   ],
+   "when": [
+    {
+     "condition": "irreparable",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "21,34-42,48-49"
+  },
+  {
+   "key": "skill_burst_hex",
+   "label": "Irreparable with Hexerei: 75% more",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3,
+    "times_param": 5
+   },
+   "moves": [
+    "skill",
+    "burst"
+   ],
+   "when": [
+    {
+     "condition": "irreparable",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "hexerei",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "37-40"
+  }
+ ]
+}

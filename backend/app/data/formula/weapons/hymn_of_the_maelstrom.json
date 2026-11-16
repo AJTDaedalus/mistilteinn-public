@@ -1,0 +1,154 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Hymn of the Maelstrom",
+ "nanoka_id": "14524",
+ "slug": "hymn_of_the_maelstrom",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/HymnOfTheMaelstrom/index.tsx",
+ "verified_by": [
+  "hymn_of_the_maelstrom_r1_capped_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.04,
+   40000.0,
+   0.004,
+   0.08,
+   10.0,
+   3.0,
+   5.0,
+   0.75
+  ],
+  "2": [
+   0.05,
+   40000.0,
+   0.005,
+   0.1,
+   10.0,
+   3.0,
+   5.0,
+   0.75
+  ],
+  "3": [
+   0.06,
+   40000.0,
+   0.006,
+   0.12,
+   10.0,
+   3.0,
+   5.0,
+   0.75
+  ],
+  "4": [
+   0.07,
+   40000.0,
+   0.007,
+   0.14,
+   10.0,
+   3.0,
+   5.0,
+   0.75
+  ],
+  "5": [
+   0.08,
+   40000.0,
+   0.008,
+   0.16,
+   10.0,
+   3.0,
+   5.0,
+   0.75
+  ]
+ },
+ "conditions": [
+  {
+   "key": "stacks",
+   "label": "Vatsamonga's Vatic Vintage stacks (after the wielder heals)",
+   "kind": "stacks",
+   "default_by": "giver_is_subject",
+   "max": 3,
+   "go": "39,41-45"
+  },
+  {
+   "key": "frozen_swirl",
+   "label": "After a party Frozen or Stellar Swirl reaction (5s)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs a party Frozen reaction, which depends on the team; the estimate does not check it"
+   },
+   "go": "40"
+  }
+ ],
+ "effects": [
+  {
+   "key": "hp",
+   "label": "Max HP% per stack",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "param": 0
+   },
+   "per": "stacks",
+   "go": "28,46-49,76"
+  },
+  {
+   "key": "hp_more",
+   "label": "After Frozen: 75% more Max HP% per stack",
+   "receivers": "self",
+   "stat": "hp_pct",
+   "value": {
+    "param": 0,
+    "times_param": 7
+   },
+   "when": [
+    {
+     "condition": "frozen_swirl",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "per": "stacks",
+   "go": "65,76"
+  },
+  {
+   "key": "team_atk",
+   "label": "The active character's ATK% per 1,000 of the wielder's Max HP over 40,000, per stack",
+   "receivers": "active",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2,
+    "times_stat": "hp",
+    "threshold": {
+     "param": 1
+    },
+    "stat_unit": {
+     "constant": 1000.0,
+     "cite": "GO HymnOfTheMaelstrom/index.tsx:57 `1 / 1000`"
+    },
+    "cap": {
+     "param": 3
+    }
+   },
+   "per": "stacks",
+   "go": "29-30,50-64,78-81"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Healing Bonus",
+   "reason": "no damage effect: healing"
+  },
+  {
+   "what": "After Frozen: 75% more of the active character's ATK%",
+   "reason": "its cap is 75% of the listed cap, a product of two parameters the file's cap cannot carry"
+  },
+  {
+   "what": "the stacks' own Max HP% in the HP the ATK% reads",
+   "reason": "only the weapon's unconditional stats enter what its values read; past the cap it is moot",
+   "receiver": "teammate"
+  }
+ ]
+}

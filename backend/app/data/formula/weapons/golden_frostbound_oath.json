@@ -1,0 +1,196 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Golden Frostbound Oath",
+ "nanoka_id": "15516",
+ "slug": "golden_frostbound_oath",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/GoldenFrostboundOath/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/goldenfrostboundoath/goldenfrostboundoath.go",
+ "verified_by": [
+  "golden_frostbound_oath_r1_on_kachina",
+  "golden_frostbound_oath_r1_lunar_crystallize"
+ ],
+ "pins": {
+  "1": [
+   6.0,
+   0.4,
+   0.4,
+   0.5,
+   0.16,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   6.0,
+   0.5,
+   0.5,
+   0.5,
+   0.2,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   6.0,
+   0.6,
+   0.6,
+   0.5,
+   0.24,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   6.0,
+   0.7,
+   0.7,
+   0.5,
+   0.28,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   6.0,
+   0.8,
+   0.8,
+   0.5,
+   0.32,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "favor",
+   "label": "Frost Fae's Favor: after a skill or Lunar-Crystallize hit",
+   "kind": "toggle",
+   "default_by": "giver_is_subject",
+   "go": "24"
+  },
+  {
+   "key": "moondrift",
+   "label": "Moondrifts near the wielder (Frost Fae's Mischief)",
+   "kind": "toggle",
+   "default_by": "situational",
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs Moondrifts nearby, which the estimate does not track"
+   },
+   "go": "32"
+  }
+ ],
+ "effects": [
+  {
+   "key": "def",
+   "label": "DEF%",
+   "receivers": "self",
+   "stat": "def_pct",
+   "value": {
+    "param": 4
+   },
+   "go": "18,22,44"
+  },
+  {
+   "key": "geo",
+   "label": "Frost Fae's Favor: Geo DMG",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "elements": [
+    "geo"
+   ],
+   "when": [
+    {
+     "condition": "favor",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,25-29,45"
+  },
+  {
+   "key": "lcr",
+   "label": "Frost Fae's Favor: Lunar-Crystallize DMG",
+   "receivers": "self",
+   "stat": "reaction_bonus",
+   "value": {
+    "param": 2
+   },
+   "reactions": [
+    "lunar_crystallize"
+   ],
+   "when": [
+    {
+     "condition": "favor",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,30,46"
+  },
+  {
+   "key": "team_geo",
+   "label": "Frost Fae's Mischief: the others' Geo DMG",
+   "receivers": "others",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1,
+    "times_param": 3
+   },
+   "elements": [
+    "geo"
+   ],
+   "when": [
+    {
+     "condition": "favor",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "moondrift",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "20,33-38,50"
+  },
+  {
+   "key": "team_lcr",
+   "label": "Frost Fae's Mischief: the others' Lunar-Crystallize DMG",
+   "receivers": "others",
+   "stat": "reaction_bonus",
+   "value": {
+    "param": 2,
+    "times_param": 3
+   },
+   "reactions": [
+    "lunar_crystallize"
+   ],
+   "when": [
+    {
+     "condition": "favor",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "moondrift",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "20,39-40,51"
+  }
+ ]
+}

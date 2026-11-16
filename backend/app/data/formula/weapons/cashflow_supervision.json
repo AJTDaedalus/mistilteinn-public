@@ -1,0 +1,125 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Cashflow Supervision",
+ "nanoka_id": "14513",
+ "slug": "cashflow_supervision",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/CashflowSupervision/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/cashflow/cashflow.go",
+ "verified_by": [
+  "cashflow_supervision_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   4.0,
+   0.3,
+   0.16,
+   0.14,
+   0.08,
+   0.14,
+   0.0,
+   0.0
+  ],
+  "2": [
+   4.0,
+   0.3,
+   0.2,
+   0.175,
+   0.1,
+   0.175,
+   0.0,
+   0.0
+  ],
+  "3": [
+   4.0,
+   0.3,
+   0.24,
+   0.21,
+   0.12,
+   0.21,
+   0.0,
+   0.0
+  ],
+  "4": [
+   4.0,
+   0.3,
+   0.28,
+   0.245,
+   0.14,
+   0.245,
+   0.0,
+   0.0
+  ],
+  "5": [
+   4.0,
+   0.3,
+   0.32,
+   0.28,
+   0.16,
+   0.28,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "stacks",
+   "label": "Stacks after current HP changes (4s each)",
+   "kind": "stacks",
+   "default_by": "self",
+   "max": 3,
+   "go": "34-35"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK%",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 2
+   },
+   "go": "20-22,28-32,74"
+  },
+  {
+   "key": "normal",
+   "label": "Normal Attack DMG per stack",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 2
+   },
+   "moves": [
+    "normal"
+   ],
+   "per": "stacks",
+   "go": "23,36-45,75"
+  },
+  {
+   "key": "charged",
+   "label": "Charged Attack DMG per stack",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 3
+   },
+   "moves": [
+    "charged"
+   ],
+   "per": "stacks",
+   "go": "24,46-55,76"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Stellar-Conduct DMG per stack",
+   "reason": "Stellar reactions are refused by name (`reactions.REFUSED`)"
+  },
+  {
+   "what": "ATK SPD at 3 stacks",
+   "reason": "no damage effect: attack speed"
+  }
+ ]
+}

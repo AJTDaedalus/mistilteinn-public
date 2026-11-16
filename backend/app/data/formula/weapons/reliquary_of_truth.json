@@ -1,0 +1,179 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Reliquary of Truth",
+ "nanoka_id": "14521",
+ "slug": "reliquary_of_truth",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Catalyst/ReliquaryOfTruth/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/catalyst/reliquary/reliquary.go",
+ "verified_by": [
+  "reliquary_of_truth_r1_on_kokomi"
+ ],
+ "pins": {
+  "1": [
+   80.0,
+   0.24,
+   12.0,
+   4.0,
+   0.5,
+   0.08,
+   0.0,
+   0.0
+  ],
+  "2": [
+   100.0,
+   0.3,
+   12.0,
+   4.0,
+   0.5,
+   0.1,
+   0.0,
+   0.0
+  ],
+  "3": [
+   120.0,
+   0.36,
+   12.0,
+   4.0,
+   0.5,
+   0.12,
+   0.0,
+   0.0
+  ],
+  "4": [
+   140.0,
+   0.42,
+   12.0,
+   4.0,
+   0.5,
+   0.14,
+   0.0,
+   0.0
+  ],
+  "5": [
+   160.0,
+   0.48,
+   12.0,
+   4.0,
+   0.5,
+   0.16,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "lies",
+   "label": "Secret of Lies: after an Elemental Skill (12s)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "28"
+  },
+  {
+   "key": "truth",
+   "label": "Moon of Truth: after dealing Lunar-Bloom DMG (4s)",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "29-32"
+  }
+ ],
+ "effects": [
+  {
+   "key": "cr",
+   "label": "CRIT Rate",
+   "receivers": "self",
+   "stat": "crit_rate",
+   "value": {
+    "param": 5
+   },
+   "go": "17,22-26,57"
+  },
+  {
+   "key": "em",
+   "label": "Secret of Lies: EM",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0
+   },
+   "when": [
+    {
+     "condition": "lies",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "18,33-42,58"
+  },
+  {
+   "key": "em_both",
+   "label": "Both: 50% more EM",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 0,
+    "times_param": 4
+   },
+   "when": [
+    {
+     "condition": "lies",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "truth",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "20,36-39,58"
+  },
+  {
+   "key": "cd",
+   "label": "Moon of Truth: CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "truth",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "19,44-53,59"
+  },
+  {
+   "key": "cd_both",
+   "label": "Both: 50% more CRIT DMG",
+   "receivers": "self",
+   "stat": "crit_dmg",
+   "value": {
+    "param": 1,
+    "times_param": 4
+   },
+   "when": [
+    {
+     "condition": "lies",
+     "values": [
+      1
+     ]
+    },
+    {
+     "condition": "truth",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "20,47-50,59"
+  }
+ ]
+}
