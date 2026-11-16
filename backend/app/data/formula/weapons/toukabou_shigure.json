@@ -1,0 +1,94 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Toukabou Shigure",
+ "nanoka_id": "11422",
+ "slug": "toukabou_shigure",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/ToukabouShigure/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/toukaboushigure/toukaboushigure.go",
+ "verified_by": [
+  "toukabou_shigure_r1_on_ayaka"
+ ],
+ "pins": {
+  "1": [
+   10.0,
+   0.16,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   10.0,
+   0.2,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   10.0,
+   0.24,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   10.0,
+   0.28,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   10.0,
+   0.32,
+   15.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "parasol",
+   "label": "Against the opponent under Cursed Parasol",
+   "kind": "toggle",
+   "default_by": "self",
+   "go": "11"
+  }
+ ],
+ "effects": [
+  {
+   "key": "dmg",
+   "label": "DMG against the Cursed Parasol's opponent",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 1
+   },
+   "when": [
+    {
+     "condition": "parasol",
+     "values": [
+      1
+     ]
+    }
+   ],
+   "go": "12-21,25"
+  }
+ ]
+}

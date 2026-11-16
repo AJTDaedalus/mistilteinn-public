@@ -255,4 +255,5 @@ def _owner_reactions() -> list[dict[str, Any]]:
 def weapon_fixtures_5() -> list[dict[str, Any]]:
     """Every fixture of this batch (the later modules import this one's helpers)."""
     from tests.unit.go_fixtures_weapons5b import five_star_fixtures
-    return [*owner_fixtures(), *five_star_fixtures()]
+    from tests.unit.go_fixtures_weapons5c import four_star_fixtures_a
+    return [*owner_fixtures(), *five_star_fixtures(), *four_star_fixtures_a()]

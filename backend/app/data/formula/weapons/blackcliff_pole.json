@@ -1,0 +1,92 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Blackcliff Pole",
+ "nanoka_id": "13404",
+ "slug": "blackcliff_pole",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Polearm/BlackcliffPole/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/spear/blackcliff/blackcliff.go",
+ "verified_by": [
+  "blackcliff_pole_r5_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   0.12,
+   30.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   0.15,
+   30.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   0.18,
+   30.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   0.21,
+   30.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   0.24,
+   30.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "kills",
+   "label": "Opponents defeated (30s each)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "usual": {
+    "value": 0,
+    "reason": "Off: a kill is not a usual state of a fight against one target"
+   },
+   "go": "17"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "ATK% per opponent defeated",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 0
+   },
+   "per": "kills",
+   "go": "17-27,29-33"
+  }
+ ]
+}

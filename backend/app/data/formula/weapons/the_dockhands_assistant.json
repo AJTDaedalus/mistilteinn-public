@@ -1,0 +1,98 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "The Dockhand's Assistant",
+ "nanoka_id": "11427",
+ "slug": "the_dockhands_assistant",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Sword/TheDockhandsAssistant/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/sword/dockhand/dockhand.go",
+ "verified_by": [
+  "the_dockhands_assistant_r1_on_xiangling_vape"
+ ],
+ "pins": {
+  "1": [
+   30.0,
+   10.0,
+   15.0,
+   2.0,
+   40.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   30.0,
+   10.0,
+   15.0,
+   2.5,
+   50.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   30.0,
+   10.0,
+   15.0,
+   3.0,
+   60.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   30.0,
+   10.0,
+   15.0,
+   3.5,
+   70.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   30.0,
+   10.0,
+   15.0,
+   4.0,
+   80.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "symbols",
+   "label": "Stoic's Symbols consumed (each from a heal given or taken)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs the wielder healed or healing, which depends on the team's healer; the estimate does not check it"
+   },
+   "go": "20-24"
+  }
+ ],
+ "effects": [
+  {
+   "key": "em",
+   "label": "Roused: Elemental Mastery per Symbol",
+   "receivers": "self",
+   "stat": "elemental_mastery",
+   "value": {
+    "param": 4
+   },
+   "per": "symbols",
+   "go": "18,25-30,35"
+  }
+ ],
+ "unmodelled": [
+  {
+   "what": "Roused: Energy per Symbol",
+   "reason": "no damage effect: energy, which the estimate does not model (task 14)"
+  }
+ ]
+}

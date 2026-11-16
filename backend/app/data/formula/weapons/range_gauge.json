@@ -1,0 +1,112 @@
+{
+ "_about": "A weapon's refinement passive for the formula estimate (math-fallback P3, task 12). Every number is read from the seeded `weapon_refinements.param_list` of the wielder's refinement by index ({\"param\": i}); `pins` holds each refinement's list as curated, and a wielder whose list differs is withheld rather than read by a stale index. Structure is transcribed from Genshin Optimizer's WR weapon sheet `go` at `go_commit` (MIT), lines per effect; gcsim's implementation at `gcsim_commit` where it has one. Validated by app/formula/genshin/weapon_passives.py.",
+ "weapon": "Range Gauge",
+ "nanoka_id": "15427",
+ "slug": "range_gauge",
+ "go_commit": "2c13fc40c4694fd8beae513493c4c8a7537173c6",
+ "go": "libs/gi/sheets/src/Weapons/Bow/RangeGauge/index.tsx",
+ "gcsim_commit": "b107b5dc5cb88977bed5270e5d83e64934730d4d",
+ "gcsim": "internal/weapons/bow/rangegauge/rangegauge.go",
+ "verified_by": [
+  "range_gauge_r1_on_xiangling"
+ ],
+ "pins": {
+  "1": [
+   30.0,
+   10.0,
+   15.0,
+   0.03,
+   0.07,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "2": [
+   30.0,
+   10.0,
+   15.0,
+   0.04,
+   0.085,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "3": [
+   30.0,
+   10.0,
+   15.0,
+   0.05,
+   0.1,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "4": [
+   30.0,
+   10.0,
+   15.0,
+   0.06,
+   0.115,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "5": [
+   30.0,
+   10.0,
+   15.0,
+   0.07,
+   0.13,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "conditions": [
+  {
+   "key": "symbols",
+   "label": "Unity's Symbols consumed (each from a heal given or taken)",
+   "kind": "stacks",
+   "default_by": "situational",
+   "max": 3,
+   "usual": {
+    "value": 0,
+    "reason": "Off: needs the wielder healed or healing, which depends on the team's healer; the estimate does not check it"
+   },
+   "go": "21-22"
+  }
+ ],
+ "effects": [
+  {
+   "key": "atk",
+   "label": "Struggle: ATK% per Symbol",
+   "receivers": "self",
+   "stat": "atk_pct",
+   "value": {
+    "param": 3
+   },
+   "per": "symbols",
+   "go": "18,23-29,47"
+  },
+  {
+   "key": "ele",
+   "label": "Struggle: Elemental DMG per Symbol, every element",
+   "receivers": "self",
+   "stat": "dmg_bonus",
+   "value": {
+    "param": 4
+   },
+   "elements": [
+    "pyro",
+    "hydro",
+    "electro",
+    "cryo",
+    "anemo",
+    "geo",
+    "dendro"
+   ],
+   "per": "symbols",
+   "go": "19,30-43,48"
+  }
+ ]
+}
